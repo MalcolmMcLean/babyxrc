@@ -9,6 +9,7 @@ Input file format
 -----------------
 
 Example script file:
+~~~
 <BabyXRC>
 <image src = "smiley.png", name = "fred", width = "10", height = "10"> </image>
 <image src = "lena.jpg"> </image>
@@ -18,3 +19,4 @@ Example script file:
 <string name = "embedded"> Embedded string </string>
 <binary src = "dump.bin", name = "dump_bin"> </binary>
 </BabyXRC>
+~~~
