@@ -148,7 +148,7 @@ BBX_CURSOR *floadanimatedcursor(FILE *fp, int *err)
 		}
 		printf("%s\n", tag);
 		
-		if (!strncmp(tag, "LIST"))
+		if (!strncmp(tag, "LIST", 4))
 		{
 			blen = fget32le(fp);
 			fget32le(fp);
