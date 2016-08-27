@@ -1,6 +1,10 @@
 Here are some example files to show how to use the
 resource compiler, also test it.
 
+Call like this:
+
+BabyXRC script.xml > outputfile.c
+
 AminoInvaders is a little fun biochemistry game project
 that includes the amino acids. Amino acid gif files were
 nicked from the web. They are too large for the game, so
