@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct
 {
@@ -376,9 +377,7 @@ static int loadaniheader(FILE *fp, ANIHEADER *hdr)
 ******************************************************/
 static int loaddibheader(FILE *fp, BMPHEADER *hdr)
 {
-	int size;
 	int hdrsize;
-	int id;
 	int i;
 
 	hdrsize = fget32le(fp);

@@ -24,7 +24,7 @@ void sprshrink(unsigned char *dest, int dwidth, int dheight, unsigned char *src,
 
   for(yt= 0, y=0;y<dheight;y++, yt += dy)
   {
-    yfrag = ceil(yt) - yt;
+    yfrag = (float) ceil(yt) - yt;
     if(yfrag == 0)
       yfrag = 1;
     yfrag2 = yt+dy - (float) floor(yt + dy);
@@ -127,7 +127,7 @@ void sprshrink(unsigned char *dest, int dwidth, int dheight, unsigned char *src,
 void bilerp(unsigned char *dest, int dwidth, int dheight, unsigned char *src, int swidth, int sheight)
 {
   float a, b;
-  int red, green, blue, alpha;
+  float red, green, blue, alpha;
   float dx, dy;
   float rx, ry;
   int x, y;
@@ -168,10 +168,10 @@ void bilerp(unsigned char *dest, int dwidth, int dheight, unsigned char *src, in
       blue = blue < 0 ? 0 : blue > 255 ? 255 : blue;
       alpha = alpha < 0 ? 0 : alpha > 255 ? 255 : alpha;
 
-      dest[(y*dwidth+x)*4] = red;
-      dest[(y*dwidth+x)*4+1] = green;
-      dest[(y*dwidth+x)*4+2] = blue;
-      dest[(y*dwidth+x)*4+3] = alpha;
+      dest[(y*dwidth+x)*4] = (unsigned char) red;
+      dest[(y*dwidth+x)*4+1] = (unsigned char) green;
+      dest[(y*dwidth+x)*4+2] = (unsigned char) blue;
+      dest[(y*dwidth+x)*4+3] = (unsigned char) alpha;
     }
     index0 = (int)ry * swidth + (int) rx;
     index1 = index0;
@@ -200,10 +200,10 @@ void bilerp(unsigned char *dest, int dwidth, int dheight, unsigned char *src, in
     blue = blue < 0 ? 0 : blue > 255 ? 255 : blue;
 
     alpha = alpha < 0 ? 0 : alpha > 255 ? 255 : alpha;
-    dest[(y*dwidth+x)*4] = red;
-    dest[(y*dwidth+x)*4+1] = green;
-    dest[(y*dwidth+x)*4+2] = blue;
-    dest[(y*dwidth+x)*4+3] = alpha;
+    dest[(y*dwidth+x)*4] = (unsigned char) red;
+    dest[(y*dwidth+x)*4+1] = (unsigned char) green;
+    dest[(y*dwidth+x)*4+2] = (unsigned char) blue;
+    dest[(y*dwidth+x)*4+3] = (unsigned char) alpha;
   }
   index0 = (int)ry * swidth + (int) rx;
   index1 = index0;
@@ -240,10 +240,10 @@ void bilerp(unsigned char *dest, int dwidth, int dheight, unsigned char *src, in
     blue = blue < 0 ? 0 : blue > 255 ? 255 : blue;
     alpha = alpha < 0 ? 0 : alpha > 255 ? 255 : alpha;
       
-    dest[(y*dwidth+x)*4] = red;
-    dest[(y*dwidth+x)*4+1] = green;
-    dest[(y*dwidth+x)*4+2] = blue;
-    dest[(y*dwidth+x)*4+3] = alpha;
+    dest[(y*dwidth+x)*4] = (unsigned char) red;
+    dest[(y*dwidth+x)*4+1] = (unsigned char) green;
+    dest[(y*dwidth+x)*4+2] = (unsigned char) blue;
+    dest[(y*dwidth+x)*4+3] = (unsigned char) alpha;
   }
   
   dest[(y*dwidth+x)*4] = src[((sheight-1)*swidth+swidth-1)*4];
@@ -269,6 +269,7 @@ void resizeimage(unsigned char *dest, int dwidth, int dheight, unsigned char *sr
 } 
 
 #include <stdio.h>
+#include "lodepng.h"
 int resizemain(void)
 {
   unsigned char *rgba;
@@ -280,5 +281,7 @@ int resizemain(void)
   printf("here width %d height %d\n", width, height);
   sprshrink(out, width*2, height*2, rgba, width, height);
   lodepng_encode32_file("shrunk.png", out, width*2, height*2);
+
+  return 0;
 
 }
