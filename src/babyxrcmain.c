@@ -12,6 +12,7 @@
 #include "bdf2c.h"
 #include "ttf2c.h"
 #include "csv.h"
+#include "dumpcsv.h"
 
 char *getextension(char *fname);
 
@@ -574,11 +575,11 @@ int processcsvtag(FILE *fp, const char *fname, const char *name)
 		fprintf(stderr, "can't load csv %s\n", fname);
 		return -1;
 	}
-	//if (dumpcursor(fp, cursor, cursorname) < 0)
-	//{
-	//fprintf(stderr, "Error processing %s\n", fname);
-	//answer = -1;
-	//}
+	if (dumpcsv(fp, cursor, cursorname) < 0)
+	{
+	  fprintf(stderr, "Error processing %s\n", fname);
+	  answer = -1;
+	}
 	free(csvname);
         killcsv(csv);
 
