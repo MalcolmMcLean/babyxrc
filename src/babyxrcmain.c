@@ -11,6 +11,7 @@
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
+#include "csv.h"
 
 char *getextension(char *fname);
 
@@ -551,6 +552,39 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 	return answer;
 }
 
+int processcsvtag(FILE *fp, const char *fname, const char *name)
+{
+	char *csvname;
+	int answer = 0;
+	CSV *csv;
+
+	if (!fname)
+	{
+		fprintf(stderr, "Error, csv without src attribute\n");
+		return -1;
+	}
+
+	if (name)
+		csvname = mystrdup(name);
+	else
+		csvname = getbasename((char*)fname);
+	csv = loadcsv(fname);
+	if (!csv)
+	{
+		fprintf(stderr, "can't load csv %s\n", fname);
+		return -1;
+	}
+	//if (dumpcursor(fp, cursor, cursorname) < 0)
+	//{
+	//fprintf(stderr, "Error processing %s\n", fname);
+	//answer = -1;
+	//}
+	free(csvname);
+        killcsv(csv);
+
+	return answer;
+}
+
 void usage(void)
 {
   printf("The Baby X resource compiler v1.0\n");
@@ -662,6 +696,14 @@ int main(int argc, char **argv)
 		path = xml_getattribute(node, "src");
 		name = xml_getattribute(node, "name");
 		processcursortag(stdout, path, name);
+	}
+	Nchildren = xml_Nchildrenwithtag(scripts[i], "csv");
+	for (ii = 0; ii<Nchildren; ii++)
+	{
+		node = xml_getchild(scripts[i], "csv", ii);
+		path = xml_getattribute(node, "src");
+		name = xml_getattribute(node, "name");
+		processcsvtag(stdout, path, name);
 	}
   }  
   killxmldoc(doc);
