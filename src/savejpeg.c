@@ -81,7 +81,7 @@ static HUFFTABLE *lumac(void);
 static HUFFTABLE *chromac(void);
 
 static HUFFTABLE *buildhuff(HUFFENTRY *table, int N);
-static killhuff(HUFFTABLE *ht);
+static void killhuff(HUFFTABLE *ht);
 static int getlength(HUFFTABLE *ht, int *len);
 static int compentries(const void *e1, const void *e2);
 static void getsymbols(HUFFTABLE *ht, unsigned char *sym);
@@ -1441,7 +1441,7 @@ error_exit:
   destroy a Huffman table
   Params: ht - the table to destroy
 */
-static killhuff(HUFFTABLE *ht)
+static void killhuff(HUFFTABLE *ht)
 {
   int i;
 

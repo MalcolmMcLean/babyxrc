@@ -613,7 +613,7 @@ int rbtreemain(void)
     }
   
   ptr = 0;
-  while(ptr = rbt_prev(tree, ptr, 0))
+  while( (ptr = rbt_prev(tree, ptr, 0)) )
     printf("*%s*\n", ptr->data);
   killrbtree(tree);
 

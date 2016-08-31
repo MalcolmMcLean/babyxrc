@@ -144,7 +144,7 @@ unsigned char *loadaspng(char *fname, int *width, int *height)
 {
   int err;
   unsigned char *argb;
-  int w, h;
+  unsigned int w, h;
   unsigned char red,green, blue, alpha;
   int i;
 
@@ -168,8 +168,8 @@ unsigned char *loadaspng(char *fname, int *width, int *height)
     argb[i*4+3] = alpha;
   }
   */
-  *width = w;
-  *height = h;
+  *width = (int) w;
+  *height = (int) h;
 
   return argb;
 }

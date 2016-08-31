@@ -262,7 +262,7 @@ void resizeimage(unsigned char *dest, int dwidth, int dheight, unsigned char *sr
 {
   if(dwidth == swidth && sheight == dheight)
     memcpy(dest, src, dwidth*dheight*4);
-  else if(dwidth > swidth || sheight > sheight)
+  else if(dwidth > swidth || dheight > sheight)
     bilerp(dest, dwidth, dheight, src, swidth, sheight);
   else
     sprshrink(dest, dwidth, dheight, src, swidth, sheight);
@@ -273,10 +273,13 @@ void resizeimage(unsigned char *dest, int dwidth, int dheight, unsigned char *sr
 int resizemain(void)
 {
   unsigned char *rgba;
+  unsigned int uwidth, uheight;
   int width, height;
   unsigned char *out;
 
-  lodepng_decode32_file(&rgba, &width, &height, "ponies.png");
+  lodepng_decode32_file(&rgba, &uwidth, &uheight, "ponies.png");
+  width = (int) uwidth;
+  height = (int) uheight;
   out = malloc(width * height * 4 * 4);
   printf("here width %d height %d\n", width, height);
   sprshrink(out, width*2, height*2, rgba, width, height);
