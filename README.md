@@ -1,8 +1,8 @@
 # babyxrc
 
-This is the Baby X resource compiler. It's intended for use with BabyX, but can be used with any programs, it's a standalone system.
+This is the Baby X resource compiler. It's intended for use with Baby X, but can be used with any programs, it's a standalone system.
 
-The purpose of the program is to convert resources - images, text, fonts and so on - to compileable ANSI C. It's not meant to be a fully-fledged image processing progrm, but it allows for resizing and expansion of images. It also rasterises fonts, so you can take font processing out of programs - the font is dumped in a simple raster graphic format. You are of course then restricted to one size of font.
+The purpose of the program is to convert resources - images, text, fonts and so on - to compilable ANSI C. It's not meant to be a fully-fledged image processing program, but it allows for resizing and expansion of images. It also rasterises fonts, so you can take font processing out of programs - the font is dumped in a simple raster graphic format. You are of course then restricted to one size of font.
 
  
 Input file format
@@ -30,11 +30,11 @@ data portably into C is to dump as C source files. Fortunately these
 zip through modern compilers pretty quickly, there's no complexity
 or optimisation. However you can't edit dumped source directly, at
 least easily. So you need to keep a list of original binary resources
-handy. A simple svg file lists the resources to compile.
+handy. A simple xml file lists the resources to compile.
 
 Because resizing images is such a frequent requirement, it is built
-in. Current just two algorihtms, both of which operate in rgba
-soace, an averaging "shrink" and bilinear interpolation for expansion.
+in. Current just two algorithms, both of which operate in rgba
+space, an averaging "shrink" and bilinear interpolation for expansion.
 The resource compiler isn't going to support a full image processing
 transform chain, however, at least yet.
 
