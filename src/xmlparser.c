@@ -61,8 +61,9 @@ XMLDOC *floadxmldoc(FILE *fp, int *err)
   XMLNODE *rootnode;
   char *tag;
   char *closetag;
+  long pos;
 
- 
+  pos = ftell(fp);
   ch1 = fgetc(fp);
   ch2 = fgetc(fp);
   if(ch1 == '<' && ch2 == '?')
@@ -73,20 +74,22 @@ XMLDOC *floadxmldoc(FILE *fp, int *err)
   }
   else if(ch1 == '<' && isalpha(ch2))
   {
-	  fseek(fp, -2, SEEK_CUR);
+	  fseek(fp, pos, SEEK_SET);
   }
   else
   {
-    fseek(fp, -2, SEEK_CUR);
+    fseek(fp, pos, SEEK_SET);
 	*err = -4;
 	return 0;
   }
+ 
 
   answer = malloc(sizeof(XMLDOC));
   if(!answer)
     goto out_of_memory;
 
   answer->root = 0;
+  
 
   while( (ch = fgetc(fp)) != EOF)
   {
@@ -295,7 +298,7 @@ static int getdescendants_r(XMLNODE *node, const char *tag,  XMLNODE ***list, in
 	  if(!temp)
 	    return -1;
 	  *list = temp;
-	  (*list)[*N] = node;
+	  (*list)[*N] = next;
 	  (*N)++;
 	}
 	if(next->child)
@@ -712,7 +715,7 @@ static char *getidentifier(FILE *fp, int *err)
 	  free(answer);
 	  return 0;
 	}
-	if(!isalpha(ch) && !isdigit(ch))
+	if(!isalpha(ch) && !isdigit(ch) && ch != '-')
 	{
 	  ungetc(ch, fp);
 	  answer[N] = 0;
