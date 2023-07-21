@@ -8,6 +8,7 @@
 #include "asciitostring.h"
 #include "loadcursor.h"
 #include "loadimage.h"
+#include "wavfile.h"
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
@@ -128,8 +129,33 @@ int putcursordefinition(FILE *fp)
 	fprintf(fp, "};\n\n");
 
 	return 0;
-};
+}
 
+int dumpaudio(FILE *fp, const short *pcm, long samplerate, int Nchannels, long Nsamples, char *name)
+{
+    size_t count;
+    long i;
+    
+    count = Nsamples * Nchannels;
+    
+    fprintf(fp, "long %s_samplerate = %ld;\n", name, samplerate);
+    fprintf(fp, "int %s_Nchannels = %d;\n", name, Nchannels);
+    fprintf(fp, "long %s_Nsamples = %ld;\n", name, (long) Nsamples);
+    
+    fprintf(fp, "short %s[%ld] = {\n", name, (long) count);
+    for (i=0; i <count; i++)
+    {
+      fprintf(fp, "%d, ", pcm[i]);
+      if( (i % 10) == 9)
+        fprintf(fp, "\n");
+    }
+    if (i % 10)
+      fprintf(fp, "\n");
+
+    fprintf(fp, "};\n\n");
+    
+    return 0;
+}
 
 int dumpbinary(FILE *fp, const char *fname, const char *name)
 {
@@ -314,7 +340,7 @@ int putfontdefinition(FILE *fp)
 	fprintf(fp, "};\n\n");
 
 	return 0;
-};
+}
 
 
 
@@ -551,6 +577,43 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 	return answer;
 }
 
+int processaudiotag(FILE *fp, const char *fname, const char *name)
+{
+    char *audioname;
+    int answer = 0;
+    int err;
+    long samplerate;
+    int Nchannels;
+    long Nsamples;
+    short *pcm;
+    
+    if (!fname)
+    {
+        fprintf(stderr, "Error, audio without src attribute\n");
+        return -1;
+    }
+
+    if (name)
+        audioname = mystrdup(name);
+    else
+        audioname = getbasename((char*)fname);
+    pcm = loadwav(fname, &samplerate, &Nchannels, &Nsamples);
+    if (!pcm)
+    {
+        fprintf(stderr, "can't load audio %s\n", fname);
+        return -1;
+    }
+    if (dumpaudio(fp, pcm, samplerate, Nchannels, Nsamples, audioname) < 0)
+    {
+        fprintf(stderr, "Error processing %s\n", fname);
+        answer = -1;
+    }
+    free(audioname);
+    free(pcm);
+
+    return answer;
+}
+
 void usage(void)
 {
   printf("The Baby X resource compiler v1.0\n");
@@ -663,6 +726,14 @@ int main(int argc, char **argv)
 		name = xml_getattribute(node, "name");
 		processcursortag(stdout, path, name);
 	}
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "audio");
+    for (ii = 0; ii<Nchildren; ii++)
+    {
+        node = xml_getchild(scripts[i], "audio", ii);
+        path = xml_getattribute(node, "src");
+        name = xml_getattribute(node, "name");
+        processaudiotag(stdout, path, name);
+    }
   }  
   killxmldoc(doc);
 

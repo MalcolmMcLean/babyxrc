@@ -989,15 +989,14 @@ static void fput16le(int x, FILE *fp)
 ***************************************************************/
 static long fget32le(FILE *fp)
 {
-  long answer;
-  answer = fgetc(fp);
-  answer |= (fgetc(fp) << 8);
-  answer |= (fgetc(fp) << 16);
-  answer |= (fgetc(fp) << 24);
-  /* check for negative */
-  if(answer & 0x80000000)
-	answer |= ((-1) << 31);
-  return answer;
+	int c1, c2, c3, c4;
+
+	c1 = fgetc(fp);
+	c2 = fgetc(fp);
+	c3 = fgetc(fp);
+	c4 = fgetc(fp);
+	return ((c4 ^ 128) - 128) * 256 * 256 * 256 + c3 * 256 * 256 + c2 
+* 256 + c1;
 }
 
 /***************************************************************
@@ -1007,12 +1006,11 @@ static long fget32le(FILE *fp)
 ***************************************************************/
 static int fget16le(FILE *fp)
 {
-  int answer;
-  answer = fgetc(fp);
-  answer |= (fgetc(fp) << 8);
-  /* check for negative */
-  if(answer & 0x8000)
-	answer |= ((-1) << 16);
-  return answer;
+	int c1, c2;
+
+	c1 = fgetc(fp);
+	c2 = fgetc(fp);
+
+	return ((c2 ^ 128) - 128) * 256 + c1;
 }
 
