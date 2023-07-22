@@ -850,3 +850,4 @@ int xmlparsermain(void)
   killxmldoc(doc);
   return 0;
 }
+

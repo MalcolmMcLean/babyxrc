@@ -290,7 +290,7 @@ int wavfilemain(int argc, char **argv)
    if (argc == 2)
    {
       pcm = loadwav(argv[1], &samplerate, &Nchannels, &Nsamples);
-      printf("%p: rate %ld channels %d N %ld\n", pcm, samplerate, 
+      printf("%p: rate %ld channels %d N %ld\n", (void *) pcm, samplerate, 
 Nchannels, Nsamples); 
       err = savewav("out.wav", pcm, samplerate, Nchannels, Nsamples);
       printf("Error %d\n", err);

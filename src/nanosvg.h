@@ -26,6 +26,10 @@
  *
  */
 
+/*
+   Altered slightly by Malcolm McLean to work with BabyXRC
+*/
+
 #ifndef NANOSVG_H
 #define NANOSVG_H
 
@@ -563,7 +567,7 @@ static void nsvg__curveBounds(float* bounds, float* curve)
 	}
 }
 
-static NSVGparser* nsvg__createParser()
+static NSVGparser* nsvg__createParser(void)
 {
 	NSVGparser* p;
 	p = (NSVGparser*)malloc(sizeof(NSVGparser));
