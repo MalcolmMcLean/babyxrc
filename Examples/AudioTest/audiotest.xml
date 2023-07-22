@@ -1,3 +1,6 @@
 <BabyXRC>
-<audio src = "StarWars3.wav", name = "starwars"> </audio>
+<audio src = "StarWars3.wav", name = "starwars", samplerate = "44100"> 
+</audio>
+<audio src = "Cat-Meow.wav", name = "miaow", samplerate = "22050">
+</audio> 
 </BabyXRC>
