@@ -12,6 +12,7 @@
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
+#include "samplerate/samplerate.h"
 
 char *getextension(char *fname);
 
@@ -577,7 +578,58 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 	return answer;
 }
 
-int processaudiotag(FILE *fp, const char *fname, const char *name)
+short *resampleaudio(const short *pcm, long samplerate, int Nchannels, long Nsamples, long resamplerate, long *Nsamplesout)
+{
+    float *fpcmin = 0;
+    float *fpcmout = 0;
+    short *answer = 0;
+    long Nout;
+    SRC_DATA src_data;
+    
+    fpcmin = malloc(Nsamples * Nchannels * sizeof(float));
+    if (!fpcmin)
+        goto error_exit;
+    Nout = (long) ((Nchannels * Nsamples * resamplerate + 1204.0)/samplerate);
+    fpcmout = malloc(Nout * sizeof(float));
+    if (!fpcmout)
+        goto error_exit;
+    
+    src_short_to_float_array(pcm, fpcmin, (int) (Nsamples * Nchannels) );
+    
+    src_data.data_in = fpcmin;
+    src_data.data_out = fpcmout;
+    src_data.input_frames = Nsamples;
+    src_data.output_frames = Nout / Nchannels;
+    src_data.input_frames_used = 0;
+    src_data.output_frames_gen = 0;
+    src_data.end_of_input = 0;
+    src_data.src_ratio = ((double)resamplerate)/(double)(samplerate);
+    
+    if (!src_is_valid_ratio(src_data.src_ratio))
+        goto error_exit;
+    
+    src_simple(&src_data, SRC_SINC_BEST_QUALITY, Nchannels);
+    answer = malloc(src_data.output_frames_gen * Nchannels * sizeof(short));
+    if (!answer)
+        goto error_exit;
+    
+    src_float_to_short_array(src_data.data_out, answer, src_data.output_frames_gen * Nchannels);
+    
+    if (Nsamplesout)
+        *Nsamplesout = src_data.output_frames_gen;
+    free(fpcmin);
+    free(fpcmout);
+    
+    return answer;
+    
+error_exit:
+    free(fpcmin);
+    free(fpcmout);
+    free(answer);
+    return 0;
+}
+
+int processaudiotag(FILE *fp, const char *fname, const char *name, const char *sampleratestr)
 {
     char *audioname;
     int answer = 0;
@@ -586,6 +638,7 @@ int processaudiotag(FILE *fp, const char *fname, const char *name)
     int Nchannels;
     long Nsamples;
     short *pcm;
+    char *end;
     
     if (!fname)
     {
@@ -603,6 +656,35 @@ int processaudiotag(FILE *fp, const char *fname, const char *name)
         fprintf(stderr, "can't load audio %s\n", fname);
         return -1;
     }
+    if (sampleratestr)
+    {
+        long resamplerate = strtol(sampleratestr, &end, 10);
+        short *resampledpcm;
+        long Nresamples;
+        if (resamplerate <= 0)
+        {
+            fprintf(stderr, "audio samplerate must be postitive\n");
+            return -1;
+        }
+        if (samplerate != resamplerate)
+        {
+            resampledpcm = resampleaudio(pcm, samplerate, Nchannels, Nsamples,
+                                         resamplerate, &Nresamples);
+            if (resampledpcm)
+            {
+                free(pcm);
+                pcm = resampledpcm;
+                resampledpcm = 0;
+                Nsamples = Nresamples;
+                samplerate = resamplerate;
+            }
+            else
+            {
+                fprintf(stderr, "failed to resample %s\n", audioname);
+                return -1;
+            }
+        }
+    }
     if (dumpaudio(fp, pcm, samplerate, Nchannels, Nsamples, audioname) < 0)
     {
         fprintf(stderr, "Error processing %s\n", fname);
@@ -616,7 +698,7 @@ int processaudiotag(FILE *fp, const char *fname, const char *name)
 
 void usage(void)
 {
-  printf("The Baby X resource compiler v1.0\n");
+  printf("The Baby X resource compiler v1.1\n");
   printf("by Malcolm Mclean\n");
   printf("\n");
   printf("Usage: babyxrc <script.xml>\n");
@@ -664,6 +746,7 @@ int main(int argc, char **argv)
   const char *widthstr;
   const char *heightstr;
   const char *pointsstr;
+  const char *sampleratestr;
   
 
   if(argc != 2)
@@ -732,7 +815,8 @@ int main(int argc, char **argv)
         node = xml_getchild(scripts[i], "audio", ii);
         path = xml_getattribute(node, "src");
         name = xml_getattribute(node, "name");
-        processaudiotag(stdout, path, name);
+        sampleratestr = xml_getattribute(node, "samplerate");
+        processaudiotag(stdout, path, name, sampleratestr);
     }
   }  
   killxmldoc(doc);

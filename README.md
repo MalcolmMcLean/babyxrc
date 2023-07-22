@@ -17,6 +17,7 @@ Example script file:
 <string src = "external.txt"> </string>
 <string name = "internal"> "A C string\n"> </string>
 <string name = "embedded"> Embedded string </string>
+<audio src = "Beep.wav", name = "beep", samplerate = "44100"> </audio> 
 <binary src = "dump.bin", name = "dump_bin"> </binary>
 </BabyXRC>
 ~~~
@@ -44,6 +45,10 @@ is slow and complicated for runtime, and many programs just use a
 restricted set of fonts at preset sizes. So they are dumped in a 
 simple raster format, and it is then trivial to write a "draw text"
 routine.
+
+Audio support has been added. Currently only wav files are supported. 
+There is an optional "samplerate" attribute which will resample the 
+audio at the rate required by your program.
 
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.

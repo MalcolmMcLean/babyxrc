@@ -18,6 +18,19 @@
 
 /* Version 1.5 */
 
+/*
+  The assembly has broken. For this program we don't need fast processing
+ */
+#ifndef FLOAT_CAST_HEADER
+#define FLOAT_CAST_HEADER
+#include    <math.h>
+
+#define    lrint(dbl)        ((long) (dbl))
+#define    lrintf(flt)        ((long) (flt))
+
+#endif
+
+//#define FLOAT_CAST_HEADER
 #ifndef FLOAT_CAST_HEADER
 #define FLOAT_CAST_HEADER
 

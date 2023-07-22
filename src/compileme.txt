@@ -1,1 +1,1 @@
-gcc *.c freetype/*.c -lm
+gcc *.c freetype/*.c samplerate/*.c -lm
