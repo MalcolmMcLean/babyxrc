@@ -9,6 +9,8 @@
 #include "loadcursor.h"
 #include "loadimage.h"
 #include "wavfile.h"
+#include "aifffile.h"
+#include "loadmp3.h"
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
@@ -364,7 +366,7 @@ int processimagetag(FILE *fp, const char *fname, const char *name, const char *w
     imagename = getbasename(path);
   if(widthstr)
   {
-    width = strtol(widthstr, &end, 10);
+    width = (int) strtol(widthstr, &end, 10);
     if(*end || width <= 0)
     {
       fprintf(stderr, "Bad width ***%s*** Using default\n", widthstr);
@@ -375,7 +377,7 @@ int processimagetag(FILE *fp, const char *fname, const char *name, const char *w
     width = -1;
   if(heightstr)
   {
-    height = strtol(heightstr, &end, 10);
+    height = (int) strtol(heightstr, &end, 10);
     if(*end || height <= 0)
     {
       fprintf(stderr, "Bad height ***%s*** Using default\n", heightstr);
@@ -413,7 +415,7 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
   
   if(pointsstr)
   {
-    points = strtol(pointsstr, &end, 10);
+    points = (int) strtol(pointsstr, &end, 10);
     if(*end || points <= 0)
     {
       fprintf(stderr, "Bad points ***%s*** Using default\n", pointsstr);
@@ -629,6 +631,30 @@ error_exit:
     return 0;
 }
 
+short *loadaudiofile(const char *fname, long *samplerate, int *Nchannels, long *Nsamples)
+{
+    char *ext;
+    
+    ext = getextension((char *)fname);
+    if (ext)
+        makelower(ext);
+    
+    if (!strcmp(ext, ".wav"))
+    {
+        return loadwav(fname, samplerate, Nchannels, Nsamples);
+    }
+    else if (!strcmp(ext, ".aif") || !strcmp(ext, ".aiff"))
+    {
+        return loadaiff(fname, samplerate, Nchannels, Nsamples);
+    }
+    else if(!strcmp(ext, ".mp3"))
+    {
+        return loadmp3(fname, samplerate, Nchannels, Nsamples);
+    }
+    
+    return 0;
+}
+
 int processaudiotag(FILE *fp, const char *fname, const char *name, const char *sampleratestr)
 {
     char *audioname;
@@ -650,7 +676,7 @@ int processaudiotag(FILE *fp, const char *fname, const char *name, const char *s
         audioname = mystrdup(name);
     else
         audioname = getbasename((char*)fname);
-    pcm = loadwav(fname, &samplerate, &Nchannels, &Nsamples);
+    pcm = loadaudiofile(fname, &samplerate, &Nchannels, &Nsamples);
     if (!pcm)
     {
         fprintf(stderr, "can't load audio %s\n", fname);
