@@ -13,5 +13,10 @@ they are resized slightly. Then dumped as 32 bit rgbas.
 I've also added a cursor and an SVG file to demonstrate
 the system.
 
+AudioTest tests the Baby X resource compiler's audio file
+capabilities. Audio data can get very large, so the full
+output file is not included, even thoughthe test samples are
+very short.
+  
 
 

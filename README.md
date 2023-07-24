@@ -46,9 +46,12 @@ restricted set of fonts at preset sizes. So they are dumped in a
 simple raster format, and it is then trivial to write a "draw text"
 routine.
 
-Audio support has been added. Currently only wav files are supported. 
-There is an optional "samplerate" attribute which will resample the 
-audio at the rate required by your program.
+Audio support has been added. Three formats are supported, wav, 
+aiff, and mp3. Only 16 bit uncompressed aiff files are currently
+supported. Mp3 files are decompressed and written out as pcm samples.
+(If you can play mp3 data, use the <binary> tag. There is an optional 
+"samplerate" attribute which will resample the audio at the rate required 
+by your program.
 
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.
