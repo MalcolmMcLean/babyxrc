@@ -9,6 +9,7 @@
 
 typedef struct
 {
+  long pixeldataoffset; /* offset from file start to pixel raster data */
   int width;     
   int height;
   int bits;
@@ -57,6 +58,11 @@ int bmpgetinfo(char *fname, int *width, int *height)
 {
   FILE *fp;
   BMPHEADER bmphdr;
+
+  if (width)
+    *width = 0;
+  if (height)
+    *height = 0;
   fp = fopen(fname, "rb");
   if(!fp)
 	return 0;
@@ -134,6 +140,7 @@ unsigned char *loadbmp(char *fname, int *width, int *height)
 	  else
 		loadpalette(fp, pal, bmpheader.palsize);
 
+          fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
 	  loadraster1(fp, raster, bmpheader.width, bmpheader.height);
 	  break;
 	case 4:
@@ -142,6 +149,7 @@ unsigned char *loadbmp(char *fname, int *width, int *height)
 	  else
 		loadpalette(fp, pal, bmpheader.palsize);
 
+          fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
 	  loadraster4(fp, raster, bmpheader.width, bmpheader.height);
 	  break;
 	 
@@ -151,10 +159,12 @@ unsigned char *loadbmp(char *fname, int *width, int *height)
       else
 	    loadpalette(fp, pal, bmpheader.palsize);
 		
+          fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
 	  loadraster8(fp, raster, bmpheader.width, bmpheader.height);
 	  break;
 	  
 	case 16:
+         fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
       for(i=0;i<bmpheader.height;i++)
 	  {
 	    for(ii=0;ii<bmpheader.width;ii++)
@@ -165,40 +175,47 @@ unsigned char *loadbmp(char *fname, int *width, int *height)
 		  answer[target+1] = (col & 0x03E0) >> 2;
 		  answer[target+2] = (col & 0x7A00) >> 7;
 		}
-		while(ii < (bmpheader.width + 1)/2 * 4)
+		while(ii < (bmpheader.width + 1)/2 * 2)
 		{
-	      fgetc(fp);
+          fgetc(fp);
+          fgetc(fp);
 		  ii++;
 		}
 	  }
 	  break;
 
 	case 24:
+          fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
 	  for(i=0;i<bmpheader.height;i++)
 	  {
 		for(ii=0;ii<bmpheader.width;ii++)
 		{
 		  target = (i * bmpheader.width * 3) + ii * 3;
-	      answer[target] = fgetc(fp);
+	      answer[target+2] = fgetc(fp);
 		  answer[target+1] = fgetc(fp);
-		  answer[target+2] = fgetc(fp);
+		  answer[target+0
+                 
+] = fgetc(fp);
 		}
-		while(ii < (bmpheader.width + 3)/4 * 4)
-		{
-		  fgetc(fp);
-		  ii++;
-		}
+        if (( bmpheader.width * 3) % 4)
+        {
+          for (ii=0;ii< 4 - ( (bmpheader.width * 3) % 4); ii++)
+          {
+            fgetc(fp);
+          }
+        }
 	  }
 	  break;
 
 	case 32:
+          fseek(fp, bmpheader.pixeldataoffset, SEEK_SET);
 	  for(i=0;i<bmpheader.height;i++)
 		for(ii=0;ii<bmpheader.width;ii++)
 		{
 		  target = (i * bmpheader.width * 3) + ii * 3;
-		  answer[target] = fgetc(fp);
-		  answer[target+1] = fgetc(fp);
 		  answer[target+2] = fgetc(fp);
+		  answer[target+1] = fgetc(fp);
+		  answer[target+0] = fgetc(fp);
 		  fgetc(fp);
 		}
 	  break;
@@ -286,6 +303,7 @@ unsigned char *loadbmp8bit(char *fname, int *width, int *height, unsigned char *
 	return 0;
   }
 
+  fseek(fp, bmphdr.pixeldataoffset, SEEK_SET);
   loadraster8(fp, answer, bmphdr.width, bmphdr.height);
   if(bmphdr.upside_down)
   {
@@ -353,6 +371,7 @@ unsigned char *loadbmp4bit(char *fname, int *width, int *height, unsigned char *
     fclose(fp);
 	return 0;
   }
+  fseek(fp, bmphdr.pixeldataoffset, SEEK_SET);
   loadraster4(fp, answer, bmphdr.width, bmphdr.height);
 
   if(bmphdr.upside_down)
@@ -704,7 +723,8 @@ static int loadheader(FILE *fp, BMPHEADER *hdr)
   fget16le(fp);
   fget16le(fp);
   /* offset to bitmap bits */
-  size = fget32le(fp);
+  hdr->pixeldataoffset = fget32le(fp);
+  
   hdrsize = fget32le(fp);
   if(hdrsize == 40)
   {
