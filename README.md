@@ -49,7 +49,7 @@ routine.
 Audio support has been added. Three formats are supported, wav, 
 aiff, and mp3. Only 16 bit uncompressed aiff files are currently
 supported. Mp3 files are decompressed and written out as pcm samples.
-(If you can play mp3 data, use the <binary> tag. There is an optional 
+(If you can play mp3 data, use the \<binary\> tag). There is an optional 
 "samplerate" attribute which will resample the audio at the rate required 
 by your program.
 
