@@ -53,6 +53,12 @@ supported. Mp3 files are decompressed and written out as pcm samples.
 "samplerate" attribute which will resample the audio at the rate required 
 by your program.
 
+There's now much better string support. You can add a string as a C
+string literal with the \<string\> tag, or you can add as UTF-8 with
+the \<utf8\> tag. UTF-16 source is difficult, but the Baby X resource
+compiler will attempt to intelligently recognise UTF-16. There's also
+barnd new support for internationalization.  
+
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.
 Those users will be C programmers, so the tool can be modified to
