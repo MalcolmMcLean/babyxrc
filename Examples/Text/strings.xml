@@ -1,0 +1,17 @@
+<BabyXRC>
+<string name = "hello">Hello world\n</string>
+<string name = "mary">Mary had a little lamb
+Its fleece was white as snow,
+And everywhere that Mary went
+The lamb was sure to go.
+
+It followed her to school one day.
+That was against the rule.
+It made the children laugh and play
+To see a lamb at school" 
+</string>
+<utf8 name = "greekhello">Γειά σου Κόσμε</utf8>
+<string name = "externalstring" src = "hello.txt"></string>
+<utf8 name = "externalutf8" src = "greekhello.utf8"></utf8>
+<utf8 name = "externalutf16" src = "greekhello.utf16"></utf8> 
+</BabyXRC>

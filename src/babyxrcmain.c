@@ -6,6 +6,7 @@
 
 #include "xmlparser.h"
 #include "asciitostring.h"
+#include "loadasutf8.h"
 #include "loadcursor.h"
 #include "loadimage.h"
 #include "wavfile.h"
@@ -454,6 +455,7 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
   return answer;
 }
 
+
 int processstringtag(FILE *fp, const char *fname, const char *name, const char *str)
 {
   char *path = 0;
@@ -511,6 +513,66 @@ int processstringtag(FILE *fp, const char *fname, const char *name, const char *
     fprintf(fp, "char *%s = ", stringname);
     fputs(string, fp);
     fprintf(fp, ";\n"); 
+  }
+  
+  free(path);
+  free(string);
+  free(stringname);
+
+  return answer;
+}
+
+int processutf8tag(FILE *fp, const char *fname, const char *name, const char *str)
+{
+  char *path = 0;
+  char *stringname = 0;
+  char *string = 0;
+  FILE *fpstr;
+  int answer = 0;
+  int i;
+  int error;
+
+  if(fname)
+    path = mystrdup(fname);
+  if(name)
+    stringname = mystrdup(name);
+  else if(path)
+    stringname = getbasename(path);
+  else
+  {
+    fprintf(stderr, "No string name specified\n");
+    answer = -1;
+   }
+    
+  if (path)
+  {
+      string = loadasutf8(path, &error);
+  }
+  else if(str)
+  {
+    string = mystrdup(str);
+  }
+  if(!string)
+  {
+    fprintf(stderr, "Out of memory with string\n");
+    answer = -1;
+  }
+  else if(!stringname)
+  {
+    fprintf(stderr, "Problem with string name\n");
+    answer = -1;
+  }
+  else if(stringname && string)
+  {
+    fprintf(fp, "char %s[] = {\n", stringname);
+    for (i =0; string[i]; i++)
+    {
+        fprintf(fp, "0x%02x, ", (unsigned char) string[i]);
+        if ((i % 10) == 9)
+            fprintf(fp, "\n");
+    }
+    fprintf(fp, "0x00\n");
+    fprintf(fp, "};\n");
   }
   
   free(path);
@@ -722,6 +784,138 @@ int processaudiotag(FILE *fp, const char *fname, const char *name, const char *s
     return answer;
 }
 
+int processinternationalnode(FILE *fp, XMLNODE *node)
+{
+    XMLNODE *child;
+    const char *name;
+    const char *language;
+    const char *str;
+    const char *path;
+    char *string;
+    int Nchildren;
+    FILE *fpstr;
+    char *buff;
+    int i, ii;
+    int answer = 0;
+    int error;
+    char stringname[256];
+    
+    name = xml_getattribute(node, "name");
+    Nchildren = xml_Nchildrenwithtag(node, "string");
+    for(i=0;i<Nchildren;i++)
+    {
+        child = xml_getchild(node, "string", i);
+        path = xml_getattribute(child, "src");
+        language = xml_getattribute(child, "language");
+        if (!language)
+        {
+            fprintf(stderr, "Children of international nodes must have\"lanugage\" attribute set.\n");
+            return -1;
+        }
+        str = xml_getdata(child);
+        string = 0;
+        snprintf(stringname, 256, "%s_%s", name, language);
+        if(path)
+        {
+          fpstr = fopen(path, "r");
+          if(!fpstr)
+          {
+            fprintf(stderr, "Can't open %s\n", path);
+            answer = -1;
+          }
+          else
+          {
+             buff = fslurp(fpstr);
+             if(buff)
+               string = texttostring(buff);
+             free(buff);
+             fclose(fpstr);
+          }
+        }
+        else if(str)
+        {
+          string = addquotes(str);
+        }
+        if(!string)
+        {
+          fprintf(stderr, "Out of memory with string\n");
+          answer = -1;
+        }
+        else if(!stringname)
+        {
+          fprintf(stderr, "Problem with string name\n");
+          answer = -1;
+        }
+        else if(stringname && string)
+        {
+          fprintf(fp, "char *%s = ", stringname);
+          fputs(string, fp);
+          fprintf(fp, ";\n");
+        }
+        free(string);
+    }
+    Nchildren = xml_Nchildrenwithtag(node, "utf8");
+    for(i=0;i<Nchildren;i++)
+    {
+        child = xml_getchild(node, "utf8", i);
+        path = xml_getattribute(child, "src");
+        language = xml_getattribute(child, "language");
+        if (!language)
+        {
+            fprintf(stderr, "Children of international nodes must have\"language\" attribute set.\n");
+            return -1;
+        }
+        str = xml_getdata(child);
+        snprintf(stringname, 256, "%s_%s", name, language);
+        if(path)
+        {
+            string = loadasutf8(path, &error);
+        }
+        else if(str)
+        {
+          string = mystrdup(str);
+        }
+        if (stringname && string)
+        {
+            fprintf(fp, "char %s[] = {\n", stringname);
+            for (ii = 0; string[ii]; ii++)
+            {
+                fprintf(fp, "0x%02x, ", (unsigned char) string[ii]);
+                if ((ii % 10) == 9)
+                    fprintf(fp, "\n");
+            }
+            if ((ii % 10) == 9)
+                fprintf(fp, "\n");
+            fprintf(fp, "0x00\n");
+            fprintf(fp, "};\n");
+        }
+        free(string);
+    }
+    
+    fprintf(fp, "const char *get_%s(const char *language)\n", name);
+    fprintf(fp, "{\n");
+    Nchildren = xml_Nchildrenwithtag(node, "string");
+    for(i=0;i<Nchildren;i++)
+    {
+        child = xml_getchild(node, "string", i);
+        language = xml_getattribute(child, "language");
+        fprintf(fp, "    if (!strcmp(\"%s\", language))\n", language);
+        fprintf(fp, "        return %s_%s;\n", name, language);
+    }
+    Nchildren = xml_Nchildrenwithtag(node, "utf8");
+    for(i=0;i<Nchildren;i++)
+    {
+        child = xml_getchild(node, "utf8", i);
+        language = xml_getattribute(child, "language");
+        fprintf(fp, "    if (!strcmp(\"%s\", language))\n", language);
+        fprintf(fp, "        return %s_%s;\n", name, language);
+    }
+    fprintf(fp, "    return 0;\n");
+    fprintf(fp, "}\n");
+    
+    return 0;
+}
+
 void usage(void)
 {
   printf("The Baby X resource compiler v1.1\n");
@@ -787,10 +981,13 @@ int main(int argc, char **argv)
   scripts = xml_getdescendants(xml_getroot(doc), "BabyXRC", &Nscripts);
   for(i=0;i<Nscripts;i++)
   {
+    if (i == 0 && xml_Nchildrenwithtag(scripts[i], "international") > 0)
+          fprintf(stdout, "#include <string.h>\n");
     if(i == 0 && xml_Nchildrenwithtag(scripts[i], "font") > 0)
       putfontdefinition(stdout);
 	if (i == 0 && xml_Nchildrenwithtag(scripts[i], "cursor") > 0)
 		putcursordefinition(stdout);
+   
     Nchildren = xml_Nchildrenwithtag(scripts[i], "image");
     for(ii=0;ii<Nchildren;ii++)
     {
@@ -819,6 +1016,15 @@ int main(int argc, char **argv)
         str = xml_getdata(node);
         processstringtag(stdout, path, name, str);
     }
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "string");
+    for(ii=0;ii<Nchildren;ii++)
+    {
+          node = xml_getchild(scripts[i], "utf8", ii);
+          path = xml_getattribute(node, "src");
+          name = xml_getattribute(node, "name");
+          str = xml_getdata(node);
+          processutf8tag(stdout, path, name, str);
+    }
     Nchildren = xml_Nchildrenwithtag(scripts[i], "binary");
     for(ii=0;ii<Nchildren;ii++)
     {
@@ -843,6 +1049,12 @@ int main(int argc, char **argv)
         name = xml_getattribute(node, "name");
         sampleratestr = xml_getattribute(node, "samplerate");
         processaudiotag(stdout, path, name, sampleratestr);
+    }
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "international");
+    for (ii = 0; ii<Nchildren; ii++)
+    {
+        node = xml_getchild(scripts[i], "international", ii);
+        processinternationalnode(stdout, node);
     }
   }  
   killxmldoc(doc);

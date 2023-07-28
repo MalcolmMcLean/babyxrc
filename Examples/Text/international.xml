@@ -1,0 +1,15 @@
+<BabyXRC>
+<international name = "hello">
+   <string language = "english">Hello World</string>
+   <string language = "latin">Save munde</string>
+   <string language = "french">Bonjour tout le monde</string>
+</international>
+<international name = "helloutf8">
+   <utf8 language = "english">Hello World</utf8>
+   <utf8 language = "latin">Save munde</utf8>
+   <utf8 language = "french">Bonjour tout le monde</utf8>
+   <utf8 language = "greek">Γειά σου Κόσμε</utf8>
+</international>
+
+</BabyXRC>
+

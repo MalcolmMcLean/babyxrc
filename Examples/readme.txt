@@ -18,5 +18,15 @@ capabilities. Audio data can get very large, so the full
 output file is not included, even thoughthe test samples are
 very short.
   
+Text tests the Baby X resource compiler's text capabiliites.
+We've added international support, so there's now an
+<international> tag that takes a list of strings or unicode
+data with a "language" attribute. It then generates a simple 
+runtime fucntion to select the stringof the right language.
+
+Whilst I strongly encourage everyone to store their data as utf-8,
+the uft8 tag will attempt to smart detect utf-16 files, and
+converts them to utf-8 before writing them out.
+
 
 
