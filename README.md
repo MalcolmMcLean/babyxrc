@@ -60,7 +60,7 @@ compiler will attempt to intelligently recognise UTF-16. There's also
 brand new support for internationalization. Whilst there is a very strong
 case for allowing UTF-16 input, allowing UTF-16 output was a more difficult
 decision. UTF-16 encoding should be discouraged. However sometimes people
-might find it easier to work with UTF-16, so there is now a \<utf-16\> tag.
+might find it easier to work with UTF-16, so there is now a \<utf16\> tag.
 Note that it won't handle surrogate pairs correctly. If you need raw 
 UTF-16 in your code, it's unlikely that you will want to handle surrogate
 pairs either.
