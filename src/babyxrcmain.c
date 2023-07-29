@@ -602,6 +602,7 @@ unsigned short *utf8toutf16(const char *utf8, int *error)
         return 0;
     }
     
+    ptr = utf8;
     for (i = 0; i < N; i++)
     {
         ch = bbx_utf8_getch(ptr);
@@ -612,6 +613,7 @@ unsigned short *utf8toutf16(const char *utf8, int *error)
             ch = 0xFFFE;
         }
         answer[i] = (unsigned short) ch;
+        
         ptr += bbx_utf8_skip(ptr);
     }
     answer[i] = 0;
@@ -665,7 +667,7 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *s
   {
       utf16 = utf8toutf16(string, &error);
     if (error == -2)
-      fprintf(stderr, "Not all values in %s can be represnted in UTF-16\n", name);
+      fprintf(stderr, "Not all values in %s can be represented in UTF-16\n", name);
     if (!utf16)
         answer = -1;
     else
