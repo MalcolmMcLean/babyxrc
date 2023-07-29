@@ -15,6 +15,7 @@
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
+#include "bbx_utf8.h"
 #include "samplerate/samplerate.h"
 
 char *getextension(char *fname);
@@ -582,6 +583,113 @@ int processutf8tag(FILE *fp, const char *fname, const char *name, const char *st
   return answer;
 }
 
+unsigned short *utf8toutf16(const char *utf8, int *error)
+{
+    unsigned short *answer;
+    int N;
+    int i;
+    const char *ptr;
+    int ch;
+    
+    if (error)
+        *error = 0;
+    N = bbx_utf8_Nchars(utf8);
+    answer = malloc( (N +1) * sizeof(short));
+    if (!answer)
+    {
+        if (error)
+            *error = 1;
+        return 0;
+    }
+    
+    for (i = 0; i < N; i++)
+    {
+        ch = bbx_utf8_getch(ptr);
+        if (ch < 0 || ch > 0xFFFF)
+        {
+            if (error)
+                *error = -2;
+            ch = 0xFFFE;
+        }
+        answer[i] = (unsigned short) ch;
+        ptr += bbx_utf8_skip(ptr);
+    }
+    answer[i] = 0;
+    
+    return answer;
+}
+
+int processutf16tag(FILE *fp, const char *fname, const char *name, const char *str)
+{
+  char *path = 0;
+  char *stringname = 0;
+  char *string = 0;
+  FILE *fpstr;
+  int answer = 0;
+  int i;
+  int error;
+  unsigned short *utf16 = 0;
+
+  if(fname)
+    path = mystrdup(fname);
+  if(name)
+    stringname = mystrdup(name);
+  else if(path)
+    stringname = getbasename(path);
+  else
+  {
+    fprintf(stderr, "No string name specified\n");
+    answer = -1;
+   }
+    
+  if (path)
+  {
+      string = loadasutf8(path, &error);
+  }
+  else if(str)
+  {
+    string = mystrdup(str);
+  }
+ 
+  if(!string)
+  {
+    fprintf(stderr, "Out of memory with string\n");
+    answer = -1;
+  }
+  else if(!stringname)
+  {
+    fprintf(stderr, "Problem with string name\n");
+    answer = -1;
+  }
+  else if(stringname && string)
+  {
+      utf16 = utf8toutf16(string, &error);
+    if (error == -2)
+      fprintf(stderr, "Not all values in %s can be represnted in UTF-16\n", name);
+    if (!utf16)
+        answer = -1;
+    else
+    {
+        fprintf(fp, "unsigned short %s[] = {\n", stringname);
+        for (i = 0; utf16[i]; i++)
+        {
+            fprintf(fp, "0x%04x, ", (unsigned short) utf16[i]);
+            if ((i % 10) == 9)
+                fprintf(fp, "\n");
+        }
+        fprintf(fp, "0x0000\n");
+        fprintf(fp, "};\n");
+    }
+  }
+  
+  free(path);
+  free(string);
+  free(stringname);
+  free(utf16);
+    
+  return answer;
+}
+
 int processbinarytag(FILE *fp, const char *fname, const char *name)
 {
   char *binaryname;
@@ -1016,7 +1124,7 @@ int main(int argc, char **argv)
         str = xml_getdata(node);
         processstringtag(stdout, path, name, str);
     }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "string");
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "utf8");
     for(ii=0;ii<Nchildren;ii++)
     {
           node = xml_getchild(scripts[i], "utf8", ii);
@@ -1025,6 +1133,15 @@ int main(int argc, char **argv)
           str = xml_getdata(node);
           processutf8tag(stdout, path, name, str);
     }
+      Nchildren = xml_Nchildrenwithtag(scripts[i], "utf16");
+      for(ii=0;ii<Nchildren;ii++)
+      {
+            node = xml_getchild(scripts[i], "utf16", ii);
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            str = xml_getdata(node);
+            processutf16tag(stdout, path, name, str);
+      }
     Nchildren = xml_Nchildrenwithtag(scripts[i], "binary");
     for(ii=0;ii<Nchildren;ii++)
     {
