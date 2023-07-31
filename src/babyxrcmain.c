@@ -330,6 +330,26 @@ static char *addquotes(const char *str)
 
 }
 
+static int parseboolaen(const char *boolattribute, int *error)
+{
+    int answer = 0;
+    
+    if (error)
+        *error = 0;
+    if (!strcmp(boolattribute, "true"))
+        return 1;
+    if (!strcmp(boolattribute, "false"))
+        return 0;
+    if (!strcmp(boolattribute, "1"))
+        return 1;
+    if (!strcmp(boolattribute, "0"))
+        return 0;
+    
+    if (error)
+        *error = -1;
+    return 0;
+}
+
 int putfontdefinition(FILE *fp)
 {
 	fprintf(fp, "/* bitmap font structure */\n");
@@ -548,6 +568,11 @@ int processutf8tag(FILE *fp, const char *fname, const char *name, const char *st
   if (path)
   {
       string = loadasutf8(path, &error);
+      if (!string)
+      {
+          fprintf(stderr, "Can't load %s\n", path);
+          return -1;
+      }
   }
   else if(str)
   {
@@ -583,18 +608,29 @@ int processutf8tag(FILE *fp, const char *fname, const char *name, const char *st
   return answer;
 }
 
-unsigned short *utf8toutf16(const char *utf8, int *error)
+unsigned short *utf8toutf16(const char *utf8, int allowsurrogatepairs, int *error)
 {
     unsigned short *answer;
-    int N;
-    int i;
+    int N = 0;
+    int Nout = 0;
+    int i, j;
     const char *ptr;
     int ch;
     
     if (error)
         *error = 0;
     N = bbx_utf8_Nchars(utf8);
-    answer = malloc( (N +1) * sizeof(short));
+    ptr = utf8;
+    for (i =0; i < N; i++)
+    {
+        ch = bbx_utf8_getch(ptr);
+        if (ch > 0xFFFF)
+            Nout += 2;
+        else
+            Nout += 1;
+        ptr += bbx_utf8_skip(ptr);
+    }
+    answer = malloc( (Nout +1) * sizeof(short));
     if (!answer)
     {
         if (error)
@@ -603,25 +639,40 @@ unsigned short *utf8toutf16(const char *utf8, int *error)
     }
     
     ptr = utf8;
+    j = 0;
     for (i = 0; i < N; i++)
     {
         ch = bbx_utf8_getch(ptr);
         if (ch < 0 || ch > 0xFFFF)
         {
-            if (error)
-                *error = -2;
-            ch = 0xFFFE;
+            if (allowsurrogatepairs && ch > 0)
+            {
+                unsigned short highsurrogate = 0xD800 | ((ch >> 10) & 0x03FF);
+                unsigned short lowsurrogate = 0xDC00 | (ch & 0x03FF);
+                answer[j++] = highsurrogate;
+                answer[j++] = lowsurrogate;
+            }
+            else
+            {
+                if (error)
+                    *error = -2;
+                ch = 0xFFFE;
+                answer[j++] = (unsigned short) ch;
+            }
         }
-        answer[i] = (unsigned short) ch;
+        else
+        {
+            answer[j++] = (unsigned short) ch;
+        }
         
         ptr += bbx_utf8_skip(ptr);
     }
-    answer[i] = 0;
+    answer[j] = 0;
     
     return answer;
 }
 
-int processutf16tag(FILE *fp, const char *fname, const char *name, const char *str)
+int processutf16tag(FILE *fp, const char *fname, const char *name, const char *allowsurrogatepairs, const char *str)
 {
   char *path = 0;
   char *stringname = 0;
@@ -631,6 +682,7 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *s
   int i;
   int error;
   unsigned short *utf16 = 0;
+  int allowsurrogatesflag = 0;
 
   if(fname)
     path = mystrdup(fname);
@@ -643,14 +695,28 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *s
     fprintf(stderr, "No string name specified\n");
     answer = -1;
    }
-    
   if (path)
   {
       string = loadasutf8(path, &error);
+      if (!string)
+      {
+          fprintf(stderr, "Can't load %s\n", path);
+          return -1;
+      }
   }
   else if(str)
   {
     string = mystrdup(str);
+  }
+    
+  if (allowsurrogatepairs)
+  {
+      allowsurrogatesflag = parseboolaen(allowsurrogatepairs, &error);
+      if (error)
+      {
+          fprintf(stderr, "Bad boolean value to allowsurrogatepairs: \"%s\"\n", allowsurrogatepairs);
+          answer = -1;
+      }
   }
  
   if(!string)
@@ -665,9 +731,9 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *s
   }
   else if(stringname && string)
   {
-      utf16 = utf8toutf16(string, &error);
+      utf16 = utf8toutf16(string, allowsurrogatesflag, &error);
     if (error == -2)
-      fprintf(stderr, "Not all values in %s can be represented in UTF-16\n", name);
+      fprintf(stderr, "Not all values in %s can be represented in UTF-16\n", stringname);
     if (!utf16)
         answer = -1;
     else
@@ -1077,6 +1143,7 @@ int main(int argc, char **argv)
   const char *heightstr;
   const char *pointsstr;
   const char *sampleratestr;
+  const char *allowsurrogatepairsstr;
   
 
   if(argc != 2)
@@ -1135,15 +1202,16 @@ int main(int argc, char **argv)
           str = xml_getdata(node);
           processutf8tag(stdout, path, name, str);
     }
-      Nchildren = xml_Nchildrenwithtag(scripts[i], "utf16");
-      for(ii=0;ii<Nchildren;ii++)
-      {
-            node = xml_getchild(scripts[i], "utf16", ii);
-            path = xml_getattribute(node, "src");
-            name = xml_getattribute(node, "name");
-            str = xml_getdata(node);
-            processutf16tag(stdout, path, name, str);
-      }
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "utf16");
+    for(ii=0;ii<Nchildren;ii++)
+    {
+        node = xml_getchild(scripts[i], "utf16", ii);
+        path = xml_getattribute(node, "src");
+        name = xml_getattribute(node, "name");
+        allowsurrogatepairsstr = xml_getattribute(node, "allowsurrogatepairs");
+        str = xml_getdata(node);
+        processutf16tag(stdout, path, name, allowsurrogatepairsstr, str);
+    }
     Nchildren = xml_Nchildrenwithtag(scripts[i], "binary");
     for(ii=0;ii<Nchildren;ii++)
     {

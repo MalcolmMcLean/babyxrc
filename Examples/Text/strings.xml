@@ -8,10 +8,17 @@ The lamb was sure to go.
 It followed her to school one day.
 That was against the rule.
 It made the children laugh and play
-To see a lamb at school" 
+To see a lamb at school.
 </string>
 <utf8 name = "greekhello">Γειά σου Κόσμε</utf8>
 <string name = "externalstring" src = "hello.txt"></string>
 <utf8 name = "externalutf8" src = "greekhello.utf8"></utf8>
-<utf8 name = "externalutf16" src = "greekhello.utf16"></utf8> 
+<utf8 name = "externalutf16" src = "greekhello.utf16"></utf8>
+<utf16 name = "helloutf16">Hello UTF-16</utf16>
+<utf16 src = "smileyandappleemoji.txt" allowsurrogatepairs = 
+"true"></utf16>
+<utf16 name = "smileyandappleemoji_utf16" src = 
+"smileyandappleemoji.utf16" allowsurrogatepairs = 
+"true"></utf16> 
+
 </BabyXRC>

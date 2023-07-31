@@ -144,7 +144,39 @@ static char *loadUTF16(const char *fname, int bigendian, int bom)
          ch1 = ch2;
          ch2 = tempch;
       }
-      codepoint = ch2 * 256 + ch1;
+      if ((ch2 & 0xFC) == 0xD8)
+      {
+          int ch3 = getc(fp);
+          int ch4 = getc(fp);
+          int highsurrogate, lowsurrogate;
+          
+          if (ch3 == EOF || ch4 == EOF)
+              goto error_exit;
+          if (bigendian)
+          {
+              int tempch = ch3;
+              ch3 = ch4;
+              ch4 = tempch;
+          }
+          if ((ch4 & 0xFC) == 0xDC)
+          {
+              highsurrogate = ((ch2 * 256) + ch1) & 0x03FF;
+              lowsurrogate = ((ch4 * 256) + ch3) & 0x03FF;
+              codepoint = 0x10000 + highsurrogate * 1024 + lowsurrogate;
+          }
+          else
+          {
+              goto error_exit;
+          }
+      }
+      else  if ((ch2 & 0xFC) == 0xDC)
+      {
+          goto error_exit;
+      }
+      else
+      {
+          codepoint = ch2 * 256 + ch1;
+      }
       if (pos > capacity - 8)
       {
          temp = realloc(answer, capacity + capacity / 2);
@@ -169,6 +201,8 @@ error_exit:
     free(answer);
     return 0;      
 }
+
+
 
 static int bbx_utf8_putch(char *out, int ch)
 {
