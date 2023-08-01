@@ -1,0 +1,159 @@
+Baby X resource compiler tags.
+
+A Baby X resource compiler script is an xml file which looks like the
+following
+
+<BabyXRC>
+   <string name = "fred">Fred Bloggs</string>
+   <string name = "joe", src = "path/joe.txt"></string>
+</BabyXRC> 
+
+So we have an opening and closing BabyXRC tag, and a list of resources in 
+between. 
+
+<string> - output data as a human-readable C string
+<utf8> - output data as UTF-8
+<utf16> - output data as UTF-16
+<binary> - dump raw binary data unprocessed 
+<image> - output data as a 32 bit rgba buffer 
+<font> - rip a font, rasterise, and output data as greyscale glyphs
+<audio> - output dat as 16-bit pcm samples
+<cursor> - output data as a 32 rgba image with hotspot
+<international> child <string> and <utf8> tags represent translations
+ 
+The tag type gives the output format, not the input format of the 
+resource. Usually the resource compiler will determine the format of
+the resource from its extension or, in the case of text files, by
+using a heuristic.
+
+Tags take attributes. All tags can take a "name" attribute, which gives 
+the base name of the C identifiers output. "name" is usually optional
+as the name can be generated fro the resource file name. All tags also 
+take a "src" attribute which gives the path to the resource file. Text
+tags <string> <utf8> <utf16> can omit the "src" attribute if text is
+included in within the tags.  
+
+<string> tag
+Attributes name, src
+
+<string name = "fred">Fred Bloggs</string>
+<string name = "fred">"My name is \"Feed Bloggs\"\n"</string>
+<string name = "fred", src = "fred.txt"></string>
+
+In the first case we are creating a string wit the value "Fred Bloggs".
+In the second case the string is quoted, so it is not escaped but is
+output as is. (This is useful for entering printf format strings).
+In the third case, the string is read from an external file. It will
+be escaped so tabs will be exanede to "\t" and newlines to "\n". 
+
+<utf8> tag
+Attributes name, src
+
+<utf8 name = "fred">Fred Bloggs</n><?utf8>
+<utf8 name = "fred" src = "fredunicode"></utf8>
+
+In the first case we are creating UTF-8 string with the value "Fred 
+Bloggs". You can put UTF-8 in this position to etner human-readable
+extended character (this text file is ASCII so we can't show that).
+In the second case we are creating a UTF-8 string from an input file.
+The resource compiler will attempt to dtermine the format. However it
+is recommedend to use UTF-8.
+
+<utf16> tag
+Attributes name, src, allowsurrogatepairs
+
+<utf16 name = "fred">Fred Bloggs</utf16>
+<utf16 src = "fred.utf8"></utf16>
+<utf16 src = "fred.utf8" allowsurrogatepairs="true"></utf16>
+
+In the first case we are creating UTF-16 with the value "Fred Bloggs".
+In the second case we are creating UTF-16 from a text file. The extension
+suggests that it is UTF-8 file (as recommended). The resource compiler 
+will re-encode it as UTF-16. name isn't given and will default to 
+"fred", based on the file name.
+In the third case we are allowing surrogate pairs in the UTF-16 output.
+By default this isn't on an code points over 0xFFFF will be mapped to 
+0xFFFE (unknown character). This is because a lot of code relies on one
+wide character representing one code point.
+
+
+<binary> tag
+Attributes name, src
+
+<binary name = Fred, src = "fred.bin"></binary>
+
+In the first case the file "fred.bin" is simply read in  and passed out
+as binary bytes, with no processing.
+
+<image> tag
+Attributes name, src, width, height
+
+<image name = "fred" src = "fred.jpeg"></image>
+<image name = "fred" src = "fred.tiff", width = "100", height = 
+"80"></image>
+
+In the first case the image is read from "fred.jpeg" and written out as
+32 bit rgba values.
+Int the second case the image is read from 'fred.tiff" and resized to 
+width 100 pixels, height 80 pixels, then written out as 32 bit rgba 
+values.
+Supported formats are .png, .jpeg, .gif, .bmp, .tiff and .svg. The format
+will be determiend form the file extension. Svg files will be converted to
+raster.
+
+
+ <font> tag
+Attributes name, src, points
+
+<font name = "fred", src = "fredsfont.ttf", points = "12"></font>
+<font name = "fred", src = "fredsfont.bdf"></font>
+
+In the first case we a loading a true type font, and outputting raster
+glyphs for 12 point text.
+In the second case we are loading a BDF raster font which cannot be
+resized.
+The <font> tag is mainly intended for ripping true type fonts and
+rasterising them so they can be used by simple programs. If you 
+have runtime support for true type fonts, load the font with the <binary>
+tag.
+
+<audio> tag
+Attributes name, src, samplerate
+
+<audio name = "fred", src = "fred.wav"></audio>
+<audio name = "fred", src = "fred.mp3", smaplerate = "22050"></audio>
+
+In the first case we are inputting "fred,wav" and writing the data out
+as 16 bit pcm samples with minimal processing.
+In the second case we are inputting an MP3 file, decompressing it, 
+resampling at 22050Hz, the outputting as PCM samples.
+
+If you have facilities for playing MP3 streams, loas the MP3 with the 
+<binary> tag.
+  
+<cursor> tag
+Attributes name, src
+
+<cursor name = "fred", src = "fred.cur"></cursor>
+
+In the first case we are loading a Microsoft .cur file, and outputting it 
+as 32 bit rgba buffer plus a hotspot.
+
+<international> tag
+Attributes name
+Children <string> <utf8> tags.
+
+<international name = "hellofred">
+  <string language = "english">Hello Fred</string>
+  <string language = "french">Bonjour Fred</string>
+  <utf8 src = "chinesefred.unicode" language = "chinese"></utf8>
+</international>
+
+Here we are setting up an internationalised string with the base identifer 
+"hellofred" and English, French, and Chinese translations. The English 
+and French are entered directly, the Chinese is read in from an external 
+file. In this context, <string> and <utf8> tags should take a "language" 
+attribute.
+
+
+
