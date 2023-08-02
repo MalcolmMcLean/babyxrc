@@ -1,0 +1,332 @@
+<HTML>
+<HEAD>
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+<H1> The Baby X resource compiler </H1>
+<P>
+The Baby X resource compiler takes binary resources - images, fonts, audio 
+clips and text - and converts them to compileable C source. Unike most 
+other resource compilers, it doesn't simply package binary data, it reads 
+in the resource file and converts into data in a form ready to use in 
+your program. So images might be provided in any one of a range of image 
+formats. However most programs want images as RGBA data. So the Baby X 
+resource compiler loads the image, decompresses it, and writes out as 
+RGBA. If the input image is the wrong size, the Baby X resource compiler 
+will resize it for you.
+ </P>
+<P>
+The Baby X resource compiler will load most images in most common formats, 
+including .jpeg, .png, .tiff, .gif, and .bmp. SVG images are rasterized 
+(import SVG  as text data if you want to treat SVG as vector). So the 
+loadimage function will load almost anything, and you are welcome to steal 
+it for your own projects. (If you enhance or bug fix, please contact me).
+ </P>
+<P>
+Audio is loaded as .wav, .aiff, or .mp3. AIFF files with bitrates other 
+than 16 bits per sample are not supported, nor are compressed AIFC files, 
+with the exception of the special case of AIFC files which reverse 
+endianness. MP3 files will be decompressed (include as &lt;binary&gt; if 
+you have facilites for playing MP3. There's a samplerate parameter so you 
+can include audio from any source and store it at the samplerate required 
+by your platform.
+</P>
+<P>
+The Baby X resource compiler will also take in text in most common formats, 
+and save it as human-readable ASCII strings, UTF-8, or UTF-16. Text files 
+commonly have non-standard extensions, so the format has to be determined 
+by heuristic analysis. For this reason it is recommended to use UTF-8 
+whereever posible. It's also recommended to use UTF-8 in the output. 
+However UTF-16 output is provided for compatibility. By default, surrogate 
+pairs are turned off, because the usual reason for using UTF-16 is that 
+the program doesn't want to handle non-fixed width representations. 
+However you can turn them on with the "allowsurrogatepairs" attribute. You
+can incorporate UTF-8 in your source with the &lt;string&gt; tag, but some 
+compilers and editors won't accept it. So the &lt;utf8&gt; tag dumps UTF-8 
+as ASCII-encoded binary. 
+ </P> 
+<P>
+Users of the Baby X resource compiler will be C programmers, so it is the 
+work of a moment to modify the program slightly to output data in a 
+slightly different format, for example if you need an exact binary 
+signature for audio samples, or if you want images as ARGB rather than 
+RGBA. It's hard to predict these requirements by providing runtime 
+options. So whilst it sounds a bit 1970s, modifying the program source is 
+the best approach.
+ </P>
+
+<H3>Usage</H3>
+<pre>
+babyxrc script.xml &gt; outputfile.c
+</pre>
+<P>
+There are currently no options, so that's it. The Baby X resource 
+compiler will read in the resource list from the script, and write the .c 
+output file to standard output. Errors are passed to stderr, so they will 
+be lost in the output unless you redirect it. 
+</P>
+
+<H3>Installation</H3>
+<P>
+The Baby X resource compiler is provided as source. It's all 100% portable 
+ANSI C with no dependencies other than those provided in the distribution 
+itself and the C standard library. So it should compile with the minimum of 
+problems. There's a CMake script to help out, but it's not necessaey to 
+use it. You'll have to put the executable on your path using the operating 
+system's specific facilities (usually by adding it to the ${PATH} 
+environment variable). It should run on absolutely any machine with a C 
+compiler and a standard output. 
+ </P>
+
+<H3> Baby X resource compiler script </H3>
+<P>
+The Baby X resource compiler accepts a simple XML script as input. 
+Essentially it is a list of your resource files together with a few 
+attributes to control the format you want them output in. So everything is 
+together.
+ </P>
+<pre>
+&lt;BabyXRC&gt;
+    &lt;string name = "hello"&gt;Hello Baby X&lt;/string&gt;
+    &lt;image name = "babyxpic", src = "Babyx.jpeg", width = "100", height = 100"&gt;
+    &lt;/image&gt;
+    &lt;audio name = "babyxcry", src = "crying.mp3", samplerate = 22050&gt;
+    &lt;/audio&gt;
+&lt;/BabyXRC&gt;
+</pre>
+<P>
+Here's a very simple sample Baby X resource compiler script file 
+containing on string, one image, and one audio clip. If the image is not 
+100x100 it will be resized, and the MP3 will be decompressed and resampled 
+at 22050Hz. 
+</P>
+<H3>Tag list</H3>
+<P>
+<LI> &lt;string&gt; - output data as a human-readable C string </LI>
+<LI> &lt;utf8&gt; - output data as UTF-8 </LI>
+<LI> &lt;utf16&gt; - output data as UTF-16 </LI>
+<LI> &lt;binary&gt; - dump raw binary data unprocessed </LI> 
+<LI> &lt;image&gt; - output data as a 32 bit rgba buffer </LI> 
+<LI> &lt;font&gt; - rip a font, rasterise, and output data as greyscale 
+glyphs 
+</LI>
+<LI> &lt;audio&gt; - output dat as 16-bit pcm samples </LI>
+<LI> &lt;cursor&gt; - output data as a 32 rgba image with hotspot </LI>
+<LI> &lt;international&gt; child &lt;string&gt; and &lt;utf8&gt; tags 
+represent translations 
+</LI>
+ 
+<P>
+The tag type gives the output format, not the input format of the 
+resource. Usually the resource compiler will determine the format of
+the resource from its extension or, in the case of text files, by
+using a heuristic.
+</P>
+<P>
+Tags take attributes. All tags can take a &quot;name&quot; attribute, 
+which gives 
+the base name of the C identifiers output. &quot;name&quot; is usually 
+optional
+as the name can be generated from the resource file name. All tags also 
+take a "src" attribute which gives the path to the resource file. Text
+tags &lt;string&gt; &lt;utf8&gt; &lt;utf16&gt; can omit the 
+&quot;src&quot; attribute if text is included in within the tags.  
+</P>
+
+<H3> &lt;string&gt; tag </H3>
+<P>
+<B>Attributes</B> name, src
+</P>
+
+<pre>
+&lt;string name = "fred"&gt;Fred Bloggs&lt;/string&gt;
+&lt;string name = "fred"&gt;"My name is \"Fred Bloggs\"\n"&lt;/string&gt;
+&lt;string name = "fred", src = "fred.txt"&gt;&lt;/string&gt;
+</pre>
+<P>
+In the first case we are creating a string wit the value "Fred Bloggs".
+In the second case the string is quoted, so it is not escaped but is
+output as is. (This is useful for entering printf format strings).
+In the third case, the string is read from an external file. It will
+be escaped so tabs will be exanede to "\t" and newlines to "\n". 
+</P>
+
+<H3> &lt;utf8&gt; tag </H3>
+<P>
+<B>Attributes</B> name, src
+</P>
+<pre>
+&lt;utf8 name = "fred"&gt;Fred Bloggs/n&gt;&lt;/utf8&gt;
+&lt;utf8 name = "fred" src = "fredunicode"&gt;&lt;/utf8&gt;
+</pre>
+<P>
+In the first case we are creating UTF-8 string with the value "Fred 
+Bloggs". You can put UTF-8 in this position to etner human-readable
+extended character (this text file is ASCII so we can't show that).
+In the second case we are creating a UTF-8 string from an input file.
+The resource compiler will attempt to dtermine the format. However it
+is recommedend to use UTF-8.
+</P>
+
+<H3>&lt;utf16&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src, allowsurrogatepairs
+</P>
+<pre>
+&lt;utf16 name = "fred"&gt;Fred Bloggs&lt;/utf16&gt;
+&lt;utf16 src = "fred.utf8"&gt;&lt;/utf16&gt;
+&lt;utf16 src = "fred.utf8" allowsurrogatepairs="true"&gt;&lt;/utf16&gt;
+</pre>
+<P>
+In the first case we are creating UTF-16 with the value "Fred Bloggs".
+In the second case we are creating UTF-16 from a text file. The extension
+suggests that it is UTF-8 file (as recommended). The resource compiler 
+will re-encode it as UTF-16. name isn't given and will default to 
+"fred", based on the file name.
+</P>
+<P>
+In the third case we are allowing surrogate pairs in the UTF-16 output.
+By default this isn't on an code points over 0xFFFF will be mapped to 
+0xFFFE (unknown character). This is because a lot of code relies on one
+wide character representing one code point.
+</P>
+
+<H3>&lt;binary&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src
+</P>
+<pre>
+&lt;binary name = Fred, src = "fred.bin"&gt;&lt;/binary&gt;
+</pre>
+<P>
+In the first case the file "fred.bin" is simply read in  and passed out
+as binary bytes, with no processing.
+</P>
+
+<H3>&lt;image&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src, width, height
+</P>
+<pre>
+&lt;image name = "fred" src = "fred.jpeg"&gt;&lt;/image&gt;
+&lt;image name = "fred" src = "fred.tiff", width = "100", height = "80"&gt;&lt;/image&gt;
+</pre>
+<P>
+In the first case the image is read from "fred.jpeg" and written out as
+32 bit rgba values.
+Int the second case the image is read from 'fred.tiff" and resized to 
+width 100 pixels, height 80 pixels, then written out as 32 bit rgba 
+values.
+</P>
+<P>
+Supported formats are .png, .jpeg, .gif, .bmp, .tiff and .svg. The format
+will be determiend form the file extension. Svg files will be converted to
+raster.
+</P>
+
+<H3> &lt;font&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src, points
+</P>
+<pre>
+&lt;font name = "fred", src = "fredsfont.ttf", points = "12"&gt;&lt;/font&gt;
+&lt;font name = "fred", src = "fredsfont.bdf"&gt;&lt;/font&gt;
+</pre>
+<P>
+In the first case we a loading a true type font, and outputting raster
+glyphs for 12 point text.
+In the second case we are loading a BDF raster font which cannot be
+resized.
+</P>
+<P>
+The &lt;font&gt; tag is mainly intended for ripping true type fonts and
+rasterising them so they can be used by simple programs. If you 
+have runtime support for true type fonts, load the font with the <binary>
+tag.
+</P>
+
+<H3>&lt;audio&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src, samplerate
+</P>
+
+<pre>
+&lt;audio name = "fred", src = "fred.wav"&gt;&lt;/audio&gt;
+&lt;audio name = "fred", src = "fred.mp3", samplerate = "22050"&gt;&lt;/audio&gt;
+</pre>
+<P>
+In the first case we are inputting "fred,wav" and writing the data out
+as 16 bit pcm samples with minimal processing.
+In the second case we are inputting an MP3 file, decompressing it, 
+resampling at 22050Hz, the outputting as PCM samples.
+</P>
+<P>
+If you have facilities for playing MP3 streams, loas the MP3 with the 
+&lt;binary&gt; tag.
+</P>
+  
+<H3>&lt;cursor&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src
+</P>
+<pre>
+&lt;cursor name = "fred", src = "fred.cur"&gt;&lt;/cursor&gt;
+</pre>
+<P>
+In the first case we are loading a Microsoft .cur file, and outputting it 
+as 32 bit rgba buffer plus a hotspot.
+</P>
+
+<H3>&lt;international&gt; tag</H3>
+<P>
+<B>Attributes</B> name <BR>
+<B>Children</B> &lt;string&gt; &lt;utf8&gt; tags.
+</B>
+
+<pre>
+&lt;international name = "hellofred"&gt;
+  &lt;string language = "english"&gt;Hello Fred&lt;/string&gt;
+  &lt;string language = "french"^gt;Bonjour Fred&lt;/string&gt;
+  &lt;utf8 src = "chinesefred.unicode" language = "chinese"&gt;&lt;/utf8&gt;
+&lt;/international&gt;
+</pre>
+<P>
+Here we are setting up an internationalised string with the base identifer 
+"hellofred" and English, French, and Chinese translations. The English 
+and French are entered directly, the Chinese is read in from an external 
+file. In this context, <string> and <utf8> tags should take a "language" 
+attribute.
+</P>
+<H3>Helping out</H3>
+<P>
+The Baby X resource compiler is provided as a service to the C programming 
+community. You can help out by enhancing the program, bug fixing, and so 
+on. You can also help by promoting it and recommending it to your friends. 
+The more users we have, the more developers we will attract, and the 
+project should go from strength to strength.
+<P>
+<P>
+On the wishlist is an MP3 encoder to allow users to store resources in 
+.wav file format and incorporate them in their programs as MP3. The bmp 
+file loader won't support some of the more exotic bitmap formats (run 
+length encoding and bit masks). We could also do with a "filesystem" 
+tag to allow users to package a directory as a runtime-accessible 
+filesystem, stored in the programs data section. We also need more work on 
+internationalisation. Functions to mix audio would also be useful.
+</P>
+ </BODY>
+ </HTML>
