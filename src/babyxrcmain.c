@@ -444,6 +444,10 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
       points = 12;
     } 
   }
+  else
+  {
+      points = 12;
+  }
   ext = getextension(path);
   makelower(ext);
   if(!strcmp(ext, ".ttf"))
