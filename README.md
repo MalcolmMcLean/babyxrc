@@ -4,6 +4,8 @@ This is the Baby X resource compiler. It's intended for use with Baby X, but can
 
 The purpose of the program is to convert resources - images, text, fonts and so on - to compilable ANSI C. It's not meant to be a fully-fledged image processing program, but it allows for resizing and expansion of images. It also rasterises fonts, so you can take font processing out of programs - the font is dumped in a simple raster graphic format. You are of course then restricted to one size of font.
 
+Check out our [webpages](http://malcolmmclean.github.io/babyxrc).
+
  
 Input file format
 -----------------
