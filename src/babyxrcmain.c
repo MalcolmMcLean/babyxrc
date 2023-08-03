@@ -330,6 +330,43 @@ static char *addquotes(const char *str)
 
 }
 
+static char *makecomment(const char *str)
+{
+    char *trimmed = 0;
+    char *ptr = 0;
+    char *answer = 0;
+    
+    trimmed = trim(str);
+    if (!trimmed)
+        goto error_exit;
+    if (strlen(trimmed) >= 4)
+    {
+        if (trimmed[0] == '/' && trimmed[1] == '*')
+            memmove(trimmed, trimmed + 2, strlen(trimmed) - 2 + 1);
+        if (trimmed[strlen(trimmed) -2] == '*' && trimmed[strlen(trimmed)-1] == '/')
+            trimmed[strlen(trimmed) -2] = 0;
+    }
+    ptr = trimmed;
+    while ((ptr = strstr(ptr, "*/")))
+        *ptr = '^';
+    answer = malloc(strlen(trimmed) + 4 + 1);
+    if (!answer)
+        goto error_exit;
+    
+    strcpy(answer, "/*");
+    strcat(answer, trimmed);
+    strcat(answer, "*/");
+    
+    free(trimmed);
+    
+    return answer;
+error_exit:
+    free(trimmed);
+    free(answer);
+    return 0;
+    
+}
+
 static int parseboolaen(const char *boolattribute, int *error)
 {
     int answer = 0;
@@ -762,6 +799,55 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *a
   return answer;
 }
 
+int processcommenttag(FILE *fp, const char *fname, const char *str)
+{
+    char *comment  = 0;
+    char *string = 0;
+    int error = 0;
+    
+    if (fname)
+    {
+        string = loadasutf8(fname, &error);
+        if (!string)
+        {
+            fprintf(stderr, "Can't load %s\n", fname);
+            goto error_exit;
+        }
+        comment = makecomment(string);
+        if (!comment)
+        {
+            fprintf(stderr, "Out of memory\n");
+            goto error_exit;
+        }
+    }
+    else if (str)
+    {
+        comment = makecomment(str);
+        if (!comment)
+        {
+            fprintf(stderr, "Out of memory\n");
+            goto error_exit;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "comment tag has no text\n");
+        goto error_exit;
+    }
+    
+    fputs(comment, fp);
+    fprintf(fp, "\n");
+    free(string);
+    free(comment);
+    return 0;
+    
+error_exit:
+    free(string);
+    free(comment);
+    return -1;
+        
+}
+
 int processbinarytag(FILE *fp, const char *fname, const char *name)
 {
   char *binaryname;
@@ -1168,7 +1254,16 @@ int main(int argc, char **argv)
       putfontdefinition(stdout);
 	if (i == 0 && xml_Nchildrenwithtag(scripts[i], "cursor") > 0)
 		putcursordefinition(stdout);
-   
+      
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "comment");
+    for(ii=0;ii<Nchildren;ii++)
+    {
+      node = xml_getchild(scripts[i], "comment", ii);
+      path = xml_getattribute(node, "src");
+      str = xml_getdata(node);
+      processcommenttag(stdout, path, str);
+    }
+      
     Nchildren = xml_Nchildrenwithtag(scripts[i], "image");
     for(ii=0;ii<Nchildren;ii++)
     {

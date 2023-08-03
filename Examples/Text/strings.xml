@@ -20,5 +20,5 @@ To see a lamb at school.
 <utf16 name = "smileyandappleemoji_utf16" src = 
 "smileyandappleemoji.utf16" allowsurrogatepairs = 
 "true"></utf16> 
-
+<comment src = "hello.txt">  </comment>
 </BabyXRC>
