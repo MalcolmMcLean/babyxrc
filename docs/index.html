@@ -328,5 +328,32 @@ tag to allow users to package a directory as a runtime-accessible
 filesystem, stored in the programs data section. We also need more work on 
 internationalisation. Functions to mix audio would also be useful.
 </P>
+<P>
+To add a new tag, add it to the list in main. It will likely have the 
+attributes "name" and "src". If there are any other attributes with new 
+names, add a variable declared as
+</P>
+<pre>
+const char *attributenamestr;
+...
+
+attributenamestr = xml_getattribute(node, "attributename");
+</pre>
+ <P>
+ The write a function called processtagnametag which takes a FILE *
+as the first parameter, and the attributes as additional parameters.
+Note that these will be null if the user doesn't provide the attribute.
+ </P>
+<P>
+To add an attribute, create the variable to hold the string using the
+convention above. Then add the attribute to the parameter list of the
+tag process function. 
+</P>
+<P>
+If the tag has children or for other reasons is difficult to process using 
+the abvoe interface, the  write a "processtagnamenode" function which 
+takes the node as a parameter. You'll then need to use the xml functions 
+in xmlparser.h to access the node's information.
+ </P> 
  </BODY>
  </HTML>
