@@ -12,6 +12,8 @@
 #include "wavfile.h"
 #include "aifffile.h"
 #include "loadmp3.h"
+#include "csv.h"
+#include "dumpcsv.h"
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
@@ -908,6 +910,39 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 	return answer;
 }
 
+int processdataframetag(FILE *fp, const char *fname, const char *name)
+{
+    char *csvname;
+    int answer = 0;
+    CSV *csv;
+
+    if (!fname)
+    {
+        fprintf(stderr, "Error, dataframe without src attribute\n");
+        return -1;
+    }
+
+    if (name)
+        csvname = mystrdup(name);
+    else
+        csvname = getbasename((char*)fname);
+    csv = loadcsv(fname);
+    if (!csv)
+    {
+        fprintf(stderr, "can't load csv %s\n", fname);
+        return -1;
+    }
+    if (dumpcsv(fp, csvname, csv) < 0)
+    {
+      fprintf(stderr, "Error processing %s\n", fname);
+      answer = -1;
+    }
+    free(csvname);
+        killcsv(csv);
+
+    return answer;
+}
+
 short *resampleaudio(const short *pcm, long samplerate, int Nchannels, long Nsamples, long resamplerate, long *Nsamplesout)
 {
     float *fpcmin = 0;
@@ -1327,6 +1362,14 @@ int main(int argc, char **argv)
 		name = xml_getattribute(node, "name");
 		processcursortag(stdout, path, name);
 	}
+    Nchildren = xml_Nchildrenwithtag(scripts[i], "dataframe");
+    for (ii = 0; ii<Nchildren; ii++)
+    {
+        node = xml_getchild(scripts[i], "dataframe", ii);
+        path = xml_getattribute(node, "src");
+        name = xml_getattribute(node, "name");
+        processdataframetag(stdout, path, name);
+    }
     Nchildren = xml_Nchildrenwithtag(scripts[i], "audio");
     for (ii = 0; ii<Nchildren; ii++)
     {
