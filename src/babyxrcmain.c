@@ -1259,8 +1259,7 @@ int main(int argc, char **argv)
   XMLNODE **scripts;
   XMLNODE *node;
   int Nscripts;
-  int Nchildren;
-  int i, ii;
+  int i;
   const char *path;
   const char *name;
   const char *str;
@@ -1289,101 +1288,82 @@ int main(int argc, char **argv)
       putfontdefinition(stdout);
 	if (i == 0 && xml_Nchildrenwithtag(scripts[i], "cursor") > 0)
 		putcursordefinition(stdout);
-      
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "comment");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-      node = xml_getchild(scripts[i], "comment", ii);
-      path = xml_getattribute(node, "src");
-      str = xml_getdata(node);
-      processcommenttag(stdout, path, str);
-    }
-      
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "image");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-      node = xml_getchild(scripts[i], "image", ii);
-      path = xml_getattribute(node, "src");
-      name = xml_getattribute(node, "name");
-      widthstr = xml_getattribute(node, "width");
-      heightstr = xml_getattribute(node, "height");
-      processimagetag(stdout, path, name, widthstr, heightstr); 
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "font");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-      node = xml_getchild(scripts[i], "font", ii);
-      path = xml_getattribute(node, "src");
-      name = xml_getattribute(node, "name");
-      pointsstr = xml_getattribute(node, "points");
-      processfonttag(stdout, path, name, pointsstr);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "string");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-        node = xml_getchild(scripts[i], "string", ii);
-        path = xml_getattribute(node, "src");
-        name = xml_getattribute(node, "name");
-        str = xml_getdata(node);
-        processstringtag(stdout, path, name, str);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "utf8");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-          node = xml_getchild(scripts[i], "utf8", ii);
-          path = xml_getattribute(node, "src");
-          name = xml_getattribute(node, "name");
-          str = xml_getdata(node);
-          processutf8tag(stdout, path, name, str);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "utf16");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-        node = xml_getchild(scripts[i], "utf16", ii);
-        path = xml_getattribute(node, "src");
-        name = xml_getattribute(node, "name");
-        allowsurrogatepairsstr = xml_getattribute(node, "allowsurrogatepairs");
-        str = xml_getdata(node);
-        processutf16tag(stdout, path, name, allowsurrogatepairsstr, str);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "binary");
-    for(ii=0;ii<Nchildren;ii++)
-    {
-      node = xml_getchild(scripts[i], "binary", ii);
-      path = xml_getattribute(node, "src");
-      name = xml_getattribute(node, "name");
-      processbinarytag(stdout, path, name);
-    }
-	Nchildren = xml_Nchildrenwithtag(scripts[i], "cursor");
-	for (ii = 0; ii<Nchildren; ii++)
-	{
-		node = xml_getchild(scripts[i], "cursor", ii);
-		path = xml_getattribute(node, "src");
-		name = xml_getattribute(node, "name");
-		processcursortag(stdout, path, name);
-	}
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "dataframe");
-    for (ii = 0; ii<Nchildren; ii++)
-    {
-        node = xml_getchild(scripts[i], "dataframe", ii);
-        path = xml_getattribute(node, "src");
-        name = xml_getattribute(node, "name");
-        processdataframetag(stdout, path, name);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "audio");
-    for (ii = 0; ii<Nchildren; ii++)
-    {
-        node = xml_getchild(scripts[i], "audio", ii);
-        path = xml_getattribute(node, "src");
-        name = xml_getattribute(node, "name");
-        sampleratestr = xml_getattribute(node, "samplerate");
-        processaudiotag(stdout, path, name, sampleratestr);
-    }
-    Nchildren = xml_Nchildrenwithtag(scripts[i], "international");
-    for (ii = 0; ii<Nchildren; ii++)
-    {
-        node = xml_getchild(scripts[i], "international", ii);
-        processinternationalnode(stdout, node);
+
+    for (node = scripts[i]->child; node != NULL; node = node->next)
+    { 
+        const char* tag = xml_gettag(node);
+        if (!strcmp(tag, "comment"))
+        { 
+            path = xml_getattribute(node, "src");
+            str = xml_getdata(node);
+            processcommenttag(stdout, path, str);
+        }
+        else if (!strcmp(tag, "image"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            widthstr = xml_getattribute(node, "width");
+            heightstr = xml_getattribute(node, "height"); 
+            processimagetag(stdout, path, name, widthstr, heightstr); 
+         }
+        else if (!strcmp(tag, "font"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            pointsstr = xml_getattribute(node, "points");
+            processfonttag(stdout, path, name, pointsstr);
+        }
+        else if (!strcmp(tag, "string"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            str = xml_getdata(node);
+            processstringtag(stdout, path, name, str);
+        }
+        else if (!strcmp(tag, "utf8"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            str = xml_getdata(node);
+            processutf8tag(stdout, path, name, str);
+        }
+        else if (!strcmp(tag, "utf16"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            allowsurrogatepairsstr = xml_getattribute(node, "allowsurrogatepairs");
+            str = xml_getdata(node);
+            processutf16tag(stdout, path, name, allowsurrogatepairsstr, str);
+        }
+        else if(!strcmp(tag, "binary"))
+        { 
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            processbinarytag(stdout, path, name);
+        }
+        else if (!strcmp(tag, "cursor"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            processcursortag(stdout, path, name);
+        }
+        else if (!strcmp(tag, "dataframe"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            processdataframetag(stdout, path, name);
+        }
+        else if (!strcmp(tag, "audio"))
+        {
+            path = xml_getattribute(node, "src");
+            name = xml_getattribute(node, "name");
+            sampleratestr = xml_getattribute(node, "samplerate");
+            processaudiotag(stdout, path, name, sampleratestr);
+        }
+        else if (!strcmp(tag, "international"))
+        {
+            processinternationalnode(stdout, node);
+        }
     }
   }  
   killxmldoc(doc);
