@@ -140,7 +140,7 @@ static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
     if (width <= 0 || height <= 0)
         return -2;
     
-    fprintf(fp, "const char * %s[%d][%d] =\n", name, width, height);
+    fprintf(fp, "const char *%s[%d][%d] =\n", name, width, height);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
     {
@@ -205,7 +205,7 @@ static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
     }
     fprintf(fp, "}%s;\n\n", structname);
     
-    fprintf(fp, "%s[%d] =\n", structname, height);
+    fprintf(fp, "%s %s[%d] =\n", structname, name, height);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
     {
