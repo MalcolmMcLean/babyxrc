@@ -15,9 +15,13 @@ the system.
 
 AudioTest tests the Baby X resource compiler's audio file
 capabilities. Audio data can get very large, so the full
-output file is not included, even thoughthe test samples are
+output file is not included, even though the test samples are
 very short.
   
+Dataframes test the ability to load tabular data from an
+external source. Data is provided in the form of .csv files,
+and written out as C structs or matrices.
+
 Text tests the Baby X resource compiler's text capabiliites.
 We've added international support, so there's now an
 <international> tag that takes a list of strings or unicode

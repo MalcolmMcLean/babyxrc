@@ -107,7 +107,7 @@ static int dumpasmatrix(FILE *fp, const char *name, CSV *csv)
     if (width <= 0 || height <= 0)
         return -2;
     
-    fprintf(fp, "double %s[%d][%d] =\n", name, width, height);
+    fprintf(fp, "double %s[%d][%d] =\n", name, height, width);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
     {
@@ -140,7 +140,7 @@ static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
     if (width <= 0 || height <= 0)
         return -2;
     
-    fprintf(fp, "const char *%s[%d][%d] =\n", name, width, height);
+    fprintf(fp, "const char *%s[%d][%d] =\n", name, height, width);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
     {
@@ -195,13 +195,13 @@ static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
                 fprintf(fp, "\tdouble %s;\n", fieldname);
                 break;
             case CSV_STRING:
-                fprintf(fp, "\tconst char * %s;\n", fieldname);
+                fprintf(fp, "\tconst char *%s;\n", fieldname);
                 break;
             case CSV_BOOL:
                 fprintf(fp, "\tint %s;\n", fieldname);
                 break;
         }
-        free (fieldname);
+        free(fieldname);
     }
     fprintf(fp, "}%s;\n\n", structname);
     
@@ -252,7 +252,7 @@ int dumpcsv(FILE *fp, const char *name, CSV *csv)
   {
       if (isrealmatrix(csv))
           dumpasmatrix(fp, name, csv);
-      if (isstringtable(csv))
+      else if (isstringtable(csv))
           dumpasstringmatrix(fp, name, csv);
       else
           fprintf(stderr, "csv data %s has no headers for struct field names\n", name);

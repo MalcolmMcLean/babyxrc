@@ -119,6 +119,7 @@ at 22050Hz.
 <LI> &lt;string&gt; - output data as a human-readable C string </LI>
 <LI> &lt;utf8&gt; - output data as UTF-8 </LI>
 <LI> &lt;utf16&gt; - output data as UTF-16 </LI>
+<LI> &lt;comment&gt; - add comment to outut file </LI>
 <LI> &lt;binary&gt; - dump raw binary data unprocessed </LI> 
 <LI> &lt;image&gt; - output data as a 32 bit rgba buffer </LI> 
 <LI> &lt;font&gt; - rip a font, rasterise, and output data as greyscale 
@@ -126,6 +127,8 @@ glyphs
 </LI>
 <LI> &lt;audio&gt; - output dat as 16-bit pcm samples </LI>
 <LI> &lt;cursor&gt; - output data as a 32 rgba image with hotspot </LI>
+<LI> &lt;dataframe&gt; - read data from a CSV file and output as array of 
+C structs </LI> 
 <LI> &lt;international&gt; child &lt;string&gt; and &lt;utf8&gt; tags 
 represent translations 
 </LI>
@@ -138,9 +141,8 @@ using a heuristic.
 </P>
 <P>
 Tags take attributes. All tags can take a &quot;name&quot; attribute, 
-which gives 
-the base name of the C identifiers output. &quot;name&quot; is usually 
-optional
+which gives the base name of the C identifiers output. &quot;name&quot; is 
+usually optional
 as the name can be generated from the resource file name. All tags also 
 take a "src" attribute which gives the path to the resource file. Text
 tags &lt;string&gt; &lt;utf8&gt; &lt;utf16&gt; can omit the 
@@ -203,6 +205,19 @@ In the third case we are allowing surrogate pairs in the UTF-16 output.
 By default this isn't on an code points over 0xFFFF will be mapped to 
 0xFFFE (unknown character). This is because a lot of code relies on one
 wide character representing one code point.
+</P>
+<H3>&lt;comment&gt; tag</H3>
+<P>
+<B>Attributes</B> src
+</P>
+
+<pre>
+&lt;comment&gt;Add this comment to my source&lt;/comment&gt;
+&lt;comment src = "licence.txt"&gt;&lt;/comment&gt;
+</pre>
+<P>
+In the first case the comment text is embedded in the script file.
+In the second case we load in the text from an external file.
 </P>
 
 <H3>&lt;binary&gt; tag</H3>
@@ -291,6 +306,18 @@ In the first case we are loading a Microsoft .cur file, and outputting it
 as 32 bit rgba buffer plus a hotspot.
 </P>
 
+<H3> &lt;dataframe&gt; tag</H3>
+<P>
+<B>Attributes</B> name, src
+</P>
+<pre>
+&lt;dataframe name = "payroll", src = "employees.csv"&gt;&lt;/dataframe&gt;
+</pre>
+<P>
+We load in a dataframe, which in C is simply an array of structs which 
+represent data from an external source. Currently the only format 
+supported is csv.
+</P> 
 <H3>&lt;international&gt; tag</H3>
 <P>
 <B>Attributes</B> name <BR>

@@ -14,11 +14,13 @@ between.
 <string> - output data as a human-readable C string
 <utf8> - output data as UTF-8
 <utf16> - output data as UTF-16
+<comment> - add comment to output file
 <binary> - dump raw binary data unprocessed 
 <image> - output data as a 32 bit rgba buffer 
 <font> - rip a font, rasterise, and output data as greyscale glyphs
 <audio> - output dat as 16-bit pcm samples
 <cursor> - output data as a 32 rgba image with hotspot
+<dataframe> - read data from a CSV file and output as an array of C structs
 <international> child <string> and <utf8> tags represent translations
  
 The tag type gives the output format, not the input format of the 
@@ -49,7 +51,7 @@ be escaped so tabs will be exanede to "\t" and newlines to "\n".
 <utf8> tag
 Attributes name, src
 
-<utf8 name = "fred">Fred Bloggs</n><?utf8>
+<utf8 name = "fred">Fred Bloggs</n></utf8>
 <utf8 name = "fred" src = "fredunicode"></utf8>
 
 In the first case we are creating UTF-8 string with the value "Fred 
@@ -76,6 +78,14 @@ By default this isn't on an code points over 0xFFFF will be mapped to
 0xFFFE (unknown character). This is because a lot of code relies on one
 wide character representing one code point.
 
+<comment> tag
+Attributes src
+
+<comment>Add this comment to my source</comment>
+<comment src = "licence.txt"></comment>
+
+In the first case the comment text is embedded in the script file.
+In the second case we load in the text from an external file.
 
 <binary> tag
 Attributes name, src
@@ -138,6 +148,13 @@ Attributes name, src
 
 In the first case we are loading a Microsoft .cur file, and outputting it 
 as 32 bit rgba buffer plus a hotspot.
+
+<dataframe> tag
+Attributes name, src
+
+<dataframe name = "payroll", src = "employees.csv"></dataframe>
+
+We load in a dataframe, which in C is simply an array of structs which represent data from an external source. Currently the only format supported is csv. 
 
 <international> tag
 Attributes name
