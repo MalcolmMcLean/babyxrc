@@ -127,6 +127,8 @@ static int dumpasmatrix(FILE *fp, const char *name, CSV *csv)
         fprintf(fp, "},\n");
     }
     fprintf(fp, "};\n\n");
+
+    return 0;
 }
 
 static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
@@ -162,6 +164,8 @@ static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
         fprintf(fp, "},\n");
     }
     fprintf(fp, "};\n\n");
+
+    return 0;
 }
 
 
@@ -237,6 +241,8 @@ static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
     fprintf(fp, "};\n\n");
 
     free(structname);
+
+    return 0;
 
 }
 
