@@ -17,6 +17,12 @@ AudioTest tests the Baby X resource compiler's audio file
 capabilities. Audio data can get very large, so the full
 output file is not included, even though the test samples are
 very short.
+
+Fonts tests the font ripper. You can render fonts wth freetype, 
+but in a small program this is both slow and overkill. If
+you only need fonts in two or three known types and sizes,
+it's easier to pre-render them and then simply write them to
+the display. 
   
 Dataframes test the ability to load tabular data from an
 external source. Data is provided in the form of .csv files,
