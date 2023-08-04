@@ -6,6 +6,16 @@ The purpose of the program is to convert resources - images, text, fonts and so 
 
 Check out our [webpages](http://malcolmmclean.github.io/babyxrc).
 
+### Usage
+
+```
+babyxrc [options] <script.xml>
+
+Options:
+      -header - output a .h header file instead of a .c source file.
+ 
+```
+
  
 Input file format
 -----------------
@@ -63,9 +73,10 @@ brand new support for internationalization. Whilst there is a very strong
 case for allowing UTF-16 input, allowing UTF-16 output was a more difficult
 decision. UTF-16 encoding should be discouraged. However sometimes people
 might find it easier to work with UTF-16, so there is now a \<utf16\> tag.
-Note that it won't handle surrogate pairs correctly. If you need raw 
-UTF-16 in your code, it's unlikely that you will want to handle surrogate
-pairs either.
+Note that it won't handle surrogate pairs correctly unless you set the
+allowsurrogatepairs attribute. The main reason for using UTF-16 is to
+guarantee one symbol per character, so surrogate pairs are disallowed by
+default. 
 
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.

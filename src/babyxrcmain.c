@@ -1284,8 +1284,9 @@ void usage(void)
   printf("The Baby X resource compiler v1.1\n");
   printf("by Malcolm Mclean\n");
   printf("\n");
-  printf("Usage: babyxrc <script.xml>\n");
+  printf("Usage: babyxrc [-header] <script.xml>\n");
   printf("\n");
+  printf("-header write a .h header file instead of a .c source file.\n");
   printf("Example script file:\n");
   printf("<BabyXRC>\n");
   printf("<image src = \"smiley.png\", name = \"fred\", width = \"10\", height = \"10\"> </image>\n");

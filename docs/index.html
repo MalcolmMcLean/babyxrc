@@ -72,12 +72,15 @@ the best approach.
 <H3>Usage</H3>
 <pre>
 babyxrc script.xml &gt; outputfile.c
+
+babyxrc -header script.xml &gt; outputfile.h
 </pre>
 <P>
-There are currently no options, so that's it. The Baby X resource 
-compiler will read in the resource list from the script, and write the .c 
-output file to standard output. Errors are passed to stderr, so they will 
-be lost in the output unless you redirect it. 
+There is currently only one option, which is to write a header file rather 
+an a .c source file.  The Baby X resource  compiler will read in the 
+resource list from the script, and write the .c  output file to standard 
+output. Errors are passed to stderr, so they will be lost in the output 
+unless you redirect it. 
 </P>
 
 <H3>Installation</H3>
