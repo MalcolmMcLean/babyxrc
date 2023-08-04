@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <limits.h>
 
+#include "options.h"
 #include "xmlparser.h"
 #include "asciitostring.h"
 #include "loadasutf8.h"
@@ -22,9 +23,17 @@
 
 char *getextension(char *fname);
 
-int dumpimage(FILE *fp, char *name, unsigned char *rgba, int width, int height)
+int dumpimage(FILE *fp, int header, char *name, unsigned char *rgba, int width, int height)
 {
   int i;
+    
+  if (header)
+  {
+      fprintf(fp, "extern int %s_width;\n", name);
+      fprintf(fp, "extern int %s_height;\n", name);
+      fprintf(fp, "extern unsigned char %s_rgba[%d];\n", name, width * height *4);
+      return 0;
+  }
 
   fprintf(fp, "int %s_width = %d;\n", name, width);
   fprintf(fp, "int %s_height = %d;\n", name, height);
@@ -49,7 +58,7 @@ int dumpimage(FILE *fp, char *name, unsigned char *rgba, int width, int height)
   process the image after parsing completed
     wwidth, wwheight - wanted width and height, -1 if use the file
  */
-int processimage(FILE *fp, char *fname, char *name, int wwidth, int wheight)
+int processimage(FILE *fp, int header, char *fname, char *name, int wwidth, int wheight)
 {
   unsigned char *rgba;
   unsigned char *resizedrgba;
@@ -88,16 +97,22 @@ int processimage(FILE *fp, char *fname, char *name, int wwidth, int wheight)
     exit(EXIT_FAILURE);
   }
   resizeimage(resizedrgba, wwidth, wheight, rgba, width, height);
-  dumpimage(fp, name, resizedrgba, wwidth, wheight);
+  dumpimage(fp, header, name, resizedrgba, wwidth, wheight);
   free(rgba);
   free(resizedrgba);
   free(ext);
   return 0;
 }
 
-int dumpcursor(FILE *fp, BBX_CURSOR *cursor, const char *name)
+int dumpcursor(FILE *fp, int header, BBX_CURSOR *cursor, const char *name)
 {
 	int i;
+    
+    if (header)
+    {
+        fprintf(fp, "extern struct bbx_cursor %s\n", name);
+        return 0;
+    }
 
 	fprintf(fp, "unsigned char %s_rgba[%d] = \n", name, cursor->width * cursor->height * 4);
 	fprintf(fp, "{\n");
@@ -138,12 +153,21 @@ int putcursordefinition(FILE *fp)
 	return 0;
 }
 
-int dumpaudio(FILE *fp, const short *pcm, long samplerate, int Nchannels, long Nsamples, char *name)
+int dumpaudio(FILE *fp, int header, const short *pcm, long samplerate, int Nchannels, long Nsamples, char *name)
 {
     size_t count;
     long i;
     
     count = Nsamples * Nchannels;
+    
+    if (header)
+    {
+        fprintf(fp, "exern long %s_samplerate;\n", name);
+        fprintf(fp, "extern int %s_Nchannels;\n", name);
+        fprintf(fp, "extern long %s_Nsamples;\n", name);
+        fprintf(fp, "extern short %s[%ld];\n", name, (long) count);
+        return 0;
+    }
     
     fprintf(fp, "long %s_samplerate = %ld;\n", name, samplerate);
     fprintf(fp, "int %s_Nchannels = %d;\n", name, Nchannels);
@@ -164,7 +188,7 @@ int dumpaudio(FILE *fp, const short *pcm, long samplerate, int Nchannels, long N
     return 0;
 }
 
-int dumpbinary(FILE *fp, const char *fname, const char *name)
+int dumpbinary(FILE *fp, int header, const char *fname, const char *name)
 {
   FILE *fpb;
   size_t flen = 0;
@@ -190,18 +214,25 @@ int dumpbinary(FILE *fp, const char *fname, const char *name)
     return -1;
   }
   fseek(fpb, 0, SEEK_SET);
-  fprintf(fp, "unsigned char %s[%ld] = {\n", name, (long) flen);
-  while( (ch = fgetc(fpb)) != -1)
+  if (header)
   {
-    fprintf(fp, "0x%02x, ", ch);
-    if( (i % 10) == 9)
-      fprintf(fp, "\n");
-    i++;
+      fprintf(fp, "extern unsigned char %s[%ld];\n", name, (long) flen);
   }
-  if(i % 10)
-    fprintf(fp, "\n");
-
-  fprintf(fp, "};\n\n");
+  else
+  {
+      fprintf(fp, "unsigned char %s[%ld] = {\n", name, (long) flen);
+      while( (ch = fgetc(fpb)) != -1)
+      {
+          fprintf(fp, "0x%02x, ", ch);
+          if( (i % 10) == 9)
+              fprintf(fp, "\n");
+          i++;
+      }
+      if(i % 10)
+          fprintf(fp, "\n");
+      
+      fprintf(fp, "};\n\n");
+  }
 
   fclose(fpb);
 
@@ -351,12 +382,16 @@ static char *makecomment(const char *str)
     ptr = trimmed;
     while ((ptr = strstr(ptr, "*/")))
         *ptr = '^';
-    answer = malloc(strlen(trimmed) + 4 + 1);
+    answer = malloc(strlen(trimmed) + 6 + 1);
     if (!answer)
         goto error_exit;
     
     strcpy(answer, "/*");
+    if (strchr(trimmed, "\n"))
+        strcat(answer, "\n");
     strcat(answer, trimmed);
+    if (strchr(trimmed, '\n'))
+        strcat(answer, "\n");
     strcat(answer, "*/");
     
     free(trimmed);
@@ -408,7 +443,7 @@ int putfontdefinition(FILE *fp)
 
 
 
-int processimagetag(FILE *fp, const char *fname, const char *name, const char *widthstr, const char *heightstr)
+int processimagetag(FILE *fp, int header, const char *fname, const char *name, const char *widthstr, const char *heightstr)
 {
   char *path;
   char *imagename;
@@ -448,13 +483,13 @@ int processimagetag(FILE *fp, const char *fname, const char *name, const char *w
   else
     height = -1;
 
-  processimage(fp, path, imagename, width, height);
+  processimage(fp, header, path, imagename, width, height);
   free(path);
   free(imagename);
   return 0;
 }
 
-int processfonttag(FILE *fp, const char *fname, const char *name, const char *pointsstr)
+int processfonttag(FILE *fp, int header,  const char *fname, const char *name, const char *pointsstr)
 {
   int points;
   char *end;
@@ -491,7 +526,7 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
   makelower(ext);
   if(!strcmp(ext, ".ttf"))
   {
-    dumpttf(path, fontname, points, fp); 
+    dumpttf(path, header, fontname, points, fp);
   }
   else if(!strcmp(ext, ".bdf"))
   {
@@ -504,7 +539,7 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
     }
     else   
     {
-      ReadBdf(fpbdf, fp, fontname);
+      ReadBdf(fpbdf, fp, header, fontname);
       fclose(fpbdf);
     }
   }
@@ -520,7 +555,7 @@ int processfonttag(FILE *fp, const char *fname, const char *name, const char *po
 }
 
 
-int processstringtag(FILE *fp, const char *fname, const char *name, const char *str)
+int processstringtag(FILE *fp, int header, const char *fname, const char *name, const char *str)
 {
   char *path = 0;
   char *stringname = 0;
@@ -540,6 +575,14 @@ int processstringtag(FILE *fp, const char *fname, const char *name, const char *
     fprintf(stderr, "No string name specified\n");
     answer = -1;
    }
+    
+  if (header)
+  {
+      fprintf(fp, "extern char *%s;\n", stringname);
+      free(path);
+      free(stringname);
+      return 0;
+  }
     
   if(path)
   {
@@ -586,7 +629,7 @@ int processstringtag(FILE *fp, const char *fname, const char *name, const char *
   return answer;
 }
 
-int processutf8tag(FILE *fp, const char *fname, const char *name, const char *str)
+int processutf8tag(FILE *fp, int header, const char *fname, const char *name, const char *str)
 {
   char *path = 0;
   char *stringname = 0;
@@ -607,6 +650,13 @@ int processutf8tag(FILE *fp, const char *fname, const char *name, const char *st
     fprintf(stderr, "No string name specified\n");
     answer = -1;
    }
+    
+  if (header)
+  {
+      fprintf(fp, "extern char *%s[];\n", stringname);
+      free(stringname);
+      return 0;
+  }
     
   if (path)
   {
@@ -715,7 +765,7 @@ unsigned short *utf8toutf16(const char *utf8, int allowsurrogatepairs, int *erro
     return answer;
 }
 
-int processutf16tag(FILE *fp, const char *fname, const char *name, const char *allowsurrogatepairs, const char *str)
+int processutf16tag(FILE *fp, int header, const char *fname, const char *name, const char *allowsurrogatepairs, const char *str)
 {
   char *path = 0;
   char *stringname = 0;
@@ -738,6 +788,12 @@ int processutf16tag(FILE *fp, const char *fname, const char *name, const char *a
     fprintf(stderr, "No string name specified\n");
     answer = -1;
    }
+  if (header)
+  {
+      fprintf(fp, "extern unsigned char %s[];\n", stringname);
+      free(stringname);
+      return 0;
+  }
   if (path)
   {
       string = loadasutf8(path, &error);
@@ -850,7 +906,7 @@ error_exit:
         
 }
 
-int processbinarytag(FILE *fp, const char *fname, const char *name)
+int processbinarytag(FILE *fp, int header, const char *fname, const char *name)
 {
   char *binaryname;
   int answer = 0;
@@ -865,7 +921,7 @@ int processbinarytag(FILE *fp, const char *fname, const char *name)
     binaryname = mystrdup(name);
   else
     binaryname = getbasename( (char*)fname );
-  if(dumpbinary(fp, fname, binaryname) < 0)
+  if(dumpbinary(fp, header, fname, binaryname) < 0)
   {
     fprintf(stderr, "Error processing %s\n", fname);
     answer = -1;
@@ -875,7 +931,7 @@ int processbinarytag(FILE *fp, const char *fname, const char *name)
   return answer;
 }
 
-int processcursortag(FILE *fp, const char *fname, const char *name)
+int processcursortag(FILE *fp, int header, const char *fname, const char *name)
 {
 	char *cursorname;
 	int answer = 0;
@@ -898,7 +954,7 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 		fprintf(stderr, "can't load cursor %s\n", fname);
 		return -1;
 	}
-	if (dumpcursor(fp, cursor, cursorname) < 0)
+	if (dumpcursor(fp, header, cursor, cursorname) < 0)
 	{
 		fprintf(stderr, "Error processing %s\n", fname);
 		answer = -1;
@@ -910,7 +966,7 @@ int processcursortag(FILE *fp, const char *fname, const char *name)
 	return answer;
 }
 
-int processdataframetag(FILE *fp, const char *fname, const char *name)
+int processdataframetag(FILE *fp, int header, const char *fname, const char *name)
 {
     char *csvname;
     int answer = 0;
@@ -932,7 +988,7 @@ int processdataframetag(FILE *fp, const char *fname, const char *name)
         fprintf(stderr, "can't load csv %s\n", fname);
         return -1;
     }
-    if (dumpcsv(fp, csvname, csv) < 0)
+    if (dumpcsv(fp, header, csvname, csv) < 0)
     {
       fprintf(stderr, "Error processing %s\n", fname);
       answer = -1;
@@ -1018,7 +1074,7 @@ short *loadaudiofile(const char *fname, long *samplerate, int *Nchannels, long *
     return 0;
 }
 
-int processaudiotag(FILE *fp, const char *fname, const char *name, const char *sampleratestr)
+int processaudiotag(FILE *fp, int header, const char *fname, const char *name, const char *sampleratestr)
 {
     char *audioname;
     int answer = 0;
@@ -1074,7 +1130,7 @@ int processaudiotag(FILE *fp, const char *fname, const char *name, const char *s
             }
         }
     }
-    if (dumpaudio(fp, pcm, samplerate, Nchannels, Nsamples, audioname) < 0)
+    if (dumpaudio(fp, header, pcm, samplerate, Nchannels, Nsamples, audioname) < 0)
     {
         fprintf(stderr, "Error processing %s\n", fname);
         answer = -1;
@@ -1085,7 +1141,7 @@ int processaudiotag(FILE *fp, const char *fname, const char *name, const char *s
     return answer;
 }
 
-int processinternationalnode(FILE *fp, XMLNODE *node)
+int processinternationalnode(FILE *fp, XMLNODE *node, int header)
 {
     XMLNODE *child;
     const char *name;
@@ -1103,6 +1159,12 @@ int processinternationalnode(FILE *fp, XMLNODE *node)
     
     name = xml_getattribute(node, "name");
     Nchildren = xml_Nchildrenwithtag(node, "string");
+   
+    if (header)
+    {
+        fprintf(fp, "const char *get_%s(const char *language);\n", name);
+        return 0;
+    }
     for(i=0;i<Nchildren;i++)
     {
         child = xml_getchild(node, "string", i);
@@ -1110,7 +1172,7 @@ int processinternationalnode(FILE *fp, XMLNODE *node)
         language = xml_getattribute(child, "language");
         if (!language)
         {
-            fprintf(stderr, "Children of international nodes must have\"lanugage\" attribute set.\n");
+            fprintf(stderr, "Children of international nodes must have\"language\" attribute set.\n");
             return -1;
         }
         str = xml_getdata(child);
@@ -1254,11 +1316,14 @@ void usage(void)
 
 int main(int argc, char **argv)
 {
+  OPTIONS *opt = 0;
   XMLDOC *doc;
   int err;
+  char *scriptfile;
   XMLNODE **scripts;
   XMLNODE *node;
   int Nscripts;
+  int header = 0;
   int i;
   const char *path;
   const char *name;
@@ -1268,18 +1333,39 @@ int main(int argc, char **argv)
   const char *pointsstr;
   const char *sampleratestr;
   const char *allowsurrogatepairsstr;
+    
   
-
-  if(argc != 2)
+  opt = options(argc, argv, 0);
+  header = opt_get(opt, "-header", 0);
+  if(opt_Nargs(opt) != 1)
     usage();
+  scriptfile = opt_arg(opt, 0);
+  if (opt_error(opt, stderr))
+        exit(EXIT_FAILURE);
+  killoptions(opt);
+  opt = 0;
 
-  doc = loadxmldoc(argv[1], &err); 
+  doc = loadxmldoc(scriptfile, &err);
   if(!doc)
   {
     fprintf(stderr, "Can't read resource script file\n");
     exit(EXIT_FAILURE);
   } 
   scripts = xml_getdescendants(xml_getroot(doc), "BabyXRC", &Nscripts);
+  if (header)
+  {
+      char *basename = getbasename(scriptfile);
+      for (i = 0; basename[i]; i++)
+      {
+          if (!isalnum((unsigned char) basename[i]))
+              basename[i] = '_';
+      }
+      if (!isalpha((unsigned char) basename[0]) && strlen(basename))
+          basename[0] = 'X';
+      fprintf(stdout, "#ifndef %s_h\n", basename);
+      fprintf(stdout, "#define %s_h\n", basename);
+      fprintf(stdout, "\n");
+  }
   for(i=0;i<Nscripts;i++)
   {
     if (i == 0 && xml_Nchildrenwithtag(scripts[i], "international") > 0)
@@ -1304,28 +1390,28 @@ int main(int argc, char **argv)
             name = xml_getattribute(node, "name");
             widthstr = xml_getattribute(node, "width");
             heightstr = xml_getattribute(node, "height"); 
-            processimagetag(stdout, path, name, widthstr, heightstr); 
+            processimagetag(stdout, header, path, name, widthstr, heightstr);
          }
         else if (!strcmp(tag, "font"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
             pointsstr = xml_getattribute(node, "points");
-            processfonttag(stdout, path, name, pointsstr);
+            processfonttag(stdout, header, path, name, pointsstr);
         }
         else if (!strcmp(tag, "string"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
             str = xml_getdata(node);
-            processstringtag(stdout, path, name, str);
+            processstringtag(stdout, header, path, name, str);
         }
         else if (!strcmp(tag, "utf8"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
             str = xml_getdata(node);
-            processutf8tag(stdout, path, name, str);
+            processutf8tag(stdout, header, path, name, str);
         }
         else if (!strcmp(tag, "utf16"))
         {
@@ -1333,40 +1419,45 @@ int main(int argc, char **argv)
             name = xml_getattribute(node, "name");
             allowsurrogatepairsstr = xml_getattribute(node, "allowsurrogatepairs");
             str = xml_getdata(node);
-            processutf16tag(stdout, path, name, allowsurrogatepairsstr, str);
+            processutf16tag(stdout, header, path, name, allowsurrogatepairsstr, str);
         }
         else if(!strcmp(tag, "binary"))
         { 
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
-            processbinarytag(stdout, path, name);
+            processbinarytag(stdout, header, path, name);
         }
         else if (!strcmp(tag, "cursor"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
-            processcursortag(stdout, path, name);
+            processcursortag(stdout, header, path, name);
         }
         else if (!strcmp(tag, "dataframe"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
-            processdataframetag(stdout, path, name);
+            processdataframetag(stdout, header, path, name);
         }
         else if (!strcmp(tag, "audio"))
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
             sampleratestr = xml_getattribute(node, "samplerate");
-            processaudiotag(stdout, path, name, sampleratestr);
+            processaudiotag(stdout, header, path, name, sampleratestr);
         }
         else if (!strcmp(tag, "international"))
         {
-            processinternationalnode(stdout, node);
+            processinternationalnode(stdout, node, header);
         }
     }
-  }  
+  }
+  if (header)
+  {
+      fprintf(stdout, "\n#endif\n");
+  }
   killxmldoc(doc);
+    free(scriptfile);
 
 
   return 0;

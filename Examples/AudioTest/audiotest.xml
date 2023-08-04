@@ -3,7 +3,7 @@
 </audio>
 <audio src = "Cat-Meow.wav", name = "miaow", samplerate = "22050">
 </audio>
-<audio src = "sample-6s.mp3, name = "mp3test"> </audio>
+<audio src = "sample-6s.mp3", name = "mp3test"> </audio>
 <audio src = "M1F1-int16-AFsp.aif", name = "aifftest"> </audio>
  
 </BabyXRC>

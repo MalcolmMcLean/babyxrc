@@ -3,5 +3,5 @@
 
 #include "csv.h"
 
-int dumpcsv(FILE *fpout, const char *name, CSV *csv);
+int dumpcsv(FILE *fpout, int headerfile, const char *name, CSV *csv);
 #endif

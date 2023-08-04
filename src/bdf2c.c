@@ -336,7 +336,7 @@ static void OutlineCharacter(unsigned char *bitmap, int width, int height)
 ///
 ///	@todo bbx isn't used to correct character position in bitmap
 ///
-void ReadBdf(FILE * bdf, FILE * out, const char *name)
+void ReadBdf(FILE * bdf, FILE * out, int header, const char *name)
 {
     char linebuf[1024];
     char *s;
@@ -363,6 +363,12 @@ void ReadBdf(FILE * bdf, FILE * out, const char *name)
     unsigned *width_table;
     unsigned *encoding_table;
     unsigned char *bitmap;
+    
+    if (header)
+    {
+        fprintf(out, "extern struct bitmap_font %s_font;\n", name);
+        return;
+    }
 
     fontboundingbox_width = 0;
     fontboundingbox_height = 0;
@@ -602,7 +608,7 @@ int bdf2cmain(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
   printf("#include \"font.h\"\n\n");
-  ReadBdf(fpin, stdout, argv[2]);
+  ReadBdf(fpin, stdout, 0, argv[2]);
   fclose(fpin);
   return 0;
 }

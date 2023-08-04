@@ -117,7 +117,7 @@ static int compints(const void *e1, const void *e2)
   return *(const int *)e1 - *(const int *) e2;
 }
 
-int dumpttf(char *fname, char *name, int points, FILE *fp)
+int dumpttf(char *fname, int header, char *name, int points, FILE *fp)
 {
   int major, minor;
   TT_Engine engine;
@@ -138,12 +138,18 @@ int dumpttf(char *fname, char *name, int points, FILE *fp)
   int *codes;
   int *widths;
   int Nglyphs;
+    
+  if (header)
+  {
+      fprintf(fp, "exrern struct bitmap_font %s_font;\n", name);
+      return 0;
+  }
 
   TT_FreeType_Version(&major, &minor);
   err = TT_Init_FreeType(&engine);
   if(err)
   {
-    fprintf(stderr, "Can't intialise free type system\n");
+    fprintf(stderr, "Can't initialise free type system\n");
     return -1;
   }
  
@@ -251,7 +257,7 @@ int ttf2cmain(int argc, char **argv)
   if(argc != 4)
     usage();
   printf("#include \"font.h\"\n");
-  dumpttf(argv[1], argv[2], atoi(argv[3]), stdout);
+  dumpttf(argv[1], 0, argv[2], atoi(argv[3]), stdout);
 
   return 0;
 }

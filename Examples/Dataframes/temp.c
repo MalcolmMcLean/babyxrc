@@ -1,6 +1,12 @@
+/*
+Dataframes.
+Payroll: a dataframe with mixed data and a header
+Numbers: a dataframe which is a raw matrix of numbers.
+Strings: a dataframe which is just string.
+*/
 typedef struct
 {
-	const char * Name;
+	const char *Name;
 	double Salary;
 	double PayrollID;
 }PAYROLL;

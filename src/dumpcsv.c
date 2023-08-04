@@ -98,7 +98,7 @@ static int isstringtable(CSV *csv)
 }
 
 
-static int dumpasmatrix(FILE *fp, const char *name, CSV *csv)
+static int dumpasmatrix(FILE *fp, int headerfile,  const char *name, CSV *csv)
 {
     int width, height;
     int i, ii;
@@ -106,6 +106,12 @@ static int dumpasmatrix(FILE *fp, const char *name, CSV *csv)
     csv_getsize(csv, &width, &height);
     if (width <= 0 || height <= 0)
         return -2;
+    
+    if (headerfile)
+    {
+        fprintf(fp, "extern double %s[%d][%d];\n", name, height, width);
+        return 0;
+    }
     
     fprintf(fp, "double %s[%d][%d] =\n", name, height, width);
     fprintf(fp, "{\n");
@@ -131,7 +137,7 @@ static int dumpasmatrix(FILE *fp, const char *name, CSV *csv)
     return 0;
 }
 
-static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
+static int dumpasstringmatrix(FILE *fp, int headerfile, const char *name, CSV *csv)
 {
     int width, height;
     int i, ii;
@@ -141,6 +147,12 @@ static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
     csv_getsize(csv, &width, &height);
     if (width <= 0 || height <= 0)
         return -2;
+    
+    if (headerfile)
+    {
+        fprintf(fp, "extern const char *%s[%d][%d];\n", name, height, width);
+        return 0;
+    }
     
     fprintf(fp, "const char *%s[%d][%d] =\n", name, height, width);
     fprintf(fp, "{\n");
@@ -169,7 +181,7 @@ static int dumpasstringmatrix(FILE *fp, const char *name, CSV *csv)
 }
 
 
-static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
+static int dumpwithheader(FILE *fp, int headerfile, const char *name, CSV *csv)
 {
     int width, height;
     int i, ii;
@@ -209,6 +221,13 @@ static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
     }
     fprintf(fp, "}%s;\n\n", structname);
     
+    if (headerfile)
+    {
+        fprintf(fp, "extern %s %s[%d];\n", structname, name, height);
+        free(structname);
+        return 0;
+    }
+    
     fprintf(fp, "%s %s[%d] =\n", structname, name, height);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
@@ -246,20 +265,20 @@ static int dumpwithheader(FILE *fp, const char *name, CSV *csv)
 
 }
 
-int dumpcsv(FILE *fp, const char *name, CSV *csv)
+int dumpcsv(FILE *fp, int headerfile, const char *name, CSV *csv)
 {
   int answer = 0;
     
   if (csv_hasheader(csv))
   {
-      dumpwithheader(fp, name, csv);
+      dumpwithheader(fp, headerfile, name, csv);
   }
   else
   {
       if (isrealmatrix(csv))
-          dumpasmatrix(fp, name, csv);
+          dumpasmatrix(fp, headerfile, name, csv);
       else if (isstringtable(csv))
-          dumpasstringmatrix(fp, name, csv);
+          dumpasstringmatrix(fp, headerfile, name, csv);
       else
           fprintf(stderr, "csv data %s has no headers for struct field names\n", name);
   }
