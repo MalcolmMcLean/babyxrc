@@ -87,7 +87,7 @@ static char *loadutf8(const char *fname, int bom)
    char * answer = 0;
    size_t len;
 
-   fp = fopen(fname, "rb");
+   fp = fopen(fname, "r");
    if (!fp)
       goto error_exit;
    answer = fslurp(fp);
