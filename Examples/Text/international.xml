@@ -1,7 +1,7 @@
 <BabyXRC>
 <international name = "hello">
    <string language = "english">Hello World</string>
-   <string language = "latin">Save munde</string>
+   <string language = "latin">Salve munde</string>
    <string language = "french">Bonjour tout le monde</string>
 </international>
 <international name = "helloutf8">

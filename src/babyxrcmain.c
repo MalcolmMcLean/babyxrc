@@ -387,7 +387,7 @@ static char *makecomment(const char *str)
         goto error_exit;
     
     strcpy(answer, "/*");
-    if (strchr(trimmed, "\n"))
+    if (strchr(trimmed, '\n'))
         strcat(answer, "\n");
     strcat(answer, trimmed);
     if (strchr(trimmed, '\n'))
@@ -1162,7 +1162,7 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
    
     if (header)
     {
-        fprintf(fp, "const char *get_%s(const char *language);\n", name);
+        fprintf(fp, "char *get_%s(const char *language);\n", name);
         return 0;
     }
     for(i=0;i<Nchildren;i++)
@@ -1204,12 +1204,7 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
           fprintf(stderr, "Out of memory with string\n");
           answer = -1;
         }
-        else if(!stringname)
-        {
-          fprintf(stderr, "Problem with string name\n");
-          answer = -1;
-        }
-        else if(stringname && string)
+        else
         {
           fprintf(fp, "char *%s = ", stringname);
           fputs(string, fp);
@@ -1238,7 +1233,7 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
         {
           string = mystrdup(str);
         }
-        if (stringname && string)
+        if (string)
         {
             fprintf(fp, "char %s[] = {\n", stringname);
             for (ii = 0; string[ii]; ii++)
@@ -1255,7 +1250,7 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
         free(string);
     }
     
-    fprintf(fp, "const char *get_%s(const char *language)\n", name);
+    fprintf(fp, "char *get_%s(const char *language)\n", name);
     fprintf(fp, "{\n");
     Nchildren = xml_Nchildrenwithtag(node, "string");
     for(i=0;i<Nchildren;i++)
