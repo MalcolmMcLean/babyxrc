@@ -16,6 +16,27 @@ Options:
  
 ```
 
+### Building
+There is a CMake script. So if you have CMake, make a directory called "build", navigate to it, then
+type
+
+```
+cmake ..
+make
+```
+or
+```
+cmake -G <your generator> ..
+```
+
+If you don't have CMake, the code is all clean portable ANSI C with no dependencies or problems. So
+it's easy to compile on the commandline. Navigate to the "src" directory and type
+
+```
+gcc *.c freetype/*.c samplerate/*.c -lm
+```
+should do it. Replace "gcc" with your C compiler of choice.  
+
  
 Input file format
 -----------------
