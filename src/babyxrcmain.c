@@ -1372,10 +1372,19 @@ int main(int argc, char **argv)
     if (i == 0 && xml_Nchildrenwithtag(scripts[i], "international") > 0)
           fprintf(stdout, "#include <string.h>\n");
     if(i == 0 && xml_Nchildrenwithtag(scripts[i], "font") > 0)
-      putfontdefinition(stdout);
+    {
+        fprintf(stdout, "#ifndef BBX_BITMAPFONTDEFINED\n");
+        fprintf(stdout, "#define BBX_BITMAPFONTDEFINED\n");
+        putfontdefinition(stdout);
+        fprintf(stdout, "#endif\n");
+    }
 	if (i == 0 && xml_Nchildrenwithtag(scripts[i], "cursor") > 0)
-		putcursordefinition(stdout);
-
+    {
+        fprintf(stdout, "#ifndef BBX_CURSORDEFINED\n");
+        fprintf(stdout, "#define BBX_CURSORDEFINED\n");
+        putcursordefinition(stdout);
+        fprintf(stdout, "#endif\n");
+    }
     for (node = scripts[i]->child; node != NULL; node = node->next)
     { 
         const char* tag = xml_gettag(node);
