@@ -4,6 +4,7 @@ resource compiler, also test it.
 Call like this:
 
 BabyXRC script.xml > outputfile.c
+BabyXRC -header script.xml > outputfile.h
 
 AminoInvaders is a little fun biochemistry game project
 that includes the amino acids. Amino acid gif files were
