@@ -36,9 +36,11 @@
 #endif
 
 #if !NEED_MINILIBC
+    #include <stdint.h>
     #include <stdio.h>
     #include <stdlib.h>
     #include <string.h>
+    #define __int8_t_defined
 #endif
 #include <math.h>
 
