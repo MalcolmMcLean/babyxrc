@@ -1805,6 +1805,7 @@ static unsigned char *decompress(FILE *fp, unsigned long count, int compression,
 	else if (compression == COMPRESSION_ADOBE_DEFLATE || compression == COMPRESSION_DEFLATE)
 	{
 		LodePNGDecompressSettings settings;
+		size_t Nout = 0;
 		settings.custom_decoder = 0;
 		settings.ignore_adler32 = 0;
 		unsigned char *buff = malloc(count);
@@ -1813,7 +1814,8 @@ static unsigned char *decompress(FILE *fp, unsigned long count, int compression,
 		fread(buff, 1, count, fp);
 		*Nret = 0;
 		answer = 0;
-		lodepng_zlib_decompress(&answer, Nret, buff, count, &settings);
+		lodepng_zlib_decompress(&answer, &Nout, buff, count, &settings);
+		*Nret = Nout;
 		free(buff);
 		return answer;
 	}
