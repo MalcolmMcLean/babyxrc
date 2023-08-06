@@ -34,6 +34,7 @@ list(APPEND bbx_sources ${BBX_SAMPLERATEH} )
 list(APPEND bbx_includes "src/freetype" )
 list(APPEND bbx_includes "src/samplerate" )  
 
+set( libs "")
 if(CMAKE_SYSTEM_NAME MATCHES Linux)
         list(APPEND libs m)
 endif()
@@ -44,6 +45,6 @@ source_group("samplerate" FILES ${BBX_SAMPLERATE} )
 source_group("samplerate" FILES ${BBX_SAMPLERATEH} )
 
 add_executable( "babyxrc" ${bbx_sources} ${bbx_headers} )
-
+target_link_libraries( "babyxrc" ${libs} )
 
 
