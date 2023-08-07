@@ -141,7 +141,7 @@ int dumpttf(char *fname, int header, char *name, int points, FILE *fp)
     
   if (header)
   {
-      fprintf(fp, "exrern struct bitmap_font %s_font;\n", name);
+      fprintf(fp, "extern struct bitmap_font %s_font;\n", name);
       return 0;
   }
 

@@ -1463,6 +1463,7 @@ int main(int argc, char **argv)
   }
   killxmldoc(doc);
     free(scriptfile);
+    free(scripts);
 
 
   return 0;

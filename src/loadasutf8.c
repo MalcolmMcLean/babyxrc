@@ -17,7 +17,7 @@ char *loadasutf8(const char *filename, int *err)
    TextEncoding encoding = TEXTENC_None;
    char *answer = 0;
 
-   if (*err)
+   if (err)
      *err = 0;
 
    encoding = DetectTextFileEncoding(filename, err);

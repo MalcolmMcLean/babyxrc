@@ -88,8 +88,7 @@ short *mp3streamdecompress(unsigned char *mp3_stream, int stream_size,
        &info);
      bytes_left -= byte_count;
      stream_pos += byte_count;
-     memcpy(answer + Nout/(sizeof(short)), sample_buffer, info.audio_bytes 
-*2);
+     memcpy(answer + Nout/(sizeof(short)), sample_buffer, info.audio_bytes);
      Nout += info.audio_bytes;
    } while(bytes_left > 0 && byte_count);
 
