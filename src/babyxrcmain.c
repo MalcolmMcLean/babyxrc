@@ -550,6 +550,7 @@ int processfonttag(FILE *fp, int header,  const char *fname, const char *name, c
   }
   free(path);
   free(fontname);
+  free(ext);
 
   return answer;
 }
