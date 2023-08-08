@@ -1,0 +1,10 @@
+Generate the font dump from the TrueType data
+using the Baby X resoutce compiler,then the header,
+then compile the program.
+   
+babyxrc fonttest.xml > walkway.c
+babyxrc -header fonttest.xml > walkway.h
+gcc fontfun.c walkway.c
+
+
+
