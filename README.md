@@ -100,7 +100,7 @@ default.
 
 There's an experimental \<dataframe\> tag which allows you to import CSV
 data. It is then written out as an array of C structs, with the fields
-determined by the header. This mihgt or might not work out in actual use.
+determined by the header. This might or might not work out in actual use.
 
 Sometimes the small things make all the difference. There is now a /<comment/>
 tag whcih inserts a comment into the output. It's vital for attaching 
