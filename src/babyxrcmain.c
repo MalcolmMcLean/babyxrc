@@ -654,6 +654,7 @@ int processutf8tag(FILE *fp, int header, const char *fname, const char *name, co
   if (header)
   {
       fprintf(fp, "extern char *%s[];\n", stringname);
+      free(path);
       free(stringname);
       return 0;
   }
@@ -791,6 +792,7 @@ int processutf16tag(FILE *fp, int header, const char *fname, const char *name, c
   if (header)
   {
       fprintf(fp, "extern unsigned char %s[];\n", stringname);
+      free(path);
       free(stringname);
       return 0;
   }
@@ -1010,7 +1012,7 @@ short *resampleaudio(const short *pcm, long samplerate, int Nchannels, long Nsam
     fpcmin = malloc(Nsamples * Nchannels * sizeof(float));
     if (!fpcmin)
         goto error_exit;
-    Nout = (long) ((Nchannels * Nsamples * resamplerate + 1204.0)/samplerate);
+    Nout = (long) ((Nchannels * Nsamples * (double) resamplerate + 1204.0)/samplerate);
     fpcmout = malloc(Nout * sizeof(float));
     if (!fpcmout)
         goto error_exit;
@@ -1033,7 +1035,7 @@ short *resampleaudio(const short *pcm, long samplerate, int Nchannels, long Nsam
     answer = malloc(src_data.output_frames_gen * Nchannels * sizeof(short));
     if (!answer)
         goto error_exit;
-    
+
     src_float_to_short_array(src_data.data_out, answer, src_data.output_frames_gen * Nchannels);
     
     if (Nsamplesout)
@@ -1053,25 +1055,28 @@ error_exit:
 short *loadaudiofile(const char *fname, long *samplerate, int *Nchannels, long *Nsamples)
 {
     char *ext;
-    
+    short *answer = 0;
+
     ext = getextension((char *)fname);
     if (ext)
         makelower(ext);
     
     if (!strcmp(ext, ".wav"))
     {
-        return loadwav(fname, samplerate, Nchannels, Nsamples);
+        answer = loadwav(fname, samplerate, Nchannels, Nsamples);
     }
     else if (!strcmp(ext, ".aif") || !strcmp(ext, ".aiff"))
     {
-        return loadaiff(fname, samplerate, Nchannels, Nsamples);
+        answer = loadaiff(fname, samplerate, Nchannels, Nsamples);
     }
     else if(!strcmp(ext, ".mp3"))
     {
-        return loadmp3(fname, samplerate, Nchannels, Nsamples);
+        answer = loadmp3(fname, samplerate, Nchannels, Nsamples);
     }
+
+    free(ext);
     
-    return 0;
+    return answer;
 }
 
 int processaudiotag(FILE *fp, int header, const char *fname, const char *name, const char *sampleratestr)
@@ -1108,7 +1113,7 @@ int processaudiotag(FILE *fp, int header, const char *fname, const char *name, c
         long Nresamples;
         if (resamplerate <= 0)
         {
-            fprintf(stderr, "audio samplerate must be postitive\n");
+            fprintf(stderr, "audio samplerate must be positive\n");
             return -1;
         }
         if (samplerate != resamplerate)
@@ -1361,6 +1366,7 @@ int main(int argc, char **argv)
       fprintf(stdout, "#ifndef %s_h\n", basename);
       fprintf(stdout, "#define %s_h\n", basename);
       fprintf(stdout, "\n");
+      free(basename);
   }
   for(i=0;i<Nscripts;i++)
   {

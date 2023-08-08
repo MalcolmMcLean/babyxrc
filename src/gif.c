@@ -540,6 +540,7 @@ int loadraster(unsigned char *out, FILE *fp, int width, int height)
   
   free(table);
   free(stream);
+  killbstream(bs);
 
   return 0;
 }

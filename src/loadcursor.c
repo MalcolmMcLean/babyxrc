@@ -317,6 +317,9 @@ BBX_CURSOR *floadcursor(FILE *fp, int *err)
 	cur->hotx = hotx;
 	cur->hoty = hoty;
 	cur->rgba = rgba;
+
+	free(data8);
+	free(bitmask);
 	
 	return cur;
 
