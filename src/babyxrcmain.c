@@ -1296,6 +1296,7 @@ void usage(void)
   printf("<string src = \"external.txt\"> </string>\n");
   printf("<string name = \"internal\"> \"A C string\\n\"> </string>\n");
   printf("<string name = \"embedded\"> Embedded string </string>\n");
+  printf("<audio src = \"beep.wav\", samplerate = \"44100\"></audio>\n");
   printf("<binary src = \"dump.bin\", name = \"dump_bin\"> </binary>\n"); 
   printf("</BabyXRC>\n");
   printf("\n");
@@ -1310,6 +1311,8 @@ void usage(void)
   printf("<string>\n");
   printf("Ascii strings, external or embedded. Quoted strings assumed to be C \n");
   printf("string literals.\n");
+  printf("<audio>\n");
+  printf("Audio in .wav, .aiff or .mp3 format. Resamples to the rate passed.\n");
   printf("<binary>\n");
   printf("Dump raw binary data.\n");   
   exit(EXIT_FAILURE);
