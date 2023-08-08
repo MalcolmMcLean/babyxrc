@@ -17,8 +17,7 @@ Options:
 ```
 
 ### Building
-There is a CMake script. So if you have CMake, make a directory called "build", navigate to it, then
-type
+There is a CMake script. So if you have CMake, make a directory called "build" under the BabyXRC root directory containing CMakeLists.txt, navigate to it, then type
 
 ```
 cmake ..
@@ -98,6 +97,14 @@ Note that it won't handle surrogate pairs correctly unless you set the
 allowsurrogatepairs attribute. The main reason for using UTF-16 is to
 guarantee one symbol per character, so surrogate pairs are disallowed by
 default. 
+
+There's an experimental \<dataframe\> tag which allows you to import CSV
+data. It is then written out as an array of C structs, with the fields
+determined by the header. This mihgt or might not work out in actual use.
+
+Sometimes the small things make all the difference. There is now a /<comment/>
+tag whcih inserts a comment into the output. It's vital for attaching 
+licence data to open source resources that might be GPLed. 
 
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.
