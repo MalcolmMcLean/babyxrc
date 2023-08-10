@@ -595,7 +595,7 @@ int rbtreemain(void)
   DATAITEM *ptr;
 
   for(i=0;i<100;i++)
-    sprintf(data[i].data, "item%d", i);
+    snprintf(data[i].data, 100, "item%d", i);
 
   tree = rbtree(compare);
 
