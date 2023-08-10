@@ -562,7 +562,7 @@ int savebmp4bit(char *fname, unsigned char *data, int width, int height, unsigne
 *         pal - the palette (0 = black/white)                  *
 * Returns: 0 on success, -1 on fail.                           *
 ***************************************************************/ 
-int savebmp2bit(char *fname, unsigned char *data, int width, int height, unsigned char *pal)
+int savebmp1bit(char *fname, unsigned char *data, int width, int height, unsigned char *pal)
 {
   FILE *fp;
   unsigned char defpal[6] = {0, 0, 0, 255, 255, 255 };
