@@ -118,10 +118,10 @@ typedef struct NSVGgradient {
 
 typedef struct NSVGpaint {
 	char type;
-	union {
+	union NSVGFill {
 		unsigned int color;
 		NSVGgradient* gradient;
-	};
+	}f;
 } NSVGpaint;
 
 typedef struct NSVGpath
@@ -357,10 +357,10 @@ typedef struct NSVGgradientData
 	char id[64];
 	char ref[64];
 	char type;
-	union {
+	union NSVGGradientData{
 		NSVGlinearData linear;
 		NSVGradialData radial;
-	};
+	} gd;
 	char spread;
 	char units;
 	float xform[6];
@@ -619,7 +619,7 @@ static void nsvg__deletePaths(NSVGpath* path)
 static void nsvg__deletePaint(NSVGpaint* paint)
 {
 	if (paint->type == NSVG_PAINT_LINEAR_GRADIENT || paint->type == NSVG_PAINT_RADIAL_GRADIENT)
-		free(paint->gradient);
+		free(paint->f.gradient);
 }
 
 static void nsvg__deleteGradientData(NSVGgradientData* grad)
@@ -753,18 +753,18 @@ static NSVGgradient* nsvg__createGradient(NSVGparser* p, const char* id, const f
 
 	if (data->type == NSVG_PAINT_LINEAR_GRADIENT) {
 		// Calculate transform aligned to the line
-		dx = data->linear.x2 - data->linear.x1;
-		dy = data->linear.y2 - data->linear.y1;
+		dx = data->gd.linear.x2 - data->gd.linear.x1;
+		dy = data->gd.linear.y2 - data->gd.linear.y1;
 		grad->xform[0] = dy; grad->xform[1] = -dx;
 		grad->xform[2] = dx; grad->xform[3] = dy;
-		grad->xform[4] = data->linear.x1; grad->xform[5] = data->linear.y1;
+		grad->xform[4] = data->gd.linear.x1; grad->xform[5] = data->gd.linear.y1;
 	} else {
 		// Calculate transform aligned to the circle
-		grad->xform[0] = data->radial.r; grad->xform[1] = 0;
-		grad->xform[2] = 0; grad->xform[3] = data->radial.r;
-		grad->xform[4] = data->radial.cx; grad->xform[5] = data->radial.cy;
-		grad->fx = data->radial.fx / data->radial.r;
-		grad->fy = data->radial.fy / data->radial.r;
+		grad->xform[0] = data->gd.radial.r; grad->xform[1] = 0;
+		grad->xform[2] = 0; grad->xform[3] = data->gd.radial.r;
+		grad->xform[4] = data->gd.radial.cx; grad->xform[5] = data->gd.radial.cy;
+		grad->fx = data->gd.radial.fx / data->gd.radial.r;
+		grad->fy = data->gd.radial.fy / data->gd.radial.r;
 	}
 
 	if (data->units == NSVG_OBJECT_SPACE) {
@@ -840,11 +840,11 @@ static void nsvg__addShape(NSVGparser* p)
 		shape->fill.type = NSVG_PAINT_NONE;
 	} else if (attr->hasFill == 1) {
 		shape->fill.type = NSVG_PAINT_COLOR;
-		shape->fill.color = attr->fillColor;
-		shape->fill.color |= (unsigned int)(attr->fillOpacity*255) << 24;
+		shape->fill.f.color = attr->fillColor;
+		shape->fill.f.color |= (unsigned int)(attr->fillOpacity*255) << 24;
 	} else if (attr->hasFill == 2) {
-		shape->fill.gradient = nsvg__createGradient(p, attr->fillGradient, shape->bounds, &shape->fill.type);
-		if (shape->fill.gradient == NULL) {
+		shape->fill.f.gradient = nsvg__createGradient(p, attr->fillGradient, shape->bounds, &shape->fill.type);
+		if (shape->fill.f.gradient == NULL) {
 			shape->fill.type = NSVG_PAINT_NONE;
 		}
 	}
@@ -854,11 +854,11 @@ static void nsvg__addShape(NSVGparser* p)
 		shape->stroke.type = NSVG_PAINT_NONE;
 	} else if (attr->hasStroke == 1) {
 		shape->stroke.type = NSVG_PAINT_COLOR;
-		shape->stroke.color = attr->strokeColor;
-		shape->stroke.color |= (unsigned int)(attr->strokeOpacity*255) << 24;
+		shape->stroke.f.color = attr->strokeColor;
+		shape->stroke.f.color |= (unsigned int)(attr->strokeOpacity*255) << 24;
 	} else if (attr->hasStroke == 2) {
-		shape->stroke.gradient = nsvg__createGradient(p, attr->strokeGradient, shape->bounds, &shape->stroke.type);
-		if (shape->stroke.gradient == NULL)
+		shape->stroke.f.gradient = nsvg__createGradient(p, attr->strokeGradient, shape->bounds, &shape->stroke.type);
+		if (shape->stroke.f.gradient == NULL)
 			shape->stroke.type = NSVG_PAINT_NONE;
 	}
 
@@ -2313,9 +2313,9 @@ static void nsvg__parseGradient(NSVGparser* p, const char** attr, char type)
 	grad->units = NSVG_OBJECT_SPACE;
 	grad->type = type;
 	if (grad->type == NSVG_PAINT_LINEAR_GRADIENT) {
-		grad->linear.x1 = 0.0f; grad->linear.y1 = 0.0f; grad->linear.x2 = 1.0f; grad->linear.y2 = 0.0f;
+		grad->gd.linear.x1 = 0.0f; grad->gd.linear.y1 = 0.0f; grad->gd.linear.x2 = 1.0f; grad->gd.linear.y2 = 0.0f;
 	} else if (grad->type == NSVG_PAINT_RADIAL_GRADIENT) {
-		grad->radial.cx = grad->radial.cy = grad->radial.r = 0.5f;
+		grad->gd.radial.cx = grad->gd.radial.cy = grad->gd.radial.r = 0.5f;
 	}
 
 	nsvg__xformIdentity(grad->xform);
@@ -2333,23 +2333,23 @@ static void nsvg__parseGradient(NSVGparser* p, const char** attr, char type)
 			} else if (strcmp(attr[i], "gradientTransform") == 0) {
 				nsvg__parseTransform(grad->xform, attr[i + 1]);
 			} else if (strcmp(attr[i], "cx") == 0) {
-				grad->radial.cx = nsvg__parseFloat(p, attr[i + 1], 0);
+				grad->gd.radial.cx = nsvg__parseFloat(p, attr[i + 1], 0);
 			} else if (strcmp(attr[i], "cy") == 0) {
-				grad->radial.cy = nsvg__parseFloat(p, attr[i + 1], 1);
+				grad->gd.radial.cy = nsvg__parseFloat(p, attr[i + 1], 1);
 			} else if (strcmp(attr[i], "r") == 0) {
-				grad->radial.r = nsvg__parseFloat(p, attr[i + 1], 2);
+				grad->gd.radial.r = nsvg__parseFloat(p, attr[i + 1], 2);
 			} else if (strcmp(attr[i], "fx") == 0) {
-				grad->radial.fx = nsvg__parseFloat(p, attr[i + 1], 0);
+				grad->gd.radial.fx = nsvg__parseFloat(p, attr[i + 1], 0);
 			} else if (strcmp(attr[i], "fy") == 0) {
-				grad->radial.fy = nsvg__parseFloat(p, attr[i + 1], 1);
+				grad->gd.radial.fy = nsvg__parseFloat(p, attr[i + 1], 1);
 			} else if (strcmp(attr[i], "x1") == 0) {
-				grad->linear.x1 = nsvg__parseFloat(p, attr[i + 1], 0);
+				grad->gd.linear.x1 = nsvg__parseFloat(p, attr[i + 1], 0);
 			} else if (strcmp(attr[i], "y1") == 0) {
-				grad->linear.y1 = nsvg__parseFloat(p, attr[i + 1], 1);
+				grad->gd.linear.y1 = nsvg__parseFloat(p, attr[i + 1], 1);
 			} else if (strcmp(attr[i], "x2") == 0) {
-				grad->linear.x2 = nsvg__parseFloat(p, attr[i + 1], 0);
+				grad->gd.linear.x2 = nsvg__parseFloat(p, attr[i + 1], 0);
 			} else if (strcmp(attr[i], "y2") == 0) {
-				grad->linear.y2 = nsvg__parseFloat(p, attr[i + 1], 1);
+				grad->gd.linear.y2 = nsvg__parseFloat(p, attr[i + 1], 1);
 			} else if (strcmp(attr[i], "spreadMethod") == 0) {
 				if (strcmp(attr[i+1], "pad") == 0)
 					grad->spread = NSVG_SPREAD_PAD;
@@ -2600,14 +2600,14 @@ static void nsvg__scaleToViewbox(NSVGparser* p, const char* units)
 		}
 
 		if (shape->fill.type == NSVG_PAINT_LINEAR_GRADIENT || shape->fill.type == NSVG_PAINT_RADIAL_GRADIENT) {
-			nsvg__scaleGradient(shape->fill.gradient, tx,ty, sx,sy);
-			memcpy(t, shape->fill.gradient->xform, sizeof(float)*6);
-			nsvg__xformInverse(shape->fill.gradient->xform, t);
+			nsvg__scaleGradient(shape->fill.f.gradient, tx,ty, sx,sy);
+			memcpy(t, shape->fill.f.gradient->xform, sizeof(float)*6);
+			nsvg__xformInverse(shape->fill.f.gradient->xform, t);
 		}
 		if (shape->stroke.type == NSVG_PAINT_LINEAR_GRADIENT || shape->stroke.type == NSVG_PAINT_RADIAL_GRADIENT) {
-			nsvg__scaleGradient(shape->stroke.gradient, tx,ty, sx,sy);
-			memcpy(t, shape->stroke.gradient->xform, sizeof(float)*6);
-			nsvg__xformInverse(shape->stroke.gradient->xform, t);
+			nsvg__scaleGradient(shape->stroke.f.gradient, tx,ty, sx,sy);
+			memcpy(t, shape->stroke.f.gradient->xform, sizeof(float)*6);
+			nsvg__xformInverse(shape->stroke.f.gradient->xform, t);
 		}
 
 	}
