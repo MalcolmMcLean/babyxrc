@@ -579,7 +579,7 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
     
   if (header)
   {
-      fprintf(fp, "extern char *%s;\n", stringname);
+      fprintf(fp, "extern char %s[];\n", stringname);
       free(path);
       free(stringname);
       return 0;
@@ -618,7 +618,7 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
   }
   else if(stringname && string)
   {
-    fprintf(fp, "char *%s = ", stringname);
+    fprintf(fp, "char %s[] = ", stringname);
     fputs(string, fp);
     fprintf(fp, ";\n"); 
   }
@@ -654,7 +654,7 @@ int processutf8tag(FILE *fp, int header, const char *fname, const char *name, co
     
   if (header)
   {
-      fprintf(fp, "extern char *%s[];\n", stringname);
+      fprintf(fp, "extern char %s[];\n", stringname);
       free(path);
       free(stringname);
       return 0;
