@@ -28,7 +28,7 @@ or
 cmake -G <your generator> ..
 ```
 
-If you don't have CMake, the code is all clean portable ANSI C with no dependencies or problems. So
+If you don't have CMake, the code is all clean portable C 99 with no dependencies or problems. So
 it's easy to compile on the commandline. Navigate to the "src" directory and type
 
 ```
