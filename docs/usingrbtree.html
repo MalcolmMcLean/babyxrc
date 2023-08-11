@@ -1,0 +1,162 @@
+<HTML>
+<HEAD>
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+<H1> Using the Red-Black Tree </H1>
+<P>
+The Baby X resource compiler contains a flexible and re-usable 
+implementation of a Red-Black tree.
+</P>
+<H3> What is a Red-Black Tree? </H3>
+<P>
+A red-black tree is a balanced binary search tree. It is used for 
+maintaining a list of sorted items that is constantly being updated. 
+Calling qsort() every time a new item was inserted into a sorted list 
+would be prohibiitvely expensive. 
+ </P> 
+<P>
+The red-black tree is a binary tree with the property that if it walked in 
+depth-first order (left child before parent, then parent, then right 
+child), it will return the elements in sorted order. Our implemention 
+takes a qsort() style comparison function to compare the keys. Our 
+implementation also uses separate keys and elements. The keys are sorted. 
+The key might or might not be field of the element.
+ </P>
+<P>
+The tree can be searched in O(log N) time, because half the data is 
+eliminated every time a node is visited. 
+</P>
+<P>
+A naive implementation of a binary search tree suffers form the 
+disadvantage 
+that, as elements are inserted and deleted, the tree will tend to 
+degenerate into a linked list. So a red-black tree imposes rules on the 
+structure to keep the tree reasonably balanced. 
+ </P>
+<OL>
+    <LI> Every node is either red or black. </LI>
+    <LI> All NIL nodes (empty leaves)  are considered black. </LI>
+    <LI> A red node does not have a red child. </LI>
+    <LI> Every path from a given node to any of its descendant NIL nodes 
+goes 
+through the same number of black nodes. </LI>
+    <LI> (Conclusion) If a node N has exactly one child, it must be a red 
+child, because if it were black, its NIL descendants <BR> would sit at a  
+different black depth than N's NIL child, violating requirement 4. </LI> 
+</OL>
+<P>
+Every time we insert or detete an element, we must fix up the tre to 
+maintain these rules. This can be done by examining a few local nodes in 
+the vicinity of the change 
+</P>
+<H3>Red Black tree functions </H3>
+<pre>
+typedef struct rbnode
+{
+  struct rbnode *left;
+  struct rbnode *right;
+  struct rbnode *parent;
+  char colour;
+  void *key;
+  void *data;
+} RBNODE;
+
+typedef struct
+{
+  RBNODE sentinel;
+  RBNODE *root;
+  RBNODE *last;
+  int (*comp)(const void *e1, const void *e2);
+} RBTREE;
+
+RBTREE *rbtree(int (*compfunc)(const void *e1, const void *e2));
+void killrbtree(RBTREE *tree);
+int rbt_add(RBTREE *tree, void *key, void *data);
+int  rbt_del(RBTREE *tree, void *key);
+void *rbt_find(RBTREE *tree, void *key);
+void *rbt_next(RBTREE *tree, void *key, void **dataret);
+void *rbt_prev(RBTREE *tree, void *key, void **dataret);
+</pre>
+<P>
+It is not necessary to access the structures directly to use the red-black 
+tree, but they are shown to help understanding. To simplify the fix-up 
+logic a  bit on insertions or deletions, leaves are set to the "sentinel" 
+node instead of the NULL pointer.
+ </P>
+<H3> Example programs </H3> 
+<pre>
+<BR>
+typedef struct
+{
+  char data[32];
+} DATAITEM;
+
+int compare(const void *e1, const void *e2)
+{
+  const DATAITEM *ptr1 = e1;
+  const DATAITEM *ptr2 = e2;
+
+  return strcmp(ptr1->data, ptr2->data);
+}
+
+int main(void)
+{
+  DATAITEM data[100];
+  int i;
+  RBTREE *tree;
+  DATAITEM *ptr;
+
+  for (i = 0;i &lt; 100; i++)
+    snprintf(data[i].data, 100, "item%d", i);
+
+  tree = rbtree(compare);
+
+  for ( i=0; i &lt; 100; i++)
+    rbt_add(tree, &data[i], &data[i]);
+
+  rbt_del(tree, &data[50]);
+  rbt_del(tree, &data[60]);
+
+  for (i = 0;i &lt; 100; i+= 10)
+    {
+      ptr = rbt_find(tree, &data[i]);
+      if(ptr)
+        printf("%s\n", ptr->data);
+    }
+  
+  ptr = 0;
+  while ( (ptr = rbt_prev(tree, ptr, 0)) )
+    printf("*%s*\n", ptr->data);
+  killrbtree(tree);
+
+  printf("OK\n");
+
+  return 0;
+}
+<BR>
+</pre>
+<P>
+Here the data and the key are the same structures. This is sometimes what 
+you want. Other times, you want to access the data via a short key. The 
+RBTREE does not own either the data or the keys, so if they are allocated 
+via dynamic memory you will have to walk the tree to collect the pointers, 
+then delete in second pass (you can't delete keys whilst walking the tree, 
+as this will put it in an inconsistent state)
+</P> 
+
+</BODY> </HTML>

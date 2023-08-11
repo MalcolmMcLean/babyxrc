@@ -1,0 +1,180 @@
+<HTML>
+<HEAD>
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+<H1> Using the Baby X UTF-8 utility functions </H1>
+<P>
+The Baby X UTF-8 utility functions are a simple set of functions which 
+make 
+it easy to manipulate UTF-8. All Baby X API functions which accept a char 
+* accept UTF-8. The functions are easy to use and efficient.   
+</P>
+<H3> What is UTF-8 </H3>
+<P>
+Unicode is a character encoding which represents all the glyphs in common 
+use in human languages. So not just English letters, like ASCII, but also 
+Greek and Arabic and Japnenese and so on. It was originally thought that 
+64,000 characters would be enough, and so the original version of Unicode 
+was a 16-bit character set. This proved to be a big mistake. More than 
+64,000 characters were needed. And there was a massive amount of legacy 
+code which expected stringsin ASCII, and couldn't work with 16-bit wide 
+characters.
+ </P>
+<P>
+So to address these probles, UTF-8 was invented. It is backwards 
+compatible with ASCII. So every ASCII string is also a valid UTF-8 
+string. However ASCII is only a seven bit encoding, whilst bytes have 
+eight bits. So UTF-8 exploits the extra high bit. If the high bit is 
+set, the character is part of a multi-byte encoding of a Unicode value 
+greater than 127. The higher the value, the more bytes used. There might 
+be one (for ASCII), two, three, or even four UTF-8 bytes used to encode a 
+single Unicode value, or "code point".
+ </P>
+<P>
+You don't have to know the details of how UTF-8 works to use the Baby X 
+utility functions successfully, but for the curious, here are the details:
+</P> 
+<pre>
+0xxxxxxx - ASCII character
+1xxxxxxx - Part of a multibyte character 
+</pre>
+
+<TABLE style='font-family:monospace;background-color:white;'>
+<TR><TH>Bytes</TH> <TH>Bits</TH> <TH> Hex Min</TH><TH>Hex Max</TH>         
+<TH>Byte Sequence in Binary </TH> </TR>
+<TR><TD>  1 </TD> <TD>  7 </TD>  <TD> 00000000 </TD> <TD> 0000007f </TD> 
+<TD> 0zzzzzzz </TD> 
+</TR>
+<TR><TD>  2 </TD> <TD>  13 </TD> <TD> 00000080 </TD>  <TD> 0000207f </TD> 
+<TD> 10zzzzzz  
+1yyyyyyy <?TD> </TR>
+<TR><TD>  3 </TD>  <TD> 19 </TD> <TD> 00002080 </TD> <TD> 0008207f </TD> 
+<TD> 110zzzzz 
+1yyyyyyy 
+1xxxxxxx </TD> </TR>
+<TR><TD>  4 </TD>  <TD> 25 </TD> <TD> 00082080 </TD> <TD> 0208207f </TD> 
+<TD> 1110zzzz 
+1yyyyyyy 
+1xxxxxxx 
+1wwwwwww </TD> </TR>
+<TR><TD>  5 </TD>  <TD>  31 </TD>  <TD> 02082080 </TD> <TD> 7fffffff </TD> 
+<TD> 11110zzz 
+1yyyyyyy 
+1xxxxxxx 
+1wwwwwww 
+1vvvvvvv
+</TD> </TR>
+</TABLE>
+ <P>
+ The bits included in the byte sequence is biased by the minimum value
+ so that if all the z's, y's, x's, w's, and v's are zero, the minimum
+ value is represented.	In the byte sequences, the lowest-order encoded
+ bits are in the last byte; the high-order bits (the z's) are in the
+ first byte.
+ </P>
+ <P>
+An easy way to remember this transformation format is to note that the
+ number of high-order 1's in the first byte is the same as the number of
+ subsequent bytes in the multibyte character:
+</P>
+
+<H3> The Baby X UTF-8 utility functions </H3>
+ <pre>
+        int bbx_isutf8z(const char *str);
+        int bbx_utf8_skip(const char *utf8);
+        int bbx_utf8_getch(const char *utf8);
+        int bbx_utf8_putch(char *out, int ch);
+        int bbx_utf8_charwidth(int ch);
+        int bbx_utf8_Nchars(const char *utf8);
+</pre>
+
+<P>
+</P>
+<H3> Examples </H3>
+<code>
+<pre>
+   <BR>
+   int *uft8toUnicode(const char *utf8)
+   {
+      int *result;
+      const char *ptr;
+      int N;
+      int i;
+
+      /* are we passed a valid UTF-8 string? */
+      if (!bbx_utf8_isutf8z(utf8))
+        return 0;
+      /* count the character so we know how many to allocate */
+      N = bbx_utf8_Nchars(utf8);
+      result = malloc((N +1) * sizeof(int));
+
+      /* pull out the characters are return as an array of code points */
+      ptr = utf8;
+      for (i =0; i < N + 1; i++)
+      {
+        int codepoint = bbx_utf8_getch(ptr);
+        result[i] = ch;
+        ptr += bbx_uf8_skip(ptr);
+      }
+
+      return result;
+   }
+   <BR>
+</pre>
+</code>
+<P>
+This is code to convert from UTF-8 to Unicode code points.
+</P>
+
+<code>
+<pre>
+        <BR>
+	char *utf16toutf8(wchar_t *utf16)
+        {
+           int szie = 0;;
+           int i;
+           char *result;
+           char *ptr;
+ 
+           /* get the size of the output buffer */
+           for (i =0; utf16[i]; i++)
+              size += bbx_utf8_charwidth(utf16[i]);
+           size++;
+
+           result = malloc(size);
+           ptr = result;
+
+           /* now put the characters into the buffer in UTF-8 */
+           for (i =0; utf16[i]; i++)
+           {
+              ptr += bbx_utf8_putch(ptr, utf16[i]);
+           }
+           /* add the nul */
+           *ptr++ = 0;
+
+           return result;
+        }
+        <BR>
+</pre>
+</code>
+<P>
+This is code to convert from a wide character encoding to UTF-8.
+</P>
+
+
+</BODY>

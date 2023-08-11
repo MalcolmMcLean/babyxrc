@@ -1,0 +1,106 @@
+<HTML>
+<HEAD>
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+<H1> Using the Commandline Options Parser</H1>
+<P>
+The commmandline options parser makes it easy to add options to programs, 
+and report errors to the user. 
+</P>
+<P>
+The options parser takes a local copy of argc and argv, so it is thread 
+safe and robust. It can of course be used with an array of strings other 
+than argv if you want to use it ina different context to options parsing 
+in your main() function. It then marks options which are queried. So it is 
+self-maintaining, you query an option and tell it what the options are in 
+the same call. After you have finished queying, it then reports an error 
+for any unknown options.
+</P>
+<P>
+The options parser allows you to easily pass in aliases for options. You 
+can use long or short names, and whilst there is an expectation that 
+options will begin with a minus sign, this is only used to distinguish 
+options from non-options in error checking. It is not enforced.
+</P>
+<P>
+The options parser accepts a scanf() - style format string for options. So 
+if options are not in the right format, it will report an error to the 
+user, for example if he enters a string for an integer option. It won't do 
+sanity testing. After parsing is completed, any errors are reported tot eh 
+user via opt_error(), which should always be called. (It can be called 
+with NULL to suppress the message and just report the fact that there were 
+errors). 
+ </P>
+
+<H3> Options parser functions </H3>
+<pre>
+OPTIONS *options(int argc, char **argv, char *flags);
+void killoptions(OPTIONS *opt);
+int opt_get(OPTIONS *opt, char *name, char *fmt, ...);
+int opt_error(OPTIONS *opt, FILE *fp);
+int opt_Nargs(OPTIONS *opt);
+char *opt_arg(OPTIONS *opt, int index); 
+</pre>
+
+<H3> Example program </H3>
+
+<code><pre>
+<BR>
+int main(int argc, char *argv)
+{
+   // defaults if option not provided by user
+   int width = 256; // an integer ootion
+   char name[32] = "Fred"; // a string option
+   double quality = 0.0; // a floating point option 
+   char *filename; // a file argument
+
+   OPTIONS *opt = options(argc, argv, NULL);
+   if (!opt)
+      exit(EXIT_FAILURE);
+
+   // if the option is in fact required, check the return value
+   opt_get(opt, "-width -w", "%d", &width);
+   opt_get(opt, "-name", "%32s", name);
+   opt_get(opt, "-quality -q", "%f", &quality);
+
+   if (opt_Nargs != 1)
+       usage();          // user hasn't entered a file name
+
+    filename = opt_arg(opt, 0);
+
+   if (opt_error(opt, stderr))
+      exit(EXIT_FAILURE);  // error message should be anough to tell
+         // user what is wrong.
+ 
+    killoptions(opt);
+    opt = 0;
+
+    if (width &lt;= 0)
+       fprintf(stderr, "width must be positive\n"); // It won't sanity
+          // test options for you
+
+    dowork(filename, width, name, quality);
+
+    return 0;   
+}
+<BR>
+</pre>
+</code>
+
+</BODY>
+</HTML>

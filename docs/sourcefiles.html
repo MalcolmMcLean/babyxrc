@@ -133,7 +133,10 @@ pre{
         <code>bbx_utf8_charwidth</code> - get the number of UTF-8 bytes needed to represent a Unicode code point.
         </P>
         <P>
-        <code> bbx_utf8_Ncharr</code> - get the number of Unicode code points in a UTF-8 nul-terminated buffer.
+        <code> bbx_utf8_Nchars</code> - get the number of Unicode code points in a UTF-8 nul-terminated buffer.
+        </P>
+        <P>
+        See <A href="usingutf8.html"> using UTF-8</A>.
         </P>
         <HR></HR>
         <H3> bdf2c.c </H3>
@@ -227,7 +230,7 @@ pre{
         <code>csv_getsize</code> - get the dimensions of the CDV dataframe in rows (height) and columns (width).
         </P>
         <P>
-        <code>csv_hasdata</code> - you need to call this before every acess to check that the CSV file cell is notx empty (missing data).
+        <code>csv_hasdata</code> - you need to call this before every access to check that the CSV file cell is not empty (missing data).
         </P>
         <P>
         <code>csv_get</code> - get numerical data from the CSV object. Note that integers will be returned as doubles.
@@ -239,7 +242,10 @@ pre{
         <code> csv_hasheader</code> - check is the first row of the CSV data is a header.
         </P>
         <P>
-        <code>csv_column</code> - query the CSV object for the type of data in a column. Which will be ehter CSV_REAL or CSV_STRING, except for degenerate csv files with completely empty columns.
+        <code>csv_column</code> - query the CSV object for the type of data in a column. Which will be either CSV_REAL or CSV_STRING, except for degenerate csv files with completely empty columns.
+        </P>
+        <P>
+        See <A href="usingcsv.html"> using CSV</A>.
         </P>
         <HR></HR>
         <H3> dumpcsv.c </H3>
@@ -325,7 +331,7 @@ pre{
         <H3> loadimage.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        HIgh-level image loading function. Should load practically anything as 32 bit RGBA, including SVG files.
+        High-level image loading function. Should load practically anything as 32 bit RGBA, including SVG files.
         </P>
         <H4> Public functions</H4>
         <pre>
@@ -336,7 +342,7 @@ pre{
         <code>loadrgba</code> - load a raster image (.bmp, .gif, .jpeg, .png, .tiff) as a 32 bit RGBA. We try to keep to the convention  that err -1 means out of memory, -2 means failure to open file or Io error, and -3 means a parse error. However it's unlikely that this is completely consistent. This is the crown jewel function.
         </P>
         <P>
-        <code>loadsvg</code> - load an SVG as a 32 bit RTGBA raster. Since SVGs are scaleable, they cant hae the same interface as the raster graphics, and you have to pass in the width and heiht that you want.
+        <code>loadsvg</code> - load an SVG as a 32 bit RTGBA raster. Since SVGs are scaleable, they can't have the same interface as the raster graphics, and you have to pass in the width and height that you want.
         </P>
         <HR></HR>
         <H3> loadmp3.c </H3>
@@ -418,6 +424,9 @@ pre{
         <P>
         <code>opt_arg</code> - call to retrieve non-option arguments. The arguments are allocated with malloc() and so should be freed by caller.
         </P>
+        <P>
+        See <A href="usingoptions.html"> using the commandline options parser</A>.
+        </P>
         
         <HR></HR>
         <H3> rbtree.c </H3>
@@ -455,6 +464,9 @@ pre{
         </P>
         <P>
         <code>rbt_prev</P> - for "walking" the tree in a reverse direction. Returns the key for the previous entry, and fills in the void ** for the data. Pass NULL for the last entry, and the return for the preceding entries, until the function returns NULL.
+        </P>
+        <P>
+        See <A href="usingrbtree.html"> using the RBTREE</A>.
         </P>
         <HR></HR>
         <H3> resize.c </H3>
@@ -598,8 +610,41 @@ pre{
         XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
         </pre>
         <P>
+        <code>loadxmldoc</code> - load an XML document.
         </P>
-
+        <P>
+        <code>floadxmldoc</code> - load an XML document from an open stream.
+        </P>
+        <P>
+        <code>killxmldoc</code> - XMLDOC destructor.
+        </P>
+        <P>
+        <code>xml_getroot</code> - get the root node of the XML document. All other nodes are descendants.
+        </P>
+        <P>
+        <code>xml_gettag</code> - get the element name associated with a node.
+        </P>
+        <P>
+        <code>xml_getdata</code> - get the data (the text between the open and close tags) associated with a node. Note currrently this function doesn't handle properly nodes with both children and embedded text.
+        </P>
+        <P>
+        <code>xml_getattribute</code> - get the named atribute data associated with a node. You have to walk the attribute list to query for unknown attributes(which should be rarely needed).
+        </P>
+        <P>
+        <code>xml_getNchildren</code> - get the number of direct children of a node.
+        </P>
+        <P>
+        <code>xml_Nchildrenwithtag</code> - convenience function, get the number of children with a given element name.
+        </P>
+        <P>
+        <code>xml_getchild</code> - get the child of a node, passing in element name and index. So use in conjunction with xml_Nchildrenwithtag() to visi every child element of a given type. Note that this function starts from the beginning of the list on each call, don't use for really long XML (walk the list by hand). If you pass NULL for the element name, it finds he Nth child of any type.
+        </P>
+        <P>
+        <code>xml_getdescendants</code> - convenience function. it gets all the descendants of a node with a certain element name, and returns them in an allocated list. Useful for over-specified XML where the data of interest is buried away in higher-level structures.
+        </P>
+        <P>
+        The XML parser is being rewritten and is not advised for general use at present. It's good enough for simple XML like the Baby X resource script, but it won't stand up to the complications found in general XML.
+        </P>
         <HR></HR>
         <H3> nanosgv.h </H3>
         <P> <B>Copyright:</B> (c) 2013-14 Mikko Mononen
