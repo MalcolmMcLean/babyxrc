@@ -158,5 +158,50 @@ via dynamic memory you will have to walk the tree to collect the pointers,
 then delete in second pass (you can't delete keys whilst walking the tree, 
 as this will put it in an inconsistent state)
 </P> 
+<pre>
+<BR>
+void deletetree(RBTREE *rb)
+{
+   int N = 0;
+   void *key;
+   void *data;
+   void **keys;
+   int i;
 
+   /* count the nodes */
+   for (key = rbt_next(rbt, 0, 0); key != NULL; key = rbt_next(rb, key, 
+0))
+   N++;
+
+  /* allocate buffer for keys and fill it */ 
+   keys = malloc(N * sizeof(void *));
+   for (key = rbt_next(rb, 0, 0), i = 0;
+        key != NULL;
+        key = rbt_next(rb, key, 0), i++)
+        {
+           keys[i] = key;
+        }
+
+  /* go through deleting everything */
+  for (i = 0; i &lt; N; i++)
+  {
+     data = rbt_find(rb, keys[i]);
+     rbt_del(rb, keys[i]);
+     /* freeing data might be more complicated, and we might
+        not need to free the keys */
+     free(data);
+     free(keys[i]); 
+  }
+  free(keys);
+
+  killrbtree(rb);
+}
+<BR>
+</pre>
+<P>
+This is how to destroy an RBTREE. The difficulty is that you can't walk 
+the tree deleting as you go, because that would put the tree into an 
+inconsistent state.
+ </P>
 </BODY> </HTML>
+
