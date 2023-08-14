@@ -1,5 +1,6 @@
 <HTML>
 <HEAD>
+    <link href="prism.css" rel="stylesheet" />
 <style>
 body {
     margin-left: 120px;
@@ -17,13 +18,14 @@ pre{
 
 </HEAD>
 <BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
 <H1> Using CSV files in Baby X </H1>
 <P>
-The Baby X resource compiler comes with a powerful CSV parser and tolls 
-for integratign CSV data into Baby X programs. You can also use the Bay X 
+The Baby X resource compiler comes with a powerful CSV parser and tools
+for integrating CSV data into Baby X programs. You can also use the Baby X
 resource compiler to create data which can be included in other programs.  
 </P> 
-<H3> What is CDV </H3>
+<H3> What is CSV </H3>
 <P>
 CSV stand for "comma-separated values" files. At its heart it is the 
 simplest of formats. A CSV file is simply a write out of data, with one 
@@ -37,14 +39,14 @@ Harry, 50000.00, 125
 </pre>
 <P>
 That's it. The simplicity and the human-readbility of this format has made 
-it a favourite for stroring high value data
+it a favourite for storing high value data
 </P>
 <P>
 CSV files represent what computer scientists call a "dataframe". A 
 dataframe is simply an array of records, with all the rows in the same 
-format and the columns representing fields. So in this case we have htree 
+format and the columns representing fields. So in this case we have three
 records (for the three employees),and three fields, name, salary, and 
-payroll id. Dataframes are naturally represneted in C programs as arrays 
+payroll id. Dataframes are naturally represented in C programs as arrays 
 of structs.  
 </P>
 <P>
@@ -60,7 +62,7 @@ that some CSVs have a header line and some do not.
 The CSV file parser which comes with the Baby X resource compiler is 
 powerful and easy to use. It will load most CSV files.
 </P>
-<pre>
+<pre><code class="language-c">
 #define CSV_NULL 0       /* null data */
 #define CSV_REAL 1       /* floating-point data */
 #define CSV_STRING 2     /* string data */
@@ -90,7 +92,7 @@ const char *csv_getstr(CSV *csv, int col, int row);
 int csv_hasheader(CSV *csv);
 const char *csv_column(CSV *csv, int col, int *type);
 
-</pre>
+</code></pre>
 <P>
   The structures are supposed to be opaque but exposed to calling code to 
 make troubleshooting easier. However the CVS_xxxx type identifiers are 
@@ -101,14 +103,13 @@ Sometimes when using CSV files you know what data you are expecting, for
 example for a payroll program,and sometimes you do not, for example when 
 implementing a statistical package. After the CSV file is loaded, you can 
 quickly query the width (the number of columns, or fields), and the column 
-names and types, to ensure that yu have data in the format you were 
-expecting. Or you can use that information to buld dynamic strucutres at 
+names and types, to ensure that you have data in the format you were
+expecting. Or you can use that information to buld dynamic structures at 
 run time, which is more difficult.
  </P> 
 <H3> Example programs </H3>
 
-<code><pre>
-<BR>
+<pre><code class="language-c">
    int main(int argc, char **argv)
    {
       CSV *csv;
@@ -163,8 +164,7 @@ run time, which is more difficult.
       killcsv(csv);
       return 0;
    }
-<BR>
-</pre></code>
+</code></pre>
 
 <P>
 Here's a program to take a CSV file and a field name, and calculate the 

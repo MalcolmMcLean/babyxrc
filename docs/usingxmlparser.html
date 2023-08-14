@@ -1,0 +1,175 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+<H1> Using the XML parser </H1>
+<P>
+The Baby X resource compiler contains a "vanilla" XML parser. 
+</P>
+
+<H3> What is XML </H3>
+XML is a format for storing hierarchical data. It was originally based on 
+a generalisation of HTML, using the same basic idea of nested tags.
+<H4> Example XML file </H3>
+<pre>
+&lt;bookstore&gt;
+      &lt;book category="COOKING"&gt;  
+        &lt;title lang="en"&gt;Everyday Italian&lt;/title&gt;
+        &lt;author&gt;Giada De Laurentiis&lt;/author&gt;
+        &lt;year&gt;2005&lt;/year&gt;
+        &lt;price>30.00&lt;/price&gt;
+      &lt;/book&gt;
+      &lt;book category="CHILDREN"&gt;
+        &lt;title lang="en"&gt;Harry Potter&lt;/title&gt;
+        &lt;author&gt;J K. Rowling&lt;/author>
+        &lt;year&gt;2005&lt;/year&gt;
+        &lt;price&gt;29.99&lt;/price&gt;
+      &lt;/book&gt;
+      &lt;book category="WEB"&gt;
+        &lt;title lang="en"&gt;Learning XML&lt;/title&gt;
+        &lt;author^gt;Erik T. Ray&lt;/author&gt;
+        &lt;year&gt;2003&lt;/year&gt;
+        &lt;price>39.95&lt;/price&gt;
+      &lt;/book&gt;
+    &lt;/bookstore&gt;
+</pre>
+
+<P>
+Each element has an open and close tag. Unlike HTML where some tags like &lt;BR&gt; are traditionally stand-alone. Data can be associated with elements in three ways, as attributes, such as the book "category" in the example, as embedded text between the tags open and close, as we see with leaf elements, or as child elements.
+</P>
+<P>
+With XML version 1.1 the format has been complicated considerably and we don't support all the complications in the vanilla parser. In particular some of them, like recursively defined elements, are highly undesirable as they make it trivially easy to write malicious XML files which expand to a vast amount of data.
+</P>
+<H3> The XML file parser </H3>
+<P>
+The XML parser is a vanilla parser. It doesn't support everything. It just converts the XML into a simple tree representation.
+</P>
+<pre>
+    <code class="language-c">
+        typedef struct xmlattribute
+        {
+        char *name;                /* attriibute name */
+        char *value;               /* attribute value (without quotes) */
+        struct xmlattribute *next; /* next pointer in linked list */
+        } XMLATTRIBUTE;
+        
+        typedef struct xmlnode
+        {
+        char *tag;                 /* tag to identify data type */
+        XMLATTRIBUTE *attributes;  /* attributes */
+        char *data;                /* data as ascii */
+        int position;              /* position of the node within parent's data
+        string */
+        struct xmlnode *next;      /* sibling node */
+        struct xmlnode *child;     /* first child node */
+        } XMLNODE;
+        
+        typedef struct
+        {
+        XMLNODE *root;             /* the root node */
+        } XMLDOC;
+        
+        
+        XMLDOC *loadxmldoc(char *fname, int *err);
+        XMLDOC *floadxmldoc(FILE *fp, int *err);
+        void killxmldoc(XMLDOC *doc);
+        
+        XMLNODE *xml_getroot(XMLDOC *doc);
+        const char *xml_gettag(XMLNODE *node);
+        const char *xml_getdata(XMLNODE *node);
+        const char *xml_getattribute(XMLNODE *node, const char *attr);
+        int xml_Nchildren(XMLNODE *node);
+        int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
+        XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
+        XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
+</code>
+</pre>
+<P>
+You will often need to access these structures directly to process the XML tree efficiently. For instance if you do not know beforehand which attributes are assoicated with an element, the only way to get that information is to walk the attribute list an examne the "name" members.
+</P>
+<P>
+Whilst in reality the structure is a binary tree, it is treated as an anary tree because the pointers are labelled "child" and "next" rather than "childa" and "childb". So the "next" pointer is interpreted as a linked list of younger siblings. You therefore iterate over the "next" pinter and recurse down the "child" pointer."
+<P>
+
+<H3> Example code </H3>
+<pre>
+    <BR>
+    <code class="language-c">
+    /*
+      test if two nodes have the same structure. Do the attributes and
+      the hierarchy under them match, and are the element tag names the same?
+      Params:
+         nodea - the first node
+         nodeb - the second node
+         useattributes - if set, check that the attribute lists match
+         usechildren - if set, check that the children match
+    Returns 1 if the nodes have the same structure, else 0
+     */
+    int nodeshavesamestructure(XMLNODE *nodea, XMLNODE *nodeb,
+                                int useattributes, int usechildren)
+    {
+       XMLATTRIBUTE *attra, *attrb;
+       XMLNODE *childa, *childb;
+
+       if (strcmp(nodea-&gt;tag, nodeb-&gt;tag))
+          return 0;
+
+       if (useattributes)
+       {
+          attra = nodea-&gt;attributes;
+          attrb = nodeb-&gtattributes;
+          while (attra && attrb)
+          {
+             if (strcmp(attra-&gt;name, attrb-&gt;name))
+               return 0;
+             attra = attra-&gt;next;
+             attrb = attrb-&gt;next;
+          }
+          if (attra != NULL || attrb != NULL)
+             return 0;
+       }
+       if (usechildren)
+       {
+          childa = nodea-&gt;child;
+          childb = nodeb-&gt;child;
+          while (childa && childb)
+          {
+            if (!nodeshavesamestructure(childa, childb, useattributes,
+                                        usechildren))
+              return 0;
+            childa = childa-&gt;next;
+            childb = childb-&gt;next;
+         }
+         if (childa != NULL || childb != NULL)
+            return 0;
+       }
+       
+       return 1;
+    }
+    </code>
+    <BR>
+
+</pre>
+<P>
+The structure is a simple tree which you can manipulate easily and cleanly.
+</P>
+
+</BODY>
+</HTML>

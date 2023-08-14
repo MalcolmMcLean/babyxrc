@@ -1,5 +1,6 @@
 <HTML>
 <HEAD>
+    <link href="prism.css" rel="stylesheet" />
 <style>
 body {
     margin-left: 120px;
@@ -17,6 +18,7 @@ pre{
 
 </HEAD>
 <BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
 <H1> The Baby X resource compiler source files </H1>
 <H3> Source file list </H3>
 <LI> aifffile.c </LI>
@@ -60,12 +62,12 @@ pre{
         files.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         short *loadaiff(const char *fname, long *samplerate, int *Nchannels, long
             *Nsamples);
         short *floadaiff(FILE *fp, long *samplerate, int *Nchannels, long
             *Nsamples);
-        </pre>
+        </code></pre>
         <P>
         <code>loadaiff</code> - loads an AIFF file in 16-but itnerleaved PPM format.
         </P>
@@ -80,13 +82,13 @@ pre{
         source code.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         char *fslurp(FILE *fp);
         int validcstring(const char *str);
         char *texttostring(const char *str);
-        </pre>
+        </code></pre>
         <P>
-        <code>fslurp</code> Probably shouldn't be in here. Loada text file froma stream.
+        <code>fslurp</code> Probably shouldn't be in here. Loads a text file from a stream.
         </P>
         <P>
         <code>validcstring</code> Test if a string is a valid escaped C literal.
@@ -109,14 +111,14 @@ pre{
         Utility functions for manipulating UTF-8. Taken from Baby X.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         int bbx_isutf8z(const char *str);
         int bbx_utf8_skip(const char *utf8);
         int bbx_utf8_getch(const char *utf8);
         int bbx_utf8_putch(char *out, int ch);
         int bbx_utf8_charwidth(int ch);
         int bbx_utf8_Nchars(const char *utf8);
-        </pre>
+        </code></pre>
         <P>
         <code>bbx_isutf8z</code> - test if a string is valid UTF-8.
         </P>
@@ -144,9 +146,9 @@ pre{
         <P>
         This code loads a .bdf font and converts it to a bitmap_font structure.
         </P>
-        <pre>
+        <pre><code class="language-c">
         void ReadBdf(FILE * bdf, FILE * out, int header, const char *name);
-        </pre>
+        </code></pre>
         <P>
         <code>ReadBdf</code> - a misnomer. It reads a BDF font from a stream, and writes C source to out. Pass header = true to just write the C header, and name for the name of the bitmap_font structure.
         </P>
@@ -154,10 +156,10 @@ pre{
         <H3> bmp.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        Code to load and save Microsoft bitmap .bmp files. It won't support absolutely everything (no compressed bitmaps or ones with odd channel masks). However it should load most bitmaps encountered in practice. There are also functions to save. A function to load
+        Code to load and save Microsoft bitmap .bmp files. It won't support absolutely everything (no compressed bitmaps or ones with odd channel masks). However it should load most bitmaps encountered in practice. There are also functions to save.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         int bmpgetinfo(char *fname, int *width, int *height);
         unsigned char *loadbmp(char *fname, int *width, int *height);
         unsigned char *loadbmp8bit(char *fname, int *width, int *height,
@@ -171,7 +173,7 @@ pre{
             unsigned char *pal);
         int savebmp1bit(char *fname, unsigned char *data, int width, int height,
             unsigned char *pal);
-        </pre>
+        </code></pre>
         <P>
         <code>bmpgetinfo</code> - query a bitmap file for its type. It returns the dimensions, and the bit depth (so 2, 4, 8, 16, 24, or 32). Note that 32 bit bitmaps do not have an alpha channel.
         </P>
@@ -183,19 +185,19 @@ pre{
         </P>
         <P>
         <code>loadbmp4bit</code> - load a 4 bit bitmap with its palette. pal shoule be a buffer
-          of 48 bytes for 16 RGB triplets. The bitmpa must have a depth of 4 bits. It returns the raster data packed in nybles.
+          of 48 bytes for 16 RGB triplets. The bitmap must have a depth of 4 bits. It returns the raster data packed in nybles.
         </P>
         <P>
         <code>savebmp</code> - save a 24 bit RGB image as a bitmap.
         </P>
         <P>
-        <code>savebmp8bit</code> - the raster data represents indexes into the palette. whihc is 256 24-bit RGB entries.
+        <code>savebmp8bit</code> - the raster data represents indexes into the palette. which is 256 24-bit RGB entries.
         </P>
         <P>
         <code>savebmp4bit</code> - save a colour-indexed image as a 4 bit bitmap. Note that each byte should be in the rnage 0-15 and represent an idex into the 16 entry palette. The function does not accept raser data packed into nybles.
         </P>
         <P>
-        <code>savebmp1bit</code> - save a binary (1-bit) bitmap. Each byte in the raster represents one pixel and must be 1 or 0. The actual colours are determiend by the two-entry palette. THis one hasn't been well-testd, and we need a corresponding save routine. The it can go inthe binaryimage library.'
+        <code>savebmp1bit</code> - save a binary (1-bit) bitmap. Each byte in the raster represents one pixel and must be 1 or 0. The actual colours are determiend by the two-entry palette. This one hasn't been well-tested, and we need a corresponding save routine. Then it can go inthe binaryimage library.'
         </P>
 
         <HR></HR>
@@ -205,7 +207,7 @@ pre{
         Code to load a comma-separated value file into memory. It attempts to automativally detect the presence of a header. It supports missing values and intricate string escapes, but not non-comma separators. It also determines the type of data in a column.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
             #define CSV_NULL 0       /* null data */
             #define CSV_REAL 1       /* floating-point data */
             #define CSV_STRING 2     /* string data */
@@ -219,7 +221,7 @@ pre{
             const char *csv_getstr(CSV *csv, int col, int row);
             int csv_hasheader(CSV *csv);
             const char *csv_column(CSV *csv, int col, int *type);
-        </pre>
+        </code></pre>
         <P>
         <code>loadcsv</code> - loads a CSV object from a file. Returns NULL on fail. It needs a rewrite to improve error handling.
         </P>
@@ -251,14 +253,14 @@ pre{
         <H3> dumpcsv.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        Code to conveert a CSV object into C source. If the CSV file is a matrix then the data is written out as a two-dimensional array. Otheerwise it is written out as a dataframe, an array of C structs. The struct fieldnames are determiend from the CSV file header.
+        Code to convert a CSV object into C source. If the CSV file is a matrix then the data is written out as a two-dimensional array. Otheerwise it is written out as a dataframe, an array of C structs. The struct field names are determined from the CSV file header.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         int dumpcsv(FILE *fpout, int headerfile, const char *name, CSV *csv);
-        </pre>
+        </code></pre>
         <P>
-        <code>dumpcsv</code> - convert a CSV object to C source code. headerfile means write out a C header file instead of a .c source file (the word "header") would have ben confusing). It should be considered experimental.
+        <code>dumpcsv</code> - convert a CSV object to C source code. headerfile means write out a C header file instead of a .c source file (the word "header" would have ben confusing). It should be considered experimental.
         </P>
         <HR></HR>
         <H3> gif.c </H3>
@@ -266,13 +268,13 @@ pre{
         <P>
         Code to load or save a .GIF image. It depends on rbtree.c and rbtree.h.
         </P>
-        <pre>
+        <pre><code class="language-c">
             unsigned char *loadgif(char *fname, int *width, int *height,
                 unsigned char *pal, int *transparent);
             int savegif(char *fname, unsigned char *data, int width, int height,
                 unsigned char *pal, int palsize, int transparent, int important,
                 int interlaced);
-        </pre>
+        </code></pre>
         <P>
         <code>loadgif</code> - load a non-animated GIF file. pal should point to 768 byters for 256 RGB triplets. transparent gives the index of the transparent colour (-1 if none, which is quite common).
         </P>
@@ -286,11 +288,11 @@ pre{
         Code to load a JPEG image as a 24-bit rgb array.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         unsigned char *loadjpeg(const char *path, int *width, int *height);
-        </pre>
+        </code></pre>
         <P>
-        <code>loadjpeg</P> - load a JPEG.
+        <code>loadjpeg</code> - load a JPEG.
         </P>
         <HR></HR>
         <H3> loadasutf8.c </H3>
@@ -299,11 +301,11 @@ pre{
         Code to load practically any common text format file as clean UTF-8 without a BOM. It relies on automatic detection of text format type.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         char *loadasutf8(const char *filename, int *err);
-        </pre>
+        </code></pre>
         <P>
-        <code>loadasutf8</code> - load text as UTF-8. It's quite straightforwards except for the text format detection code on which it depends. It returns NULL and err is set to non-zero on falure. To do, improve error reporting.
+        <code>loadasutf8</code> - load text as UTF-8. It's quite straightforwards except for the text format detection code on which it depends. It returns NULL and err is set to non-zero on failure. To do, improve error reporting.
         </P>
         <HR></HR>
         <H3> loadcursor.c </H3>
@@ -312,7 +314,7 @@ pre{
         Code to load a Microsoft .cur (cursor) file.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         typedef struct
         {
             int width;
@@ -323,7 +325,7 @@ pre{
         } BBX_CURSOR;
 
         BBX_CURSOR *loadcursor(const char *filename, int *err);
-        </pre>
+        </code></pre>
         <P>
         <code>loadcursor</code> - load a .cur file. A .cur file is basically just a bitmap with a hotpoint attached. The function hasn't been well-tested.
         </P>
@@ -334,10 +336,10 @@ pre{
         High-level image loading function. Should load practically anything as 32 bit RGBA, including SVG files.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         unsigned char *loadrgba(char *fname, int *width, int *height, int *err);
         unsigned char *loadassvgwithsize(char *fname, int width, int height);
-        </pre>
+        </code></pre>
         <P>
         <code>loadrgba</code> - load a raster image (.bmp, .gif, .jpeg, .png, .tiff) as a 32 bit RGBA. We try to keep to the convention  that err -1 means out of memory, -2 means failure to open file or Io error, and -3 means a parse error. However it's unlikely that this is completely consistent. This is the crown jewel function.
         </P>
@@ -351,28 +353,28 @@ pre{
         A thin layer on top of the minimp3.c audio decoder to load an MP3 file into memory as raw uncompressed audio 16-bit PCM samples.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         short *loadmp3(const char *fname, long *samplerate, int
                        *Nchannels, long *Nsamples);
         short *mp3streamdecompress(unsigned char *mp3_stream, int stream_size,
            long *samplerate, int *Nchannels, long *Nsamples);
-        </pre>
+        </code></pre>
         <P>
         <code>loadmp3</code> - loads an MP3 file using the same interface as for WAV and AIFF files.
         </P>
         <P>
-        <code>mp3streamdecompress</code> - a function to decompress and entire MP3 imae in one go. It's useful for audio processing, less useful for playback.
+        <code>mp3streamdecompress</code> - a function to decompress and entire MP3 image in one go. It's useful for audio processing, less useful for playback.
         </P>
         <HR></HR>
         <H3> loadtiff.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        TIFF file loader. TIFF is one of those formats which has been allowed to get out of control. However this dunction will load the vast majority of TIFFs.
+        TIFF file loader. TIFF is one of those formats which has been allowed to get out of control. However this function will load the vast majority of TIFFs.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         unsigned char *floadtiff(FILE *fp, int *width, int *height);
-        </pre>
+        </code></pre>
         <P>
         <code>floadtiff</code> - load a TIFF froman open stream. TIFFs were designed to work with non-seekable streams, hence the interface. TIFF is a very complicated umbrella format and it will probably fail on some input.
         </P>
@@ -398,14 +400,14 @@ pre{
         Commandline options parser.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         OPTIONS *options(int argc, char **argv, char *flags);
         void killoptions(OPTIONS *opt);
         int opt_get(OPTIONS *opt, char *name, char *fmt, ...);
         int opt_error(OPTIONS *opt, FILE *fp);
         int opt_Nargs(OPTIONS *opt);
         char *opt_arg(OPTIONS *opt, int index);
-        </pre>
+        </code></pre>
         <P>
         <code>options</code> - create an OPTIONS object from argc and argv. It takes local copies, so everything is from thsi point self-contained. flags is a list of sigle character flags the options parser will accept. If you don't support single character option flags, pass NULL rather than the empty string.
         </P>
@@ -413,13 +415,13 @@ pre{
         <code>killoptions</code> - the OPTIONS object destructor.
         </P>
         <P>
-        <code>opt_get<code> - query the OPTIONS object for an option. You can pass several aliases for an option at once, eg, "-help -h --help /help /h". If the option is a flag, fmt should be null. If it takes arguments, it's similar to scanf() - pass %d for an integer or %f for a double. %s should always take a length field (e.g %256s) to avoid buffer overruns. Intiilaise the arguments to defaults and they will not be overwritten if the option is not present. Note that opt_get() is used both to extract options,a nd to tell the options parser what the allowed options are. So you must query for every option you support.
+        <code>opt_get</code> - query the OPTIONS object for an option. You can pass several aliases for an option at once, eg, "-help -h --help /help /h". If the option is a flag, fmt should be null. If it takes arguments, it's similar to scanf() - pass %d for an integer or %f for a double. %s should always take a length field (e.g %256s) to avoid buffer overruns. Intitialise the arguments to defaults and they will not be overwritten if the option is not present. Note that opt_get() is used both to extract options, and to tell the options parser what the allowed options are. So you must query for every option you support.
         </P>
         <P>
-        <ode>opt_error</code> - query the options parser for user errors. Pass a stream to receive error text (so, usually, pass stderr), or NULL to suppress. It returns non-zero if there is an error. The main errors are unrecognised options, or options with the wrong arguments. So setting up the opt_get calls beforehand is vital. Note that it won;t sanity check arguments for you, you have to do that inn caller.
+        <ode>opt_error</code> - query the options parser for user errors. Pass a stream to receive error text (so, usually, pass stderr), or NULL to suppress. It returns non-zero if there is an error. The main errors are unrecognised options, or options with the wrong arguments. So setting up the opt_get calls beforehand is vital. Note that it won't sanity check arguments for you, you have to do that in caller.
         </P>
         <P>
-        <code>opt_Nargs</code> - after all the calls to opt_get have been completed, the reamining arguments in argv are non-option arguments, usually filenames. This function counts them.
+        <code>opt_Nargs</code> - after all the calls to opt_get have been completed, the remaining arguments in argv are non-option arguments, usually filenames. This function counts them.
         </P>
         <P>
         <code>opt_arg</code> - call to retrieve non-option arguments. The arguments are allocated with malloc() and so should be freed by caller.
@@ -435,7 +437,7 @@ pre{
         Code to implement a red-black tree. red-black trees are balanced binary trees which do not deenrate into linked lists afte rrepeated insertions or deletions. They always remain reaonsably balanced. Which means that they can offer O(log N) searching of dynamic data.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         RBTREE *rbtree(int (*compfunc)(const void *e1, const void *e2));
         void killrbtree(RBTREE *tree);
         int rbt_add(RBTREE *tree, void *key, void *data);
@@ -443,27 +445,27 @@ pre{
         void *rbt_find(RBTREE *tree, void *key);
         void *rbt_next(RBTREE *tree, void *key, void **dataret);
         void *rbt_prev(RBTREE *tree, void *key, void **dataret);
-        </pre>
+        </code></pre>
         <P>
-        <code>rbtree</P> - constructor for an empty RBTREE object. Since the tree is sorted, it need s aqsort-style comparison functionto oder the elemnts.
+        <code>rbtree</code> - constructor for an empty RBTREE object. Since the tree is sorted, it need s aqsort-style comparison function to order the elements.
         </P>
         <P>
         <code>killrbtree</code> - RBTREE destructor. Note that it doesn't own its contents.
         </P>
         <P>
-        <code>rbt_add</code> - add an entry to the RBTREE. It consists of a key . data item pair. The RBTREE doesn't own the jeys or the data, so the key canbe  afield of the data entry.
+        <code>rbt_add</code> - add an entry to the RBTREE. It consists of a key / data item pair. The RBTREE doesn't own the keys or the data, so the key can be a field of the data entry.
         </P>
         <P>
-        <code>rbt_del</code> - delete an entry from the tree. returns -1 i fthe object is not found. Note that it won't delete either the key or the data.
+        <code>rbt_del</code> - delete an entry from the tree. Returns -1 if the object is not found. Note that it won't delete either the key or the data.
         </P>
         <P>
         <code>rbt_find</code> - search for an entry by key. It returns a pointer to the data item if found, NULL if not found.
         </P>
         <P>
-        <code>rbt_next</code> - for "walking" the tree. Returns the key for the next entry, and fills in the void ** for the data. Pass NULL for the first entry, and the return for the subsequent entries, until the fucntion returns NULL.
+        <code>rbt_next</code> - for "walking" the tree. Returns the key for the next entry, and fills in the void ** for the data. Pass NULL for the first entry, and then the return for the subsequent entries, until the function returns NULL.
         </P>
         <P>
-        <code>rbt_prev</P> - for "walking" the tree in a reverse direction. Returns the key for the previous entry, and fills in the void ** for the data. Pass NULL for the last entry, and the return for the preceding entries, until the function returns NULL.
+        <code>rbt_prev</code> - for "walking" the tree in a reverse direction. Returns the key for the previous entry, and fills in the void ** for the data. Pass NULL for the last entry, and then the return for the preceding entries, until the function returns NULL.
         </P>
         <P>
         See <A href="usingrbtree.html"> using the RBTREE</A>.
@@ -475,12 +477,12 @@ pre{
         Code to resize images.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         void resizeimage(unsigned char *dest, int dwidth, int dheight,
             unsigned char *src, int swidth, int sheight);
-        </pre>
+        </code></pre>
         <P>
-        <code>resizeimage</P> - resize a 32 bit RGBA image to dwidth, dheight. It dowsn;t allocate the buffer so you have to pass it in.
+        <code>resizeimage</code> - resize a 32 bit RGBA image to dwidth, dheight. It doesn't allocate the buffer so you have to pass it in.
         </P>
         <HR></HR>
         <H3> savejpeg.c </H3>
@@ -490,9 +492,9 @@ pre{
         JPEG saver. There's no facility for choosing quality, and it just uses generally accepted defaults. However you can play with the quantisation table if you want.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         int savejpeg(char *path, unsigned char *rgb, int width, int height);
-        </pre>
+        </code></pre>
         <P>
         <code>savejpeg</code> - saves a JPEG. There are no options for quality. If you want to add them. you will need to adjust the quantisation table.
         <HR></HR>
@@ -502,7 +504,7 @@ pre{
         Code to automatically detect text format form the binary.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         typedef enum
         {
             TEXTENC_None,                // Unknown or binary
@@ -518,7 +520,7 @@ pre{
 
         TextEncoding DetectTextFileEncoding(const char *filename, int *error);
 
-        </pre>
+        </code></pre>
         <P>
         <code>DetectTextFileEncoding</code> - this uses very good heuristics. error isn't really functional.
         </P>
@@ -526,14 +528,14 @@ pre{
         <H3> ttf2c.c </H3>
         <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        This is a thinlayer on top of the freetype/ code which load a .tttf or truetype font, and saves it out as a struct bitmap_font.
+        This is a thin layer on top of the freetype/ code which loads a .ttf or TrueType font, and saves it out as a struct bitmap_font.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         int dumpttf(char *fname, int header, char *name, int points, FILE *fp);
-        </pre>
+        </code></pre>
         <P>
-        <code>dumpttf</code> - write out a TrueType font as C source for a bitmap_font structure. Yu need to pass inthe size you want in points. fp points to the output stream. header is set to just output a C header.
+        <code>dumpttf</code> - write out a TrueType font as C source for a bitmap_font structure. You need to pass in the size you want in points. fp points to the output stream. header is set to just output a C header.
         </P>
         <HR></HR>
         <H3> wavfile.c </H3>
@@ -542,7 +544,7 @@ pre{
         Microsoft .wav file loader and saver. WAV files are relatively simple and clean.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         short *loadwav(const char *fname, long *samplerate, int *Nchannels, long
             *Nsamples);
         int savewav(const char *fname, const short *pcm, long samplerate, int
@@ -551,7 +553,7 @@ pre{
             *Nsamples);
         int fsavewav(FILE *fp, const short *pcm, long samplerate, int Nchnanels,
             long Nsamples);
-        </pre>
+        </code></pre>
         <P>
         <code>loadwav</code> - load a WAV file.
         </P>
@@ -568,13 +570,13 @@ pre{
         <H3> xmlparser.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
-        Code to parse an XML file. Whilst it is adequate for parsing Baby X resource compiler input files, it is not good enouhg to stand up to use as a general XML file parser.
+        Code to parse an XML file. Whilst it is adequate for parsing Baby X resource compiler input files, it is not good enough to stand up to use as a general XML file parser.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         typedef struct xmlattribute
         {
-            char *name;                /* attriibute name */
+            char *name;                /* attribute name */
             char *value;               /* attribute value (without quotes) */
             struct xmlattribute *next; /* next pointer in linked list */
         } XMLATTRIBUTE;
@@ -608,7 +610,7 @@ pre{
         int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
         XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
         XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
-        </pre>
+        </code></pre>
         <P>
         <code>loadxmldoc</code> - load an XML document.
         </P>
@@ -645,6 +647,9 @@ pre{
         <P>
         The XML parser is being rewritten and is not advised for general use at present. It's good enough for simple XML like the Baby X resource script, but it won't stand up to the complications found in general XML.
         </P>
+        <P>
+        See <A href="usingxmlparser.html">using the XML parser</A>.
+        </P>
         <HR></HR>
         <H3> nanosgv.h </H3>
         <P> <B>Copyright:</B> (c) 2013-14 Mikko Mononen
@@ -652,10 +657,10 @@ pre{
         This code is implemented as header-only file. It parses an SVG (scaleable vector graphics) file.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         NSVGimage* nsvgParseFromFile(const char* filename, const char* units, float dpi);
         void nsvgDelete(NSVGimage* image);
-        </pre>
+        </code></pre>
         <HR></HR>
         <H3> nanosvgrast.h </H3>
         <P> <B>Copyright:</B> (c) 2013-14 Mikko Mononen
@@ -663,13 +668,13 @@ pre{
         This code is implemented as a header-only file. It takes the output of nanosvg.h, and produces a raster image.
         </P>
         <H4> Public functions</H4>
-        <pre>
+        <pre><code class="language-c">
         NSVGrasterizer* nsvgCreateRasterizer(void);
         void nsvgDeleteRasterizer(NSVGrasterizer* r);
         void nsvgRasterize(NSVGrasterizer* r,
                            NSVGimage* image, float tx, float ty, float scale,
                            unsigned char* dst, int w, int h, int stride);
-        </pre>
+        </code></pre>
         <HR></HR>
         <H3> freetype/ </H3>
         <P> <B>Copyright:</B> 1996-1999 by David Turner, Robert Wilhelm, and Werner Lemberg. </P>

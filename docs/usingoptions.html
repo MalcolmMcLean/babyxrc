@@ -1,5 +1,6 @@
 <HTML>
 <HEAD>
+    <link href="prism.css" rel="stylesheet" />
 <style>
 body {
     margin-left: 120px;
@@ -17,6 +18,7 @@ pre{
 
 </HEAD>
 <BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
 <H1> Using the Commandline Options Parser</H1>
 <P>
 The commmandline options parser makes it easy to add options to programs, 
@@ -28,7 +30,7 @@ safe and robust. It can of course be used with an array of strings other
 than argv if you want to use it ina different context to options parsing 
 in your main() function. It then marks options which are queried. So it is 
 self-maintaining, you query an option and tell it what the options are in 
-the same call. After you have finished queying, it then reports an error 
+the same call. After you have finished querying, it then reports an error
 for any unknown options.
 </P>
 <P>
@@ -41,26 +43,25 @@ options from non-options in error checking. It is not enforced.
 The options parser accepts a scanf() - style format string for options. So 
 if options are not in the right format, it will report an error to the 
 user, for example if he enters a string for an integer option. It won't do 
-sanity testing. After parsing is completed, any errors are reported tot eh 
+sanity testing. After parsing is completed, any errors are reported to the
 user via opt_error(), which should always be called. (It can be called 
 with NULL to suppress the message and just report the fact that there were 
 errors). 
  </P>
 
 <H3> Options parser functions </H3>
-<pre>
+<pre><code class="language-c">
 OPTIONS *options(int argc, char **argv, char *flags);
 void killoptions(OPTIONS *opt);
 int opt_get(OPTIONS *opt, char *name, char *fmt, ...);
 int opt_error(OPTIONS *opt, FILE *fp);
 int opt_Nargs(OPTIONS *opt);
 char *opt_arg(OPTIONS *opt, int index); 
-</pre>
+</code></pre>
 
 <H3> Example program </H3>
 
-<code><pre>
-<BR>
+<pre><code class="language-c">
 int main(int argc, char *argv)
 {
    // defaults if option not provided by user
@@ -98,9 +99,7 @@ int main(int argc, char *argv)
 
     return 0;   
 }
-<BR>
-</pre>
-</code>
+</code></pre>
 
 </BODY>
 </HTML>

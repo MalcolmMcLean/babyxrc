@@ -1,5 +1,6 @@
 <HTML>
 <HEAD>
+    <link href="prism.css" rel="stylesheet" />
 <style>
 body {
     margin-left: 120px;
@@ -17,6 +18,7 @@ pre{
 
 </HEAD>
 <BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
 <H1> Using the Baby X UTF-8 utility functions </H1>
 <P>
 The Baby X UTF-8 utility functions are a simple set of functions which 
@@ -28,11 +30,11 @@ it easy to manipulate UTF-8. All Baby X API functions which accept a char
 <P>
 Unicode is a character encoding which represents all the glyphs in common 
 use in human languages. So not just English letters, like ASCII, but also 
-Greek and Arabic and Japnenese and so on. It was originally thought that 
+Greek and Arabic and Japanese and so on. It was originally thought that
 64,000 characters would be enough, and so the original version of Unicode 
 was a 16-bit character set. This proved to be a big mistake. More than 
 64,000 characters were needed. And there was a massive amount of legacy 
-code which expected stringsin ASCII, and couldn't work with 16-bit wide 
+code which expected strings in ASCII, and couldn't work with 16-bit wide 
 characters.
  </P>
 <P>
@@ -62,7 +64,7 @@ utility functions successfully, but for the curious, here are the details:
 </TR>
 <TR><TD>  2 </TD> <TD>  13 </TD> <TD> 00000080 </TD>  <TD> 0000207f </TD> 
 <TD> 10zzzzzz  
-1yyyyyyy <?TD> </TR>
+1yyyyyyy </TD> </TR>
 <TR><TD>  3 </TD>  <TD> 19 </TD> <TD> 00002080 </TD> <TD> 0008207f </TD> 
 <TD> 110zzzzz 
 1yyyyyyy 
@@ -94,21 +96,19 @@ An easy way to remember this transformation format is to note that the
 </P>
 
 <H3> The Baby X UTF-8 utility functions </H3>
- <pre>
+ <pre><code class="language-c">
         int bbx_isutf8z(const char *str);
         int bbx_utf8_skip(const char *utf8);
         int bbx_utf8_getch(const char *utf8);
         int bbx_utf8_putch(char *out, int ch);
         int bbx_utf8_charwidth(int ch);
         int bbx_utf8_Nchars(const char *utf8);
-</pre>
+</code></pre>
 
 <P>
 </P>
 <H3> Examples </H3>
-<code>
-<pre>
-   <BR>
+<pre><code class="language-c">
    int *uft8toUnicode(const char *utf8)
    {
       int *result;
@@ -125,7 +125,7 @@ An easy way to remember this transformation format is to note that the
 
       /* pull out the characters are return as an array of code points */
       ptr = utf8;
-      for (i =0; i < N + 1; i++)
+      for (i =0; i &lt; N + 1; i++)
       {
         int codepoint = bbx_utf8_getch(ptr);
         result[i] = ch;
@@ -134,19 +134,15 @@ An easy way to remember this transformation format is to note that the
 
       return result;
    }
-   <BR>
-</pre>
-</code>
+</code></pre>
 <P>
 This is code to convert from UTF-8 to Unicode code points.
 </P>
 
-<code>
-<pre>
-        <BR>
+<pre><code class="language-c">
 	char *utf16toutf8(wchar_t *utf16)
         {
-           int szie = 0;;
+           int size = 0;;
            int i;
            char *result;
            char *ptr;
@@ -169,9 +165,7 @@ This is code to convert from UTF-8 to Unicode code points.
 
            return result;
         }
-        <BR>
-</pre>
-</code>
+</code></pre>
 <P>
 This is code to convert from a wide character encoding to UTF-8.
 </P>

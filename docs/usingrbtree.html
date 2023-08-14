@@ -1,5 +1,6 @@
 <HTML>
 <HEAD>
+    <link href="prism.css" rel="stylesheet" />
 <style>
 body {
     margin-left: 120px;
@@ -17,6 +18,7 @@ pre{
 
 </HEAD>
 <BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
 <H1> Using the Red-Black Tree </H1>
 <P>
 The Baby X resource compiler contains a flexible and re-usable 
@@ -27,7 +29,7 @@ implementation of a Red-Black tree.
 A red-black tree is a balanced binary search tree. It is used for 
 maintaining a list of sorted items that is constantly being updated. 
 Calling qsort() every time a new item was inserted into a sorted list 
-would be prohibiitvely expensive. 
+would be prohibitively expensive.
  </P> 
 <P>
 The red-black tree is a binary tree with the property that if it walked in 
@@ -42,7 +44,7 @@ The tree can be searched in O(log N) time, because half the data is
 eliminated every time a node is visited. 
 </P>
 <P>
-A naive implementation of a binary search tree suffers form the 
+A naive implementation of a binary search tree suffers from the
 disadvantage 
 that, as elements are inserted and deleted, the tree will tend to 
 degenerate into a linked list. So a red-black tree imposes rules on the 
@@ -60,12 +62,12 @@ child, because if it were black, its NIL descendants <BR> would sit at a
 different black depth than N's NIL child, violating requirement 4. </LI> 
 </OL>
 <P>
-Every time we insert or detete an element, we must fix up the tre to 
+Every time we insert or detete an element, we must fix up the tree to 
 maintain these rules. This can be done by examining a few local nodes in 
 the vicinity of the change 
 </P>
 <H3>Red Black tree functions </H3>
-<pre>
+<pre><code class="language-c">
 typedef struct rbnode
 {
   struct rbnode *left;
@@ -91,7 +93,7 @@ int  rbt_del(RBTREE *tree, void *key);
 void *rbt_find(RBTREE *tree, void *key);
 void *rbt_next(RBTREE *tree, void *key, void **dataret);
 void *rbt_prev(RBTREE *tree, void *key, void **dataret);
-</pre>
+</code></pre>
 <P>
 It is not necessary to access the structures directly to use the red-black 
 tree, but they are shown to help understanding. To simplify the fix-up 
@@ -99,8 +101,7 @@ logic a  bit on insertions or deletions, leaves are set to the "sentinel"
 node instead of the NULL pointer.
  </P>
 <H3> Example programs </H3> 
-<pre>
-<BR>
+<pre><code class="language-c">
 typedef struct
 {
   char data[32];
@@ -148,8 +149,7 @@ int main(void)
 
   return 0;
 }
-<BR>
-</pre>
+</code></pre>
 <P>
 Here the data and the key are the same structures. This is sometimes what 
 you want. Other times, you want to access the data via a short key. The 
@@ -158,8 +158,7 @@ via dynamic memory you will have to walk the tree to collect the pointers,
 then delete in second pass (you can't delete keys whilst walking the tree, 
 as this will put it in an inconsistent state)
 </P> 
-<pre>
-<BR>
+<pre><code class="language-c">
 void deletetree(RBTREE *rb)
 {
    int N = 0;
@@ -196,8 +195,7 @@ void deletetree(RBTREE *rb)
 
   killrbtree(rb);
 }
-<BR>
-</pre>
+</code></pre>
 <P>
 This is how to destroy an RBTREE. The difficulty is that you can't walk 
 the tree deleting as you go, because that would put the tree into an 
