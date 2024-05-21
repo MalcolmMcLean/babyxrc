@@ -1,4 +1,5 @@
 <BabyXRC>
+<-- ASCII strings -->
 <string name = "hello">Hello world\n</string>
 <string name = "mary">Mary had a little lamb
 Its fleece was white as snow,
@@ -10,8 +11,9 @@ That was against the rule.
 It made the children laugh and play
 To see a lamb at school.
 </string>
-<utf8 name = "greekhello">Γειά σου Κόσμε</utf8>
 <string name = "externalstring" src = "hello.txt"></string>
+<!-- Unicode strings -->
+<utf8 name = "greekhello">Γειά σου Κόσμε</utf8>
 <utf8 name = "externalutf8" src = "greekhello.utf8"></utf8>
 <utf8 name = "externalutf16" src = "greekhello.utf16"></utf8>
 <utf16 name = "helloutf16">Hello UTF-16</utf16>
