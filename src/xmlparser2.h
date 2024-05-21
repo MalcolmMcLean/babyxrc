@@ -5,7 +5,7 @@
 
 typedef struct xmlattribute
 {
-  char *name;                /* attriibute name */
+  char *name;                /* attribute name */
   char *value;               /* attribute value (without quotes) */
   struct xmlattribute *next; /* next pointer in linked list */
 } XMLATTRIBUTE;
@@ -26,8 +26,8 @@ typedef struct
 } XMLDOC;
 
 
-XMLDOC *loadxmldoc(char *fname, int *err);
-XMLDOC *floadxmldoc(FILE *fp, int *err);
+XMLDOC *loadxmldoc2(char *fname, char *errormessage, int Nerr);
+XMLDOC *floadxmldoc2(FILE *fp, char *errormessage, int Nerr);
 void killxmldoc(XMLDOC *doc);
 
 XMLNODE *xml_getroot(XMLDOC *doc);

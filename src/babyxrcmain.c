@@ -5,7 +5,7 @@
 #include <limits.h>
 
 #include "options.h"
-#include "xmlparser.h"
+#include "xmlparser2.h"
 #include "asciitostring.h"
 #include "loadasutf8.h"
 #include "loadcursor.h"
@@ -1323,7 +1323,7 @@ int main(int argc, char **argv)
 {
   OPTIONS *opt = 0;
   XMLDOC *doc;
-  int err;
+  char errormessage[256];
   char *scriptfile;
   XMLNODE **scripts;
   XMLNODE *node;
@@ -1350,10 +1350,10 @@ int main(int argc, char **argv)
   killoptions(opt);
   opt = 0;
 
-  doc = loadxmldoc(scriptfile, &err);
+  doc = loadxmldoc2(scriptfile, errormessage, 256);
   if(!doc)
   {
-    fprintf(stderr, "Can't read resource script file\n");
+    fprintf(stderr, "Can't read resource script file (%s)\n", errormessage);
     exit(EXIT_FAILURE);
   } 
   scripts = xml_getdescendants(xml_getroot(doc), "BabyXRC", &Nscripts);
