@@ -29,6 +29,7 @@ typedef struct
 XMLDOC *loadxmldoc2(char *fname, char *errormessage, int Nerr);
 XMLDOC *floadxmldoc2(FILE *fp, char *errormessage, int Nerr);
 void killxmldoc(XMLDOC *doc);
+void killxmlnode(XMLNODE *node);
 
 XMLNODE *xml_getroot(XMLDOC *doc);
 const char *xml_gettag(XMLNODE *node);
