@@ -30,9 +30,10 @@ static XMLNODE *simplexpression(XMLNODE *root, LEXER *lex);
 static XMLNODE *pathexpression(XMLNODE *root, LEXER *lex, int level);
 static XMLNODE *postfixexpression(XMLNODE *root, LEXER *lex);
 static int matchtag(XMLNODE *node, void *ptr);
+static int matchall(XMLNODE *node, void *ptr);
 
 static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
-static XMLNODE *deleteunselected(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
+static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
 
 static XMLNODE *clonexmlnode_r(XMLNODE *node);
 static XMLNODE *clonexmlnode(XMLNODE *node);
@@ -47,6 +48,8 @@ static int haserror(LEXER *lex);
 static void writeerror(LEXER *lex, const char *fmt, ...);
 static char *mystrdup(const char *str);
 
+static void printnode_r(XMLNODE *node, int depth);
+static void printnodewithsibs(XMLNODE *node);
 
 XMLDOC *xml_selectxpath(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr)
 {
@@ -60,8 +63,11 @@ XMLDOC *xml_selectxpath(XMLDOC *doc, const char *xpath, char *errormessage, int 
     {
         goto  out_of_memory;
     }
+    printnode_r(root, 0);
+    
     initlexer(&lex, xpath);
     result = simplexpression(root, &lex);
+    
     if (haserror(&lex))
     {
         killxmlnode(result);
@@ -119,21 +125,24 @@ static XMLNODE *pathexpression(XMLNODE *root, LEXER *lex, int level)
     if (match(lex, SLASH) == 0)
         return root;
     
+    answer = root;
+    
     token = gettoken(lex);
     if (token == EQNAME)
     {
         getvalue(lex, eqname , 1024);
         match(lex, EQNAME);
-        answer = deleteunselected(root, level, matchtag, eqname);
+        answer = select_r(answer, level, matchtag, eqname);
     }
     else if (token == ASTERISK)
     {
-        answer = root;
+        match(lex, ASTERISK);
+        answer = select_r(answer, level, matchall, eqname);
     }
     
     token = gettoken(lex);
     if (token == SLASH)
-        answer = pathexpression(answer, lex, level + 1);
+        answer = pathexpression(answer, lex, 1);
         
     return answer;
 }
@@ -165,11 +174,17 @@ static int matchtag(XMLNODE *node, void *ptr)
     return strcmp(node->tag, tag) ? 0 : 1;
 }
 
+static int matchall(XMLNODE *node, void *ptr)
+{
+    return 1;
+}
+
 static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr), void *ptr)
 {
     XMLNODE *answer = NULL;
     XMLNODE *nextnode;
     XMLNODE *lastnode = NULL;
+    XMLNODE *fished;
     
     nextnode = node->next;
     while (node)
@@ -178,16 +193,19 @@ static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr)
         {
             if (answer == NULL)
                 answer = node;
-            if (lastnode)
-            {
-                lastnode->next = node;
-            }
             lastnode = node;
             
         }
         else
         {
-            lastnode->next = fish_r(node->child, predicate, ptr);
+            fished = fish_r(node->child, predicate, ptr);
+            if (lastnode)
+                lastnode->next = fished;
+            else
+            {
+                answer = fished;
+                lastnode = answer;
+            }
             while (lastnode->next)
                 lastnode = lastnode->next;
             node->next = NULL;
@@ -195,38 +213,57 @@ static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr)
             killxmlnode(node);
         }
         node = nextnode;
-        nextnode = node->next;
+        nextnode = node ? node->next : 0;
     }
     
     return  answer;
 }
 
-
-static XMLNODE *deleteunselected(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr)
+static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr)
 {
-    XMLNODE *answer;
-    answer = node;
-    if (level > 0)
+    XMLNODE *answer = NULL;
+    XMLNODE *nextnode;
+    XMLNODE *lastnode = NULL;
+    XMLNODE *fished;
+    
+    if (level < 0)
     {
-        while (node)
-        {
-            node->child = deleteunselected(node->child, level-1, predicate, ptr);
-            node = node->next;
-        }
-    }
-    else
-    {
-        if (node->next)
-            node->next = deleteunselected(node->next, level, predicate, ptr);
-        if (!(*predicate)(node, ptr))
-        {
-            answer = node->next;
-            node->next = 0;
-            killxmlnode(node);
-        }
+        killxmlnode(node);
+        return 0;
     }
     
-    return answer;
+    nextnode = node->next;
+    while (node)
+    {
+        if (level == 0 && (*predicate)(node, ptr))
+        {
+            if (answer == NULL)
+                answer = node;
+            lastnode = node;
+            
+        }
+        else
+        {
+            fished = select_r(node->child, level - 1, predicate, ptr);
+            if (lastnode)
+                lastnode->next = fished;
+            else
+            {
+                answer = fished;
+                lastnode = answer;
+            }
+            while (lastnode->next)
+                lastnode = lastnode->next;
+            node->next = NULL;
+            node->child = NULL;
+            killxmlnode(node);
+        }
+        node = nextnode;
+        nextnode = node ? node->next : 0;
+    }
+    
+    
+    return  answer;
 }
 
 static XMLNODE *clonexmlnode_r(XMLNODE *node)
@@ -278,10 +315,17 @@ static XMLNODE *clonexmlnode(XMLNODE *node)
     answer->next = 0;
     answer->child = 0;
     
-    
+    if (node->tag)
+    {
+        answer->tag = mystrdup(node->tag);
+        if (!answer->tag)
+            goto out_of_memory;
+    }
     if (node->data)
     {
         answer->data = mystrdup(node->data);
+        if (!answer->data)
+            goto out_of_memory;
     }
     if (node->attributes)
     {
@@ -295,6 +339,8 @@ static XMLNODE *clonexmlnode(XMLNODE *node)
 out_of_memory:
     if (answer)
     {
+        free(answer->tag);
+        free(answer->data);
         free(answer);
     }
     
@@ -443,4 +489,63 @@ static char *mystrdup(const char *str)
         strcpy(answer, str);
     
     return answer;
+}
+
+static void printnode_r(XMLNODE *node, int depth)
+{
+    int i;
+    XMLNODE *child;
+    
+    for (i =0; i < depth; i++)
+        printf("\t");
+    printf("<%s>\n", node->tag);
+    for (child = node->child; child; child = child->next)
+        printnode_r(child, depth +1);
+    for (i =0; i < depth; i++)
+        printf("\t");
+    printf("</%s>\n", node->tag);
+}
+
+static void printnodewithsibs(XMLNODE *node)
+{
+    while (node)
+    {
+        printnode_r(node, 0);
+        node = node->next;
+    }
+}
+
+static void printdocument(XMLDOC *doc)
+{
+    if (!doc)
+        printf("Document was null\n");
+    else if(!doc->root)
+        printf("root null\n");
+    else
+        printnode_r(doc->root, 0);
+}
+
+int main(int argc, char **argv)
+{
+    char error[1024];
+    
+    if (argc == 3)
+    {
+        XMLDOC *doc = 0;
+        XMLDOC *filtered = 0;
+        doc = loadxmldoc2(argv[1], error, 1024);
+        if (!doc)
+            fprintf(stderr, "%s\n", error);
+        filtered = xml_selectxpath(doc, argv[2], error, 1024);
+        if (!filtered)
+            fprintf(stderr, "%s\n", error);
+        
+        printdocument(filtered);
+        
+        killxmldoc(filtered);
+        killxmldoc(doc);
+    }
+    
+    
+    return 0;
 }

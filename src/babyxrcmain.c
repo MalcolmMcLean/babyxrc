@@ -1319,7 +1319,7 @@ void usage(void)
 }
 
 
-int main(int argc, char **argv)
+int xmain(int argc, char **argv)
 {
   OPTIONS *opt = 0;
   XMLDOC *doc;
