@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include "xmlparser2.h"
 
-XMLDOC *xml_selectxpath(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr);
+XMLNODE **xml_selectxpath(XMLDOC *doc, const char *xpath, int *Nselected, char *errormessage, int Nerr);
+XMLATTRIBUTE **xml_xpathgetattributes(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr);
+int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr);
+
 
 #endif /* xpath_h */
