@@ -56,9 +56,9 @@ static XMLNODE **getselectednodes_r(XMLNODE *node, HASHTABLE *ht, XMLNODE **out)
 static int countnodes_r(XMLNODE *node);
 static void fillhashtable_r(XMLNODE *node, HASHTABLE *ht);
 
-static void simplexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex);
-static void pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level);
-static void postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex);
+static XMLATTRIBUTE **simplexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex);
+static XMLATTRIBUTE **pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level);
+static XMLATTRIBUTE **postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex);
 static void predicate2(XMLNODE *root, HASHTABLE *ht, LEXER *lex);
 
 static XMLNODE *simplexpression(XMLNODE *root, LEXER *lex);
@@ -71,6 +71,9 @@ static int matchhasanychild(XMLNODE *node, void *ptr);
 static int matchattribute(XMLNODE *node, void *ptr);
 static int matchtag(XMLNODE *node, void *ptr);
 static int matchall(XMLNODE *node, void *ptr);
+
+static int pickattribute(XMLATTRIBUTE *attr, void *ptr);
+
 
 static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
 static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
@@ -108,6 +111,7 @@ XMLNODE **xml_selectxpath2(XMLDOC *doc, const char *xpath, int *Nselected, char 
     LEXER lex;
     HASHTABLE *ht = 0;
     XMLNODE **answer = 0;
+    XMLATTRIBUTE** selattributes = 0;
     
     ht = inithashtablefromtree(doc->root);
     if (!ht)
@@ -116,7 +120,9 @@ XMLNODE **xml_selectxpath2(XMLDOC *doc, const char *xpath, int *Nselected, char 
     }
     
     initlexer(&lex, xpath);
-    simplexpression2(doc->root, ht, &lex);
+    selattributes = simplexpression2(doc->root, ht, &lex);
+    free(selattributes);
+    selattributes = 0;
     
     if (haserror(&lex))
     {
@@ -136,10 +142,70 @@ XMLNODE **xml_selectxpath2(XMLDOC *doc, const char *xpath, int *Nselected, char 
     return answer;
     
 out_of_memory:
+    free(selattributes);
     killhashtable(ht);
     if (errormessage)
         strncpy(errormessage, "Out of memory", Nerr);
     return  0;
+}
+
+XMLATTRIBUTE **xml_xpathgetattributes(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr)
+{
+    LEXER lex;
+    HASHTABLE *ht = 0;
+    XMLATTRIBUTE **answer = 0;
+    
+    ht = inithashtablefromtree(doc->root);
+    if (!ht)
+    {
+        goto  out_of_memory;
+    }
+    
+    initlexer(&lex, xpath);
+    answer = simplexpression2(doc->root, ht, &lex);
+    
+    if (haserror(&lex))
+    {
+        killhashtable(ht);
+        if (errormessage)
+            strncpy(errormessage, lex.error, Nerr);
+        return 0;
+    }
+    if (errormessage)
+        errormessage[0] = 0;
+    
+    killhashtable(ht);
+    return answer;
+    
+out_of_memory:
+    killhashtable(ht);
+    if (errormessage)
+        strncpy(errormessage, "Out of memory", Nerr);
+    return  0;
+}
+
+int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr)
+{
+    LEXER lex;
+    XMLATTRIBUTE **attributes;
+    int answer = 0;
+    initlexer(&lex, xpath);
+    attributes = simplexpression2(0, 0, &lex);
+    if (attributes)
+    {
+        answer = 1;
+        free(attributes);
+    }
+    
+    if (haserror(&lex))
+    {
+        if (errormessage)
+            strncpy(errormessage, lex.error, Nerr);
+        return 0;
+    }
+    if (errormessage)
+        errormessage[0] = 0;
+    return answer;
 }
 
 XMLDOC *xxml_selectxpath(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr)
@@ -196,6 +262,45 @@ static HASHTABLE *inithashtablefromtree(XMLNODE *root)
     return ht;
     
 out_of_memory:
+    return 0;
+}
+
+static XMLATTRIBUTE **getselectedattributes(XMLNODE *root, HASHTABLE *ht, int (*predicate)(XMLATTRIBUTE *attr, void *ptr), void *ptr)
+{
+    XMLATTRIBUTE *attr;
+    XMLATTRIBUTE **answer = 0;
+    XMLNODE **selnodes = 0;
+    int N;
+    int i;
+    
+    selnodes = getselectednodes(root, ht, &N);
+    if (!selnodes)
+        goto out_of_memory;
+    answer = malloc((N+1) * sizeof(XMLATTRIBUTE *));
+    if(!answer)
+        goto out_of_memory;
+    
+    for (i = 0; selnodes[i]; i++)
+    {
+        attr = selnodes[i]->attributes;
+        while (attr)
+        {
+            if ((*predicate)(attr, ptr))
+            {
+                answer[i] = attr;
+                break;
+            }
+            attr = attr->next;
+        }
+    }
+    answer[N] = 0;
+    
+    free(selnodes);
+    return  answer;
+    
+out_of_memory:
+    free(selnodes);
+    free(answer);
     return 0;
 }
 
@@ -360,23 +465,28 @@ static void fillhashtable_r(XMLNODE *node, HASHTABLE *ht)
 }
 
 
-static void simplexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
+static XMLATTRIBUTE **simplexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
 {
+    XMLATTRIBUTE **answer = 0;
     int token = gettoken(lex);
     
     while (token != NUL)
     {
         if (token == SLASH)
         {
-            pathexpression2(root, ht, lex, 0);
+            if (answer)
+                free(answer);
+            answer = pathexpression2(root, ht, lex, 0);
         }
         else if (token == SLASHSLASH)
         {
-            postfixexpression2(root, ht, lex);
+            if (answer)
+                free(answer);
+            answer = postfixexpression2(root, ht, lex);
         }
         else if (token == OPENSQUARE)
         {
-          //  answer = predicate(answer, lex);
+            predicate2(root, ht, lex);
         }
         else
         {
@@ -388,12 +498,15 @@ static void simplexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
     }
     
     match(lex, NUL);
+    
+    return answer;
 }
 
-static void pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level)
+static XMLATTRIBUTE **pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level)
 {
     int token;
     char eqname[1024];
+    XMLATTRIBUTE **answer = 0;
     
     if (match(lex, SLASH) == 0)
         return;
@@ -417,7 +530,7 @@ static void pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level)
     token = gettoken(lex);
     if (token == SLASH)
     {
-        pathexpression2(root, ht, lex, 1);
+        answer = pathexpression2(root, ht, lex, 1);
     }
     else if (token == STRUDEL)
     {
@@ -428,18 +541,22 @@ static void pathexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex, int level)
             getvalue(lex, eqname, 1024);
             match(lex, EQNAME);
             select2_r(root, ht, matchattribute, eqname);
+            answer = getselectedattributes(root, ht, pickattribute, eqname);
         }
     }
+    
+    return answer;
 }
 
-static void postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
+static XMLATTRIBUTE **postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
 {
     int token;
     char eqname[1024];
+    XMLATTRIBUTE **answer = 0;
 
     
     if (match(lex, SLASHSLASH) == 0)
-        return root;
+        return answer;
     
     token = gettoken(lex);
     if (token == EQNAME)
@@ -457,6 +574,7 @@ static void postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
             getvalue(lex, eqname, 1024);
             match(lex, EQNAME);
             fish2_r(root, ht, matchattribute, eqname);
+            answer = getselectedattributes(root, ht, pickattribute, eqname);
         }
         
     }
@@ -464,7 +582,9 @@ static void postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
     token = gettoken(lex);
     if (token == SLASH)
     {
-        pathexpression2(root, ht, lex, 1);
+        if (answer)
+            free(answer);
+        answer = pathexpression2(root, ht, lex, 1);
     }
     else if (token == STRUDEL)
     {
@@ -474,9 +594,14 @@ static void postfixexpression2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
         {
             getvalue(lex, eqname, 1024);
             match(lex, EQNAME);
-            select_r(root, ht, matchattribute, eqname);
+            select2_r(root, ht, matchattribute, eqname);
+            if (answer)
+                free(answer);
+            answer = getselectedattributes(root, ht, pickattribute, eqname);
         }
     }
+    
+    return answer;
 }
 
 static void predicate2(XMLNODE *root, HASHTABLE *ht, LEXER *lex)
@@ -707,6 +832,19 @@ static int matchtag(XMLNODE *node, void *ptr)
 static int matchall(XMLNODE *node, void *ptr)
 {
     return 1;
+}
+
+
+static int pickattribute(XMLATTRIBUTE *attr, void *ptr)
+{
+    char *name = ptr;
+    
+    if (!attr)
+        return 0;
+    
+    if (!strcmp(attr->name, name))
+        return 1;
+    return  0;
 }
 
 static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr), void *ptr)
@@ -1252,7 +1390,9 @@ int main(int argc, char **argv)
 {
     char error[1024];
     XMLNODE **selected;
+    XMLATTRIBUTE **attributes;
     int Nselected;
+    int hasattributes;
     int i;
     
     if (argc == 3)
@@ -1262,6 +1402,13 @@ int main(int argc, char **argv)
         doc = loadxmldoc2(argv[1], error, 1024);
         if (!doc)
             fprintf(stderr, "%s\n", error);
+        
+        hasattributes = xml_xpathselectsattributes(argv[2], error, 1024);
+        if (hasattributes)
+            printf("xpath selects attributes\n");
+        else
+            printf("xpath selects nodes\n");
+        
         
         selected = xml_selectxpath2(doc, argv[2], &Nselected, error, 1024);
         if (!selected)
@@ -1273,6 +1420,14 @@ int main(int argc, char **argv)
         {
             printf("node %d\n", i);
             printnode_r(selected[i], 0);
+        }
+        if (hasattributes)
+        {
+            attributes = xml_xpathgetattributes(doc, argv[2], error, 1024);
+            for (i = 0; attributes[i]; i++)
+            {
+                printf("%s=\"%s\"\n", attributes[i]->name, attributes[i]->value);
+            }
         }
         
         /*
