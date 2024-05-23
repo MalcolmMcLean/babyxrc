@@ -24,21 +24,34 @@ typedef struct
 #define NUL 0
 #define EQNAME 1
 #define SLASH 2
-#define ASTERISK 3
+#define SLASHSLASH 3
+#define ASTERISK 4
+#define STRUDEL 5
+#define OPENSQUARE 6
+#define CLOSESQUARE 7
 
 static XMLNODE *simplexpression(XMLNODE *root, LEXER *lex);
 static XMLNODE *pathexpression(XMLNODE *root, LEXER *lex, int level);
 static XMLNODE *postfixexpression(XMLNODE *root, LEXER *lex);
+static XMLNODE *predicate(XMLNODE *root, LEXER *lex);
+
+static int matchhaschild(XMLNODE *node, void *ptr);
+static int matchhasanychild(XMLNODE *node, void *ptr);
+static int matchattribute(XMLNODE *node, void *ptr);
 static int matchtag(XMLNODE *node, void *ptr);
 static int matchall(XMLNODE *node, void *ptr);
 
 static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
 static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
 
+static void purgeattributes(XMLNODE *list, const char *nametokeep);
+static void keeponlyoneattribute(XMLNODE *node, const char *name);
+
 static XMLNODE *clonexmlnode_r(XMLNODE *node);
 static XMLNODE *clonexmlnode(XMLNODE *node);
 static XMLATTRIBUTE *clonexmlattribute_r(XMLATTRIBUTE *attr);
 static XMLATTRIBUTE *clonexmlattribute(XMLATTRIBUTE *attr);
+static void killxmlattribute(XMLATTRIBUTE *attr);
 
 static void initlexer(LEXER *lex, const char *xpath);
 static int gettoken(LEXER *lex);
@@ -63,7 +76,6 @@ XMLDOC *xml_selectxpath(XMLDOC *doc, const char *xpath, char *errormessage, int 
     {
         goto  out_of_memory;
     }
-    printnode_r(root, 0);
     
     initlexer(&lex, xpath);
     result = simplexpression(root, &lex);
@@ -98,17 +110,27 @@ static XMLNODE *simplexpression(XMLNODE *root, LEXER *lex)
     int token = gettoken(lex);
     XMLNODE *answer = root;
     
-    if (token == SLASH)
+    while (token != NUL)
     {
-        answer = pathexpression(root, lex, 0);
-    }
-    else if (token == EQNAME)
-    {
-        answer = postfixexpression(root, lex);
-    }
-    else
-    {
-        writeerror(lex, "Can't recognise path");
+        if (token == SLASH)
+        {
+            answer = pathexpression(answer, lex, 0);
+        }
+        else if (token == SLASHSLASH)
+        {
+            answer = postfixexpression(answer, lex);
+        }
+        else if (token == OPENSQUARE)
+        {
+            answer = predicate(answer, lex);
+        }
+        else
+        {
+            writeerror(lex, "Can't recognise path");
+            break;
+        }
+        
+        token = gettoken(lex);
     }
     
     match(lex, NUL);
@@ -142,7 +164,21 @@ static XMLNODE *pathexpression(XMLNODE *root, LEXER *lex, int level)
     
     token = gettoken(lex);
     if (token == SLASH)
+    {
         answer = pathexpression(answer, lex, 1);
+    }
+    else if (token == STRUDEL)
+    {
+        match(lex, STRUDEL);
+        token = gettoken(lex);
+        if (token == EQNAME)
+        {
+            getvalue(lex, eqname, 1024);
+            match(lex, EQNAME);
+            answer = select_r(answer, 0, matchattribute, eqname);
+            purgeattributes(answer, eqname);
+        }
+    }
         
     return answer;
 }
@@ -154,6 +190,9 @@ static XMLNODE *postfixexpression(XMLNODE *root, LEXER *lex)
     char eqname[1024];
     XMLNODE * answer = root;
     
+    if (match(lex, SLASHSLASH) == 0)
+        return root;
+    
     token = gettoken(lex);
     if (token == EQNAME)
     {
@@ -161,11 +200,99 @@ static XMLNODE *postfixexpression(XMLNODE *root, LEXER *lex)
         match(lex, EQNAME);
         answer = fish_r(root, matchtag, eqname);
     }
+    else if(token == STRUDEL)
+    {
+        match(lex, STRUDEL);
+        token = gettoken(lex);
+        if (token == EQNAME)
+        {
+            getvalue(lex, eqname, 1024);
+            match(lex, EQNAME);
+            answer = fish_r(root, matchattribute, eqname);
+            purgeattributes(answer, eqname);
+        }
+        
+    }
+    
     token = gettoken(lex);
     if (token == SLASH)
-        answer = pathexpression(answer, lex, 0);
+    {
+        answer = pathexpression(answer, lex, 1);
+    }
+    else if (token == STRUDEL)
+    {
+        match(lex, STRUDEL);
+        token = gettoken(lex);
+        if (token == EQNAME)
+        {
+            getvalue(lex, eqname, 1024);
+            match(lex, EQNAME);
+            answer = select_r(answer, 0, matchattribute, eqname);
+            purgeattributes(answer, eqname);
+        }
+    }
     
     return  answer;
+}
+
+static XMLNODE *predicate(XMLNODE *root, LEXER *lex)
+{
+    
+    int token;
+    char eqname[1024];
+    XMLNODE * answer = root;
+    
+    match(lex, OPENSQUARE);
+    
+    token = gettoken(lex);
+    
+    if (token == EQNAME)
+    {
+        getvalue(lex, eqname, 1024);
+        match(lex, EQNAME);
+        answer = select_r(answer, 0, matchhaschild, eqname);
+    }
+    else if (token == ASTERISK)
+    {
+        match(lex, ASTERISK);
+        answer = select_r(answer, 0, matchhasanychild, 0);
+        
+    }
+    
+    match(lex, CLOSESQUARE);
+    
+}
+
+static int matchhaschild(XMLNODE *node, void *ptr)
+{
+    XMLNODE *child;
+    
+    for (child = node->child; child != NULL; child = child->next)\
+    {
+        if (matchtag(child, ptr))
+            return  1;
+    }
+    
+    return  0;
+}
+
+static int matchhasanychild(XMLNODE *node, void *ptr)
+{
+    return node->child ? 1 : 0;
+}
+
+static int matchattribute(XMLNODE *node, void *ptr)
+{
+    char *name = ptr;
+    XMLATTRIBUTE *attr = node->attributes;
+    
+    while (attr)
+    {
+        if (!strcmp(attr->name, name))
+            return 1;
+        attr = attr->next;
+    }
+    return 0;
 }
 
 static int matchtag(XMLNODE *node, void *ptr)
@@ -185,6 +312,9 @@ static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr)
     XMLNODE *nextnode;
     XMLNODE *lastnode = NULL;
     XMLNODE *fished;
+    
+    if (!node)
+        return 0;
     
     nextnode = node->next;
     while (node)
@@ -206,11 +336,13 @@ static XMLNODE *fish_r(XMLNODE *node, int (*predicate)(XMLNODE *node, void *ptr)
                 answer = fished;
                 lastnode = answer;
             }
-            while (lastnode->next)
+            while (lastnode && lastnode->next)
                 lastnode = lastnode->next;
             node->next = NULL;
             node->child = NULL;
             killxmlnode(node);
+            if (lastnode)
+                lastnode->next = nextnode;
         }
         node = nextnode;
         nextnode = node ? node->next : 0;
@@ -225,6 +357,9 @@ static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *nod
     XMLNODE *nextnode;
     XMLNODE *lastnode = NULL;
     XMLNODE *fished;
+    
+    if (!node)
+        return 0;
     
     if (level < 0)
     {
@@ -252,11 +387,13 @@ static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *nod
                 answer = fished;
                 lastnode = answer;
             }
-            while (lastnode->next)
+            while (lastnode && lastnode->next)
                 lastnode = lastnode->next;
             node->next = NULL;
             node->child = NULL;
             killxmlnode(node);
+            if (lastnode)
+                lastnode->next = nextnode;
         }
         node = nextnode;
         nextnode = node ? node->next : 0;
@@ -266,6 +403,32 @@ static XMLNODE *select_r(XMLNODE *node, int level, int (*predicate)(XMLNODE *nod
     return  answer;
 }
 
+static void purgeattributes(XMLNODE *list, const char *nametokeep)
+{
+    XMLNODE *node;
+    
+    for (node = list; node != NULL; node = node->next)
+    {
+        keeponlyoneattribute(node, nametokeep);
+    }
+}
+
+
+static void keeponlyoneattribute(XMLNODE *node, const char *name)
+{
+    XMLATTRIBUTE *keep = 0;
+    XMLATTRIBUTE *attr;
+    
+    for (attr = node->attributes; attr != NULL; attr = attr->next)
+    {
+        if (!strcmp(attr->name, name))
+            keep = attr;
+    }
+    if (keep)
+        keep = clonexmlattribute(keep);
+    killxmlattribute(node->attributes);
+    node->attributes = keep;
+}
 static XMLNODE *clonexmlnode_r(XMLNODE *node)
 {
     XMLNODE *answer;
@@ -393,6 +556,25 @@ out_of_memory:
     return 0;
 }
 
+/*
+  destroy the attributes list
+*/
+static void killxmlattribute(XMLATTRIBUTE *attr)
+{
+  XMLATTRIBUTE *next;
+  if(attr)
+  {
+    while(attr)
+    {
+       next = attr->next;
+       free(attr->name);
+       free(attr->value);
+       free(attr);
+       attr = next;
+    }
+  }
+}
+
 static void initlexer(LEXER *lex, const char *xpath)
 {
     lex->input = xpath;
@@ -445,10 +627,30 @@ static int match(LEXER *lex, int token)
         {
             lex->token = SLASH;
             lex->pos++;
+            if (lex->input[lex->pos] == '/')
+            {
+                lex->token = SLASHSLASH;
+                lex->pos++;
+            }
         }
         else if (lex->input[lex->pos] == '*')
         {
             lex->token = ASTERISK;
+            lex->pos++;
+        }
+        else if (lex->input[lex->pos] == '@')
+        {
+            lex->token = STRUDEL;
+            lex->pos++;
+        }
+        else if (lex->input[lex->pos] == '[')
+        {
+            lex->token = OPENSQUARE;
+            lex->pos++;
+        }
+        else if (lex->input[lex->pos] == '[')
+        {
+            lex->token = CLOSESQUARE;
             lex->pos++;
         }
         else
@@ -461,7 +663,30 @@ static int match(LEXER *lex, int token)
         return 1;
     }
     else
+    {
+        if (lex->token == NUL)
+        {
+            writeerror(lex, "Unexpected end of xpath");
+        }
+        else if (lex->token == EQNAME)
+        {
+            char eqname[1024];
+            getvalue(lex, eqname, 1024);
+            writeerror(lex, "Unexpected name[%s]", eqname);
+        }
+        else if (lex->token == SLASHSLASH)
+        {
+            writeerror(lex, "Unexpected symbol[//]");
+        }
+        else if (lex->pos > 0)
+        {
+            int ch = lex->input[lex->pos-1];
+            writeerror(lex, "Unexpected symbol[%c]", isgraph(ch) ?
+                       ch : '?');
+            
+        }
         return 0;
+    }
 }
 
 static int haserror(LEXER *lex)
@@ -540,7 +765,7 @@ int main(int argc, char **argv)
         if (!filtered)
             fprintf(stderr, "%s\n", error);
         
-        printdocument(filtered);
+        printnodewithsibs(filtered->root);
         
         killxmldoc(filtered);
         killxmldoc(doc);
