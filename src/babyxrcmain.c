@@ -15,6 +15,7 @@
 #include "loadmp3.h"
 #include "csv.h"
 #include "dumpcsv.h"
+#include "dataframes.h"
 #include "resize.h"
 #include "bdf2c.h"
 #include "ttf2c.h"
@@ -1319,7 +1320,7 @@ void usage(void)
 }
 
 
-int xmain(int argc, char **argv)
+int main(int argc, char **argv)
 {
   OPTIONS *opt = 0;
   XMLDOC *doc;
@@ -1448,12 +1449,12 @@ int xmain(int argc, char **argv)
             name = xml_getattribute(node, "name");
             processcursortag(stdout, header, path, name);
         }
-        else if (!strcmp(tag, "dataframe"))
-        {
-            path = xml_getattribute(node, "src");
-            name = xml_getattribute(node, "name");
-            processdataframetag(stdout, header, path, name);
-        }
+       // else if (!strcmp(tag, "dataframe"))
+       // {
+       //     path = xml_getattribute(node, "src");
+       //     name = xml_getattribute(node, "name");
+       //     processdataframetag(stdout, header, path, name);
+       // }
         else if (!strcmp(tag, "audio"))
         {
             path = xml_getattribute(node, "src");
@@ -1464,6 +1465,10 @@ int xmain(int argc, char **argv)
         else if (!strcmp(tag, "international"))
         {
             processinternationalnode(stdout, node, header);
+        }
+        else if (!strcmp(tag, "dataframe"))
+        {
+            processdataframenode(stdout, node, header);
         }
     }
   }

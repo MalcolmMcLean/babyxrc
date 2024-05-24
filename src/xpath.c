@@ -53,6 +53,8 @@ static void fish_r(XMLNODE *node, HASHTABLE *ht, int (*predicate)(XMLNODE *node,
 static void markdeleted_r(XMLNODE *node, HASHTABLE *ht);
 static int countselectednodes_r(XMLNODE *node, HASHTABLE *ht);
 static XMLNODE **getselectednodes_r(XMLNODE *node, HASHTABLE *ht, XMLNODE **out);
+static int getnodepath_r(XMLNODE *node, char *path, int len, XMLNODE *reference);
+static int pathdepth_r(XMLNODE *node);
 static int countnodes_r(XMLNODE *node);
 static void fillhashtable_r(XMLNODE *node, HASHTABLE *ht);
 
@@ -75,6 +77,7 @@ static int getvalue(LEXER *lex, char *value, int Nvalue);
 static int match(LEXER *lex, int token);
 static int haserror(LEXER *lex);
 static void writeerror(LEXER *lex, const char *fmt, ...);
+static int iselementchar(int ch);
 
 static HASHTABLE *inithashtable(int N);
 static void killhashtable(HASHTABLE *ht);
@@ -186,6 +189,32 @@ int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr)
         errormessage[0] = 0;
     return answer;
 }
+
+char *xml_getnodepath(XMLDOC *doc, XMLNODE *node)
+{
+    int maxlen;
+    int len;
+    char *answer = 0;
+    char *temp = 0;
+    
+    maxlen = pathdepth_r(doc->root);
+    answer = malloc(maxlen + 1);
+    if (!answer)
+        goto out_of_memory;
+    getnodepath_r(doc->root, answer, 0, node);
+    len = (int) strlen(answer);
+    temp = realloc(answer, len +1);
+    if (!temp)
+        goto out_of_memory;
+    answer = temp;
+    
+    return answer;
+    
+out_of_memory:
+    free(answer);
+    return 0;
+}
+
 
 
 static HASHTABLE *inithashtablefromtree(XMLNODE *root)
@@ -377,6 +406,55 @@ static XMLNODE **getselectednodes_r(XMLNODE *node, HASHTABLE *ht, XMLNODE **out)
     
     return out;
 }
+
+static int getnodepath_r(XMLNODE *node, char *path, int len, XMLNODE *reference)
+{
+    int taglen;
+    
+    while (node)
+    {
+        if (node == reference)
+        {
+            path[len++] = '/';
+            strcpy(path + len, node->tag);
+            return 1;
+        }
+        
+        if (node->child)
+        {
+            path[len] = '/';
+            strcpy(path + len + 1, node->tag);
+            taglen = (int) strlen(node->tag);
+            if (getnodepath_r(node->child, path, len + taglen +1, reference))
+               return 1;
+            path[len] = 0;
+        }
+        
+        node = node->next;
+    }
+    
+    return 0;
+}
+
+static int pathdepth_r(XMLNODE *node)
+{
+    int answer = 0;
+    int path;
+    
+    while (node)
+    {
+        if (node->tag)
+            path = (int) strlen(node->tag) + 1;
+        if (node->child)
+            path += pathdepth_r(node->child);
+        if (path > answer)
+            answer = path;
+        node = node->next;
+    }
+    
+    return answer;
+}
+
 
 static int countnodes_r(XMLNODE *node)
 {
@@ -668,10 +746,10 @@ static int match(LEXER *lex, int token)
     {
         if (lex->input[lex->pos] == 0)
             lex->token = NUL;
-        else if (isalpha(lex->input[lex->pos]))
+        else if (isalpha(lex->input[lex->pos]) || lex->input[lex->pos] == '_')
         {
             lex->tokenpos = lex->pos;
-            while (isalnum(lex->input[lex->pos]) || lex->input[lex->pos] == ':')
+            while (iselementchar(lex->input[lex->pos]) || lex->input[lex->pos] == ':')
             {
                 lex->pos++;
             }
@@ -757,6 +835,15 @@ static void writeerror(LEXER *lex, const char *fmt, ...)
         vsnprintf(lex->error, 1024, fmt, valist);
     va_end(valist);
     
+}
+
+static int iselementchar(int ch)
+{
+    if (isalnum(ch))
+        return 1;
+    if (ch == '-'|| ch == '_' || ch == '.')
+        return 1;
+    return 0;
 }
 
 static HASHTABLE *inithashtable(int N)
@@ -889,7 +976,7 @@ static void printdocument(XMLDOC *doc)
         printnode_r(doc->root, 0);
 }
 
-int main(int argc, char **argv)
+int xpathmain(int argc, char **argv)
 {
     char error[1024];
     XMLNODE **selected;
