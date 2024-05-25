@@ -10,9 +10,10 @@
 #include <string.h>
 #include <ctype.h>
 
-static int cJSONToXML_r(FILE *fp, cJSON *json, int depth);
+static int cJSONToXML_r(FILE *fp, cJSON *json, const char *mothertag, int depth);
 static int iselementchar(int ch);
 static char *xml_escape(const char *data);
+static char *mystrconcat(const char *prefix, const char *suffix);
 
 int xml_fromCSV(FILE *fp, CSV *csv)
 {
@@ -73,26 +74,32 @@ int xml_fromCSV(FILE *fp, CSV *csv)
     return  0;
 }
 
+
 int xml_fromJSON(FILE *fp, cJSON *json)
 {
-    return cJSONToXML_r(fp, json, 0);
+    return cJSONToXML_r(fp, json, "Root", 0);
 }
 
-static int cJSONToXML_r(FILE *fp, cJSON *json, int depth)
+static int cJSONToXML_r(FILE *fp, cJSON *json, const char *mothertag, int depth)
 {
     int i;
     int N;
-    const char *tag;
+    char *tag;
     const char *str;
     char *xmltext;
     
     while (json)
     {
+        if (json->string)
+            tag = xml_makeelementname(json->string);
+        else
+            tag = mystrconcat(mothertag, "Row");
+        if (!tag)
+            return -1;
+        
         for (i = 0; i < depth; i++)
             fprintf(fp, "\t");
-        tag = json->string;
-        if (!tag)
-            tag = "Row";
+        
         fprintf(fp, "<%s>", tag);
         if (json->child)
             fprintf(fp, "\n");
@@ -110,16 +117,8 @@ static int cJSONToXML_r(FILE *fp, cJSON *json, int depth)
             fprintf(fp, "%g", cJSON_GetNumberValue(json));
         else if (cJSON_IsBool(json))
             fprintf(fp,"%s", cJSON_IsTrue(json) ? "true" : "false");
-        else if (cJSON_IsArray(json))
-        {
-            N = cJSON_GetArraySize(json);
-            for (i = 0; i < N; i++)
-            {
-                cJSONToXML_r(fp, cJSON_GetArrayItem(json, i), depth +1);
-            }
-        }
         if (json->child)
-            cJSONToXML_r(fp, json->child, depth +1);
+            cJSONToXML_r(fp, json->child, tag, depth +1);
         
         if (json->child)
         {
@@ -127,7 +126,8 @@ static int cJSONToXML_r(FILE *fp, cJSON *json, int depth)
                 fprintf(fp, "\t");
         }
         fprintf(fp, "</%s>\n", tag);
-        
+    
+        free(tag);
         json = json->next;
     }
     
@@ -208,4 +208,20 @@ static char *xml_escape(const char *data)
     return answer;
 out_of_memory:
     return 0;
+}
+
+static char *mystrconcat(const char *prefix, const char *suffix)
+{
+    int lena, lenb;
+    char *answer;
+    
+    lena = (int) strlen(prefix);
+    lenb = (int) strlen(suffix);
+    answer = malloc(lena + lenb + 1);
+    if (answer)
+    {
+        strcpy(answer, prefix);
+        strcpy(answer + lena, suffix);
+    }
+    return  answer;
 }

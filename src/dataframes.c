@@ -20,14 +20,29 @@
 #define TYPE_NUMBER 1
 #define TYPE_STRING 2
 
+enum PrintFType
+{
+    PF_UNKNOWN,
+    PF_INT,
+    PF_DOUBLE,
+    PF_CHAR_STAR,
+    PF_LONG_INT,
+    PF_LONG_LONG_INT,
+    PF_LONG_DOUBLE,
+    PF_SIZE_T,
+};
+
 typedef struct field
 {
    char *name;  /* name in CSV header */
    char *tag; /* tag of owning XML element */
-   int attribute; /* set if the filed is an attribute */
+   int attribute; /* set if the field is an attribute */
    int datatype; /* type of data it is */
    char *xpath;
-   char format[32];
+   char *ctype; /* type of data in C */
+   int structexternal; /* set if the type is an externally defned structure */
+   char *format; /* format string to pass to fprintf */
+   enum PrintFType printftype;
    XMLNODE **nodes;
    XMLATTRIBUTE **attributes;
    int Nnodes;
@@ -40,11 +55,14 @@ int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const
 
 int writefield_r(FILE *fp, FIELD *field, int row);
 void writefieldstruct_r(FILE *fp, FIELD *field);
+int pointerwithspace(const char *type);
 int fillfields_r(XMLDOC *doc, FIELD *field);
 
 int determinefieldtype_r(FIELD *field);
 int fieldshavesamenumbernodes_r(FIELD *field);
 
+
+FIELD *createfield(void);
 FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildren);
 FIELD *fieldsfromnodes_r(XMLNODE *node, const char *format);
 FIELD *processfieldnode(XMLNODE *node, const char *format);
@@ -59,6 +77,10 @@ void makelower(char *str);
 int guessdatatype(XMLNODE **nodes, int N);
 int guessdatataattributes(XMLATTRIBUTE **attr, int N);
 int getdatatype(const char *str);
+int writeformat(FILE *fp, const char *fmt, enum PrintFType pftype, const char *data);
+enum PrintFType getformttype_pf(const char *fmt);
+const char *getformattype(const char *fmt);
+int Nformatspecifiers(const char *fmt);
 static char *mystrconcat(const char *prefix, const char *suffix);
 static char *mystrdup(const char *str);
 
@@ -137,16 +159,11 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         fclose(tempfp);
         
         json = cJSON_Parse(jsonstr);
-        xml_fromJSON(stdout, json);
-        
         tempfp = tmpfile();
         xml_fromJSON(tempfp, json);
         fseek(tempfp, 0, SEEK_SET);
         doc = floadxmldoc2(tempfp, error, 1024);
         fclose(tempfp);
-        
-        printf("Doc %p\n", doc);
-        printf("error %s\n", error);
     }
     else if(!strcmp(ext, ".xml"))
     {
@@ -179,7 +196,7 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         {
             if (!nodeshavesamestructure(nodes[0], nodes[i], useattributes, usechildren))
             {
-                fprintf(stderr, "Not all nodes selected for datframe have same structure\n");
+                fprintf(stderr, "Not all nodes selected for dataframe have same structure\n");
             }
         }
         fields = getfields_r(nodes[0], doc, useattributes, usechildren);
@@ -214,14 +231,24 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
 int writestructuredefinition_r(FILE *fp, FIELD *fields, const char *structname)
 {
     FIELD *current;
+    char *childstructname;
     
     for  (current = fields; current != NULL; current = current->next)
     {
         if (current->child)
-            writestructuredefinition_r(fp, current->child, current->name);
+        {
+            if (current->ctype)
+                childstructname = mystrdup(current->ctype);
+            else
+                childstructname = mystrconcat("struct ", current->name);
+            if (!current->structexternal)
+                writestructuredefinition_r(fp, current->child, childstructname);
+            
+            free(childstructname);
+        }
     }
     
-    fprintf(fp, "struct %s\n", structname);
+    fprintf(fp, "%s\n", structname);
     fprintf(fp, "{\n");
     writefieldstruct_r(fp, fields);
     fprintf(fp, "};\n\n");
@@ -255,7 +282,11 @@ int writefield_r(FILE *fp, FIELD *field, int row)
     {
         if (field->attribute)
         {
-            if (field->datatype == TYPE_STRING)
+            if (field->format)
+            {
+                writeformat(fp, field->format, field->printftype, field->attributes[row]->value);
+            }
+            else if (field->datatype == TYPE_STRING)
             {
                 cstring = texttostring(field->attributes[row]->value);
                 fprintf(fp, "%s, ", cstring);
@@ -268,7 +299,11 @@ int writefield_r(FILE *fp, FIELD *field, int row)
         }
         else
         {
-            if (field->datatype == TYPE_STRING)
+            if (field->format)
+            {
+                writeformat(fp, field->format, field->printftype, field->nodes[row]->data);
+            }
+            else if (field->datatype == TYPE_STRING)
             {
                 cstring = texttostring(field->nodes[row]->data);
                 fprintf(fp, "%s, ", cstring);
@@ -435,7 +470,18 @@ void writefieldstruct_r(FILE *fp, FIELD *field)
 {
     while (field)
     {
-        if (field->datatype == TYPE_STRING)
+        if (field->ctype)
+        {
+            if (pointerwithspace(field->ctype))
+            {
+                fprintf(fp, "  %s%s;\n", field->ctype, field->name);
+            }
+            else
+            {
+                fprintf(fp, "  %s %s;\n", field->ctype, field->name);
+            }
+        }
+        else if (field->datatype == TYPE_STRING)
         {
             fprintf(fp, "  char *%s;\n", field->name);
         }
@@ -452,6 +498,77 @@ void writefieldstruct_r(FILE *fp, FIELD *field)
                 fprintf(fp, "  struct %s %s_x;\n", field->name, field->name);
         }
         field = field->next;
+    }
+}
+
+int pointerwithspace(const char *type)
+{
+    char *asterisk;
+    
+    asterisk = strrchr(type, '*');
+    if (!asterisk)
+        return 0;
+    if (asterisk[1] == 0)
+    {
+        while (*asterisk == '*' && asterisk != type)
+            asterisk--;
+        if (isspace((unsigned char) *asterisk))
+            return 1;
+    }
+    
+    return  0;
+}
+
+FIELD *createfield(void)
+{
+    FIELD *field;
+    
+    field = malloc(sizeof(FIELD));
+    if (!field)
+        return 0;
+    field->name = 0;
+    field->tag = 0;
+    field->xpath = 0;
+    field->attribute = 0;
+    field->datatype = TYPE_UNKNOWN;
+    field->ctype = 0;
+    field->format = 0;
+    field->printftype = PF_UNKNOWN;
+    field->structexternal = 0;
+    field->attributes = 0;
+    field->nodes = 0;
+    field->next = 0;
+    field->child = 0;
+    
+    return field;
+}
+
+void killfield(FIELD *field)
+{
+    if (field)
+    {
+        free(field->name);
+        free(field->tag);
+        free(field->xpath);
+        free(field->ctype);
+        free(field->format);
+        free(field->attributes);
+        free(field->nodes);
+        free(field);
+    }
+}
+
+void killfields_r(FIELD *field)
+{
+    FIELD *next;
+    while (field)
+    {
+        next = field->next;
+        if (field->child)
+            killfields_r(field->child);
+        killfield(field);
+        
+        field = next;
     }
 }
 
@@ -479,14 +596,12 @@ FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildre
       }
       for (attr = node->attributes; attr; attr = attr->next)
       {
-          field = malloc(sizeof(FIELD));
+          field = createfield();
           field->name = mystrdup(attr->name);
           field->tag = mystrdup(node->tag);
           field->xpath = mystrconcat(pathtonodea, attr->name);
           field->attribute = 1;
           field->datatype = TYPE_UNKNOWN;
-          field->attributes = 0;
-          field->nodes = 0;
           field->next = answer;
           field->child = 0;
           answer = field;
@@ -503,7 +618,7 @@ FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildre
    {
       for (child = node->child; child; child = child->next)
       {
-          field = malloc(sizeof(FIELD));
+          field = createfield();
           
          field->name = mystrdup(child->tag);
          field->tag = mystrdup(node->tag);
@@ -528,6 +643,11 @@ FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildre
     answer = reverse;
     
     return answer;
+out_of_memory:
+    killfields_r(answer);
+    fprintf(stderr, "Out of nemory\n");
+    
+    return 0;
 }
 
 FIELD *fieldsfromnodes_r(XMLNODE *node, const char *format)
@@ -569,21 +689,14 @@ FIELD *processfieldnode(XMLNODE *node, const char *format)
     FIELD *field;
     const char *name = 0;
     const char *xpath = 0;
+    const char *ctype = 0;
+    const char *formatstr = 0;
+    enum PrintFType pftype;
+    int err;
     
-    field = malloc(sizeof(FIELD));
+    field = createfield();
     if (!field)
         goto out_of_memory;
-    
-    field->name = 0;  /* name in CSV header */
-    field->tag = 0; /* tag of owning XML element */
-    field->attribute = 0; /* set if the filed is an attribute */
-    field->datatype = TYPE_UNKNOWN; /* type of data it is */
-    field->xpath = 0;
-    field->format[0] = 0;
-    field->nodes = 0;
-    field->attributes =0;
-    field->next = 0;
-    field->child = 0;
     
     name = xml_getattribute(node, "name");
     if (!name)
@@ -609,6 +722,47 @@ FIELD *processfieldnode(XMLNODE *node, const char *format)
         field->xpath = mystrconcat("//", field->name);
         if (!field->xpath)
             goto out_of_memory;
+    }
+    
+    ctype = xml_getattribute(node, "ctype");
+    if (ctype)
+    {
+        field->ctype = mystrdup(ctype);
+        if (!field->ctype)
+            goto out_of_memory;
+    }
+    
+    formatstr = xml_getattribute(node, "format");
+    if (formatstr)
+    {
+        if (Nformatspecifiers(formatstr) != 1)
+        {
+            fprintf(stderr, "field element format attribute must specify one field\n");
+        }
+        else
+        {
+            pftype = getformttype_pf(formatstr);
+            if (pftype == PF_UNKNOWN)
+            {
+                fprintf(stderr, "field element format attribute doesn't specify supported type\n");
+            }
+            else
+            {
+                field->format = mystrdup(formatstr);
+                if (!field->format)
+                    goto out_of_memory;
+                field->printftype = pftype;
+            }
+        }
+    }
+    
+    if (xml_getattribute(node, "external"))
+    {
+        field->structexternal = parseboolean(xml_getattribute(node, "external"), &err);
+        if (err)
+        {
+            fprintf(stderr, "field element external attribute must be boolean\n");
+        }
     }
     
     return field;
@@ -804,6 +958,173 @@ int getdatatype(const char *str)
     if (*end == 0)
         return TYPE_NUMBER;
     return TYPE_STRING;
+}
+
+int writeformat(FILE *fp, const char *fmt, enum PrintFType pftype, const char *data)
+{
+    switch (pftype)
+    {
+        case PF_UNKNOWN:
+            fprintf(fp, "%s", data);
+            break;
+        case PF_INT:
+            fprintf(fp, fmt, (int) strtol(data, 0, 10));
+            break;
+        case PF_DOUBLE:
+            fprintf(fp, fmt, strtod(data, 0));
+            break;
+        case PF_CHAR_STAR:
+            fprintf(fp, fmt, data);
+            break;
+        case PF_LONG_INT:
+            fprintf(fp, fmt, strtol(data, 0, 10));
+            break;
+        case PF_LONG_LONG_INT:
+            fprintf(fp, fmt, strtoll(data, 0, 10));
+            break;
+        case PF_LONG_DOUBLE:
+            fprintf(fp, fmt, strtold(data, 0));
+            break;
+        case PF_SIZE_T:
+            fprintf(fp, fmt, (size_t) strtoll(data, 0, 10));
+            break;
+    }
+    fprintf(fp, ", ");
+}
+
+enum PrintFType getformttype_pf(const char *fmt)
+{
+    const char *type;
+    
+    type = getformattype(fmt);
+    
+    if (!strcmp(type, "unknown"))
+        return PF_UNKNOWN;
+    else if (!strcmp(type, "int"))
+        return PF_INT;
+    else if (!strcmp(type, "double"))
+        return PF_DOUBLE;
+    else if (!strcmp(type, "char *"))
+        return PF_CHAR_STAR;
+    else if (!strcmp(type, "long int"))
+        return PF_LONG_INT;
+    else if (!strcmp(type, "long long int"))
+        return PF_LONG_LONG_INT;
+    else if (!strcmp(type, "long double"))
+        return PF_LONG_DOUBLE;
+    else if (!strcmp(type, "size_t"))
+        return PF_SIZE_T;
+    
+    return PF_UNKNOWN;
+}
+
+const char *getformattype(const char *fmt)
+{
+    int i, j;
+    char specifier[16];
+    
+    while (fmt[0] && (fmt[0] != '%' || (fmt[0] == '%' && fmt[1] == '%')))
+    {
+        if (fmt[0] == '%')
+            fmt++;
+        fmt++;
+    }
+    if (fmt[0] == 0)
+        return "unknown";
+    for (i = 0; fmt[i]; i++)
+    {
+        if (isalpha(fmt[i]))
+        {
+            j = 0;
+            while(fmt[i] == 'h' ||
+                  fmt[i] == 'l' ||
+                  fmt[i] == 'j' ||
+                  fmt[i] == 'z' ||
+                  fmt[i] == 't' ||
+                  fmt[i] == 'L')
+            {
+                specifier[j++] = fmt[i++];
+                specifier[j] = 0;
+                if (j > 4)
+                    return "unknown";
+            }
+            specifier[j++] = fmt[i++];
+            specifier[j] = 0;
+            
+            if (strlen(specifier) == 1)
+            {
+                if (strchr("diouxX", specifier[0]))
+                    return "int";
+                if (strchr("aAeEfFgG", specifier[0]))
+                    return "double";
+                if (strchr("s", specifier[0]))
+                    return "char *";
+                return "unknown";
+            }
+            else if(strlen(specifier) == 2)
+            {
+                switch (specifier[0]) {
+                    case 'h':
+                        if (strchr("diouxX", specifier[1]))
+                            return "int";
+                        else
+                            return "unknown";
+                        break;
+                    case 'l':
+                        if (strchr("diouxX", specifier[1]))
+                            return "long int";
+                        else
+                            return "unknown";
+                        break;
+                    case 'z':
+                        if (strchr("diouxX", specifier[1]))
+                            return "size_t";
+                        else
+                            return "unknown";
+                        break;
+                    case 'L':
+                        if (strchr("aAeEfFgG", specifier[1]))
+                            return "long double";
+                        else
+                            return "unknown";
+                        break;
+                    default:
+                        return "unknown";
+                        break;
+                }
+            }
+            else if(strlen(specifier) == 3)
+            {
+                if (specifier[0] == 'l' && specifier[1] == 'l' &&
+                    strchr("diouxX", specifier[2]))
+                        return "long long int";
+                else
+                    return "unknown";
+            }
+            
+        }
+    }
+    
+    return "unknown";
+}
+
+int Nformatspecifiers(const char *fmt)
+{
+    int answer = 0;
+    
+    while (*fmt)
+    {
+        if (*fmt == '%')
+        {
+            if (fmt[1] == '%')
+                fmt++;
+            else
+                answer++;
+        }
+        fmt++;
+    }
+    
+    return answer;
 }
 
 static char *mystrconcat(const char *prefix, const char *suffix)
