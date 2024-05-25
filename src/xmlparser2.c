@@ -428,7 +428,7 @@ static int bbx_utf8_putch(char *out, int ch)
 
 
 
-XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nout)
+XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nerr)
 {
    ERROR error;
    LEXER lexer;
@@ -438,7 +438,7 @@ XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nout)
     
     initerror(&error);
 
-   if (errormessage && Nout > 0)
+   if (errormessage && Nerr > 0)
       errormessage[0] = 0;
 
     strbuf.str = str;
@@ -448,14 +448,14 @@ XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nout)
     ch = stringaccess(&strbuf);
     if (ch != '<')
     {
-        snprintf(errormessage, Nout, "string must start with a \'<\' character");
+        snprintf(errormessage, Nerr, "string must start with a \'<\' character");
         return 0;
     }
     initlexer(&lexer, &error, stringaccess, &strbuf);
     answer = xmldocument(&lexer, &error);
     if (error.set)
     {
-         snprintf(errormessage, Nout, "%s", error.message);
+         snprintf(errormessage, Nerr, "%s", error.message);
     }
     return answer;
 }

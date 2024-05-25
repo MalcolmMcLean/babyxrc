@@ -16,5 +16,6 @@
 
 int xml_fromCSV(FILE *fp, CSV *csv);
 int xml_fromJSON(FILE *fp,cJSON *json);
+char *xml_makeelementname(const char *str);
 
 #endif /* xmlconverter_h */

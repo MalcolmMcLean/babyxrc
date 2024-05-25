@@ -8,8 +8,10 @@
 #include "xmlconverter.h"
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 static int cJSONToXML_r(FILE *fp, cJSON *json, int depth);
+static int iselementchar(int ch);
 static char *xml_escape(const char *data);
 
 int xml_fromCSV(FILE *fp, CSV *csv)
@@ -17,6 +19,7 @@ int xml_fromCSV(FILE *fp, CSV *csv)
     int width, height;
     int i, ii;
     const char *fieldname;
+    char *elementname;
     char buff[256];
     int type;
     const char *str;
@@ -34,10 +37,13 @@ int xml_fromCSV(FILE *fp, CSV *csv)
             fieldname = csv_column(csv, ii, &type);
             if (!fieldname)
             {
-                snprintf(buff, 256, "Col%d\n", ii +1);
+                snprintf(buff, 256, "Col%d", ii +1);
                 fieldname = buff;
             }
-            fprintf(fp, "\t\t<%s>", fieldname);
+            elementname = xml_makeelementname(fieldname);
+            fprintf(fp, "\t\t<%s>", elementname);
+         
+            
             if (csv_hasdata(csv, ii, i))
             {
                 if (type == CSV_STRING)
@@ -55,7 +61,9 @@ int xml_fromCSV(FILE *fp, CSV *csv)
                 else if (type == CSV_BOOL)
                     fprintf(fp, "%s", csv_get(csv, ii, i) == 0.0 ? "false" : "true");
             }
-            fprintf(fp,"</%s>\n", fieldname);
+            fprintf(fp,"</%s>\n", elementname);
+            free(elementname);
+            elementname = 0;
         }
         fprintf(fp, "\t</Row>\n");
     }
@@ -123,6 +131,42 @@ static int cJSONToXML_r(FILE *fp, cJSON *json, int depth)
         json = json->next;
     }
     
+    return 0;
+}
+
+char *xml_makeelementname(const char *str)
+{
+    char *answer;
+    int i;
+    int j = 0;
+    
+    answer = malloc(strlen(str) + 2);
+    if (!answer)
+        return 0;
+    
+    if (!isalpha(str[0]) && str[0] != '_')
+    {
+        answer[0] = '_';
+        j = 1;
+    }
+    for (i = 0; str[i]; i++)
+    {
+        if (!iselementchar(str[i]))
+            answer[j++] = '_';
+        else
+            answer[j++] = str[i];
+    }
+    answer[j++] = 0;
+    
+    return answer;
+}
+
+static int iselementchar(int ch)
+{
+    if (isalnum(ch))
+        return 1;
+    if (ch == '-'|| ch == '_' || ch == '.')
+        return 1;
     return 0;
 }
 

@@ -43,10 +43,12 @@ typedef struct
 #define STRUDEL 5
 #define OPENSQUARE 6
 #define CLOSESQUARE 7
+#define DOTDOT 8
 
 static HASHTABLE *inithashtablefromtree(XMLNODE *root);
 static XMLNODE **getselectednodes(XMLNODE *root, HASHTABLE *ht, int *Nret);
 
+static void stepup_r(XMLNODE *node, HASHTABLE *ht);
 static void stepdown_r(XMLNODE *node, HASHTABLE *ht);
 static void select_r(XMLNODE *node, HASHTABLE *ht, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
 static void fish_r(XMLNODE *node, HASHTABLE *ht, int (*predicate)(XMLNODE *node, void *ptr), void *ptr);
@@ -190,6 +192,32 @@ int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr)
     return answer;
 }
 
+int xml_xpathvalid(const char *xpath, char *errormessage, int Nerr)
+{
+    XMLDOC *doc = 0;
+    XMLNODE **nodes = 0;
+    int N;
+    int answer = 0;
+    
+    doc = xmldoc2fromstring("<root attr=\"true\">Fred</root>\n", 0, 0);
+    if (!doc)
+        goto out_of_memory;
+    nodes = xml_selectxpath(doc, xpath, &N, errormessage, Nerr);
+    if (!nodes)
+        answer = 0;
+    else
+        answer = 1;
+    free(nodes);
+    killxmldoc(doc);
+    
+    return answer;
+    
+out_of_memory:
+    free(nodes);
+    killxmldoc(doc);
+    return -1;
+}
+
 char *xml_getnodepath(XMLDOC *doc, XMLNODE *node)
 {
     int maxlen;
@@ -289,6 +317,41 @@ static XMLNODE **getselectednodes(XMLNODE *root, HASHTABLE *ht, int *Nret)
     
 out_of_memory:
     return 0;
+}
+
+static void stepup_r(XMLNODE *node, HASHTABLE *ht)
+{
+    HASHCELL *cell;
+    XMLNODE *child;
+    HASHCELL *childcell;
+    
+    while (node)
+    {
+        cell = ht_get(ht, node);
+    
+        if (cell->deleted == 1)
+        {
+            if (node->child)
+            {
+                child = node->child;
+                while (child)
+                {
+                    childcell = ht_get(ht, child);
+                    if (childcell->deleted == 0)
+                    {
+                        cell->deleted = 0;
+                        break;
+                    }
+                    child = child->next;
+                }
+            }
+                
+            if (cell->deleted == 1 && node->child)
+                stepup_r(node->child, ht);
+        }
+        
+        node = node->next;
+    }
 }
 
 static void stepdown_r(XMLNODE *node, HASHTABLE *ht)
@@ -544,7 +607,13 @@ static XMLATTRIBUTE **pathexpression(XMLNODE *root, HASHTABLE *ht, LEXER *lex, i
         match(lex, ASTERISK);
         select_r(root, ht, matchall, eqname);
     }
-    
+    else if (token == DOTDOT)
+    {
+        match(lex, DOTDOT);
+        if (level)
+            stepup_r(root, ht);
+        stepup_r(root, ht);
+    }
     token = gettoken(lex);
     if (token == SLASH)
     {
@@ -765,6 +834,11 @@ static int match(LEXER *lex, int token)
                 lex->pos++;
             }
         }
+        else if (lex->input[lex->pos] == '.' && lex->input[lex->pos+1] == '.')
+        {
+            lex->token = DOTDOT;
+            lex->pos += 2;
+        }
         else if (lex->input[lex->pos] == '*')
         {
             lex->token = ASTERISK;
@@ -807,6 +881,10 @@ static int match(LEXER *lex, int token)
             writeerror(lex, "Unexpected name[%s]", eqname);
         }
         else if (lex->token == SLASHSLASH)
+        {
+            writeerror(lex, "Unexpected symbol[//]");
+        }
+        else if (lex->token == DOTDOT)
         {
             writeerror(lex, "Unexpected symbol[//]");
         }
@@ -916,9 +994,23 @@ static HASHCELL *ht_get(HASHTABLE *ht, void *address)
     return 0;
 }
 
-static unsigned int hash(void *address)
+static unsigned int xhash(void *address)
 {
     return (unsigned int) (unsigned long)(address) >> 4;
+}
+
+static unsigned int hash(void *address)
+{
+    int i;
+    unsigned long answer = 2166136261;
+    unsigned char *byte = (unsigned char *) &address;
+    
+    for (i =0; i < sizeof(void *); i++)
+    {
+        answer *= 16777619;
+        answer ^= byte[i];
+    }
+    return (unsigned int) (answer & 0xFFFFFFFF);
 }
 
 

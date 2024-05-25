@@ -26,8 +26,9 @@ typedef struct
 } XMLDOC;
 
 
-XMLDOC *loadxmldoc2(char *fname, char *errormessage, int Nerr);
+XMLDOC *loadxmldoc2(const char *fname, char *errormessage, int Nerr);
 XMLDOC *floadxmldoc2(FILE *fp, char *errormessage, int Nerr);
+XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nerr);
 void killxmldoc(XMLDOC *doc);
 void killxmlnode(XMLNODE *node);
 

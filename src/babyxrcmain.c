@@ -405,7 +405,7 @@ error_exit:
     
 }
 
-static int parseboolaen(const char *boolattribute, int *error)
+int parseboolean(const char *boolattribute, int *error)
 {
     int answer = 0;
     
@@ -814,7 +814,7 @@ int processutf16tag(FILE *fp, int header, const char *fname, const char *name, c
     
   if (allowsurrogatepairs)
   {
-      allowsurrogatesflag = parseboolaen(allowsurrogatepairs, &error);
+      allowsurrogatesflag = parseboolean(allowsurrogatepairs, &error);
       if (error)
       {
           fprintf(stderr, "Bad boolean value to allowsurrogatepairs: \"%s\"\n", allowsurrogatepairs);
@@ -908,6 +908,45 @@ error_exit:
     free(comment);
     return -1;
         
+}
+
+int processincludetag(FILE *fp, int header,  const char *fname, const char *system, const char *alsoheader)
+{
+    int alsoheaderflag = 1;
+    int systemflag = 0;
+    int error;
+    
+    if (system)
+    {
+        systemflag = parseboolean(system, &error);
+        if (error)
+        {
+            fprintf(stderr, "system attribute of include element must be boolean\n");
+            return -1;
+        }
+    }
+    if (alsoheader)
+    {
+        systemflag = parseboolean(alsoheader, &error);
+        if (error)
+        {
+            fprintf(stderr, "header attribute of include element must be boolean\n");
+            return -1;
+        }
+    }
+    if (!fname)
+    {
+        fprintf(stderr, "include element must have src attribute set\n");
+        return -1;
+    }
+    if (header && !alsoheaderflag)
+        return 0;
+    if (systemflag)
+        fprintf(fp, "#include <%s>\n", fname);
+    else
+        fprintf(fp, "#include \"%s\"\n", fname);
+    
+    return 0;
 }
 
 int processbinarytag(FILE *fp, int header, const char *fname, const char *name)
@@ -1339,6 +1378,8 @@ int main(int argc, char **argv)
   const char *pointsstr;
   const char *sampleratestr;
   const char *allowsurrogatepairsstr;
+  const char *system;
+  const char *headerstr;
     
   
   opt = options(argc, argv, 0);
@@ -1399,6 +1440,13 @@ int main(int argc, char **argv)
             path = xml_getattribute(node, "src");
             str = xml_getdata(node);
             processcommenttag(stdout, path, str);
+        }
+        if (!strcmp(tag, "include"))
+        {
+            path = xml_getattribute(node, "src");
+            system = xml_getattribute(node, "system");
+            headerstr = xml_getattribute(node, "header");
+            processincludetag(stdout, header, path, system, headerstr);
         }
         else if (!strcmp(tag, "image"))
         {
