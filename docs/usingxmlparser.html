@@ -105,7 +105,7 @@ The XML parser is a vanilla parser. It doesn't support everything. It just conve
 You will often need to access these structures directly to process the XML tree efficiently. For instance if you do not know beforehand which attributes are assoicated with an element, the only way to get that information is to walk the attribute list an examne the "name" members.
 </P>
 <P>
-Whilst in reality the structure is a binary tree, it is treated as an anary tree because the pointers are labelled "child" and "next" rather than "childa" and "childb". So the "next" pointer is interpreted as a linked list of younger siblings. You therefore iterate over the "next" pinter and recurse down the "child" pointer."
+Whilst in reality the structure is a binary tree, it is treated as an anary tree because the pointers are labelled "child" and "next" rather than "childa" and "childb". So the "next" pointer is interpreted as a linked list of younger siblings. You therefore iterate over the "next" pointer and recurse down the "child" pointer."
 <P>
 
 <H3> Example code </H3>

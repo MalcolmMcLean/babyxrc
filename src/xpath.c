@@ -90,7 +90,21 @@ static unsigned int hash(void *address);
 static void printnode_r(XMLNODE *node, int depth);
 static void printnodewithsibs(XMLNODE *node);
 
-XMLNODE **xml_selectxpath(XMLDOC *doc, const char *xpath, int *Nselected, char *errormessage, int Nerr)
+/*
+    Call the XPath query.
+ 
+    Params: doc - the xml document
+            xpath - the path to query
+            Nselected - return for number of selected paths
+            errormessage - return buffer for parse errors
+            Nerr - length of errormessage buffer.
+    Returns: the selected nodes as a list, yerminateed with a NULL
+ 
+    Notes: were the quety returns no nores, u]it will return an empty
+    list containing onl the terminal NULL value. When it encouters an error
+    it wil return 0.
+ */
+XMLNODE **xml_xpath_select(XMLDOC *doc, const char *xpath, int *Nselected, char *errormessage, int Nerr)
 {
     LEXER lex;
     HASHTABLE *ht = 0;
@@ -133,7 +147,24 @@ out_of_memory:
     return  0;
 }
 
-XMLATTRIBUTE **xml_xpathgetattributes(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr)
+/*
+    Call the XPath query on an expression which selects attributes
+ 
+    Params: doc - the xml document
+            xpath - the path to query
+            Nselected - return for number of selected paths
+            errormessage - return buffer for parse errors
+            Nerr - length of errormessage buffer.
+    Returns: the selected attributes as a list, yerminateed with a NULL
+ 
+    Notes: where the query returns no attributes, it will return an empty
+    list containing only the terminal NULL value. When it encouters an error
+    it will return 0.
+ 
+     An XPath expression like "//book@category" selects all catehory atr]tributes of nodes with the element tad "book". If you call xml_xpath_select you will obtain thne <book> nodesb themselves.
+ 
+ */
+XMLATTRIBUTE **xml_xpath_selectattributes(XMLDOC *doc, const char *xpath, char *errormessage, int Nerr)
 {
     LEXER lex;
     HASHTABLE *ht = 0;
@@ -168,7 +199,18 @@ out_of_memory:
     return  0;
 }
 
-int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr)
+/*
+    Test whether an XPath selects attributes.
+ 
+    Params: xpath - the xapth exression
+           errormessage - reutnr buffer for parse error messages
+           Nerr - size of the roor meaage buffer
+    Returns: 1 if the xpath expression selects attributes, else 0.
+ 
+    Nots: the Xath xpression "//book" selcts all nodes with the element tag "book". Tne expression "//book@category" selects all nodes with the elemnet tag "book" and an attribute "category" in Node context, and the attributes themselves in an attribute cntext. The funtion distinguishes.
+s.
+ */
+int xml_xpath_selectsattributes(const char *xpath, char *errormessage, int Nerr)
 {
     LEXER lex;
     XMLATTRIBUTE **attributes;
@@ -192,7 +234,18 @@ int xml_xpathselectsattributes(const char *xpath, char *errormessage, int Nerr)
     return answer;
 }
 
-int xml_xpathvalid(const char *xpath, char *errormessage, int Nerr)
+/*
+    Test an XPath expression for errors.
+ 
+    Params: xpath - the xpath expresion
+            errormessage - return buffer for error diagnstics
+            Nerr - size of the errormeaasge buffer. (256 bytes adequate).
+    Returns: 1 id the xoath ahs valid sntax, 0 if not.
+ 
+    Notes: we do not suppprt all of XPath. So some expressions may be valid
+    XPath syntax but not accpeted by this XPath engine.
+*/
+int xml_xpath_isvalid(const char *xpath, char *errormessage, int Nerr)
 {
     XMLDOC *doc = 0;
     XMLNODE **nodes = 0;
@@ -202,7 +255,7 @@ int xml_xpathvalid(const char *xpath, char *errormessage, int Nerr)
     doc = xmldoc2fromstring("<root attr=\"true\">Fred</root>\n", 0, 0);
     if (!doc)
         goto out_of_memory;
-    nodes = xml_selectxpath(doc, xpath, &N, errormessage, Nerr);
+    nodes = xml_xpath_select(doc, xpath, &N, errormessage, Nerr);
     if (!nodes)
         answer = 0;
     else
@@ -218,7 +271,18 @@ out_of_memory:
     return -1;
 }
 
-char *xml_getnodepath(XMLDOC *doc, XMLNODE *node)
+/*
+    Given an node, get the XPath expression which selects it.
+    
+    Params: doc - the XML document
+            node - the node to test (Must be from the document)
+    Returns: the ath to the node
+ 
+    Notes: it returns the path as "/bookstore/book/title", so the XPath expression
+        will select all siblings at the same level. It is aso quite an
+        expensive function as it requires a full traversal of the document tree.
+ */
+char *xml_xpath_getnodepath(XMLDOC *doc, XMLNODE *node)
 {
     int maxlen;
     int len;
@@ -1085,14 +1149,14 @@ int xpathmain(int argc, char **argv)
         if (!doc)
             fprintf(stderr, "%s\n", error);
         
-        hasattributes = xml_xpathselectsattributes(argv[2], error, 1024);
+        hasattributes = xml_xpath_selectsattributes(argv[2], error, 1024);
         if (hasattributes)
             printf("xpath selects attributes\n");
         else
             printf("xpath selects nodes\n");
         
         
-        selected = xml_selectxpath(doc, argv[2], &Nselected, error, 1024);
+        selected = xml_xpath_select(doc, argv[2], &Nselected, error, 1024);
         if (!selected)
         {
             fprintf(stderr, "%s\n", error);
@@ -1105,7 +1169,7 @@ int xpathmain(int argc, char **argv)
         }
         if (hasattributes)
         {
-            attributes = xml_xpathgetattributes(doc, argv[2], error, 1024);
+            attributes = xml_xpath_selectattributes(doc, argv[2], error, 1024);
             for (i = 0; attributes[i]; i++)
             {
                 printf("%s=\"%s\"\n", attributes[i]->name, attributes[i]->value);

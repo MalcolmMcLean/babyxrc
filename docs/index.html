@@ -58,7 +58,18 @@ However you can turn them on with the "allowsurrogatepairs" attribute. You
 can incorporate UTF-8 in your source with the &lt;string&gt; tag, but some 
 compilers and editors won't accept it. So the &lt;utf8&gt; tag dumps UTF-8 
 as ASCII-encoded binary. 
- </P> 
+ </P>
+ <P>
+ The resource compiler now has extremely powerful facilities for importing data
+ via the &lt;dataframe&gt; tag. The old minimal vanilla xml parser, which was
+ only up to reading the script files, has been replaced with a much more powerful
+ one. A side effect is that, due to a mistake on my part, the old parser accepted
+ commas between atrribute items, the new one in accordance with xml standards does
+ not). There is now also  a certain amount of support for XPath. So it is now
+ possible to load data as XML, and query for fields using XPath, turning the
+ resource compiler into a powerful data transform engine. Of course support for
+ CVS has not been dropped, and there is also support for JSON.
+ </P>
 <P>
 Users of the Baby X resource compiler will be C programmers, so it is the 
 work of a moment to modify the program slightly to output data in a 
@@ -109,9 +120,9 @@ together.
 <pre>
 &lt;BabyXRC&gt;
     &lt;string name = "hello"&gt;Hello Baby X&lt;/string&gt;
-    &lt;image name = "babyxpic", src = "Babyx.jpeg", width = "100", height = 100"&gt;
+    &lt;image name = "babyxpic" src = "Babyx.jpeg" width = "100" height = 100"&gt;
     &lt;/image&gt;
-    &lt;audio name = "babyxcry", src = "crying.mp3", samplerate = 22050&gt;
+    &lt;audio name = "babyxcry" src = "crying.mp3" samplerate = 22050&gt;
     &lt;/audio&gt;
 &lt;/BabyXRC&gt;
 </pre>
@@ -126,16 +137,18 @@ at 22050Hz.
 <LI> &lt;string&gt; - output data as a human-readable C string </LI>
 <LI> &lt;utf8&gt; - output data as UTF-8 </LI>
 <LI> &lt;utf16&gt; - output data as UTF-16 </LI>
-<LI> &lt;comment&gt; - add comment to outut file </LI>
+<LI> &lt;comment&gt; - add comment to output file </LI>
+<LI> &lt;include&gt; - add #include statement to output file </LI>
 <LI> &lt;binary&gt; - dump raw binary data unprocessed </LI> 
 <LI> &lt;image&gt; - output data as a 32 bit rgba buffer </LI> 
 <LI> &lt;font&gt; - rip a font, rasterise, and output data as greyscale 
 glyphs 
 </LI>
-<LI> &lt;audio&gt; - output dat as 16-bit pcm samples </LI>
+<LI> &lt;audio&gt; - output data as 16-bit pcm samples </LI>
 <LI> &lt;cursor&gt; - output data as a 32 rgba image with hotspot </LI>
-<LI> &lt;dataframe&gt; - read data from a CSV file and output as array of 
-C structs </LI> 
+<LI> &lt;dataframe&gt; - read data from a CSV, XML, or JSON file and output as array of
+C structs </LI>
+<LI> &lt;field&gt; - define fields for the dataframe tag </LI>
 <LI> &lt;international&gt; child &lt;string&gt; and &lt;utf8&gt; tags 
 represent translations 
 </LI>
@@ -167,7 +180,7 @@ tags &lt;string&gt; &lt;utf8&gt; &lt;utf16&gt; can omit the
 &lt;string name = "fred", src = "fred.txt"&gt;&lt;/string&gt;
 </pre>
 <P>
-In the first case we are creating a string wit the value "Fred Bloggs".
+In the first case we are creating a string with the value "Fred Bloggs".
 In the second case the string is quoted, so it is not escaped but is
 output as is. (This is useful for entering printf format strings).
 In the third case, the string is read from an external file. It will
@@ -227,12 +240,28 @@ In the first case the comment text is embedded in the script file.
 In the second case we load in the text from an external file.
 </P>
 
+<H3>&lt;include&gt; tag</H3>
+<P>
+<B>Attributes</B> src, system, header
+</P>
+
+<pre>
+&lt;include src="myheader.h" /&gt;
+&lt;include src = "stdio.h" system="true" header="false" /&gt;
+</pre>
+<P>
+In the first case we generate #include "myheader.h".
+In the second case we generate #include &lt;stdio.h&gt;, but not in the header.
+</P>
+<P>
+External includes are important for dataframes which might use externally declared types like the fixed width types, or structures defined elsewhere in the program.
+</P>
 <H3>&lt;binary&gt; tag</H3>
 <P>
 <B>Attributes</B> name, src
 </P>
 <pre>
-&lt;binary name = Fred, src = "fred.bin"&gt;&lt;/binary&gt;
+&lt;binary name = Fred src = "fred.bin"&gt;&lt;/binary&gt;
 </pre>
 <P>
 In the first case the file "fred.bin" is simply read in  and passed out
@@ -245,7 +274,7 @@ as binary bytes, with no processing.
 </P>
 <pre>
 &lt;image name = "fred" src = "fred.jpeg"&gt;&lt;/image&gt;
-&lt;image name = "fred" src = "fred.tiff", width = "100", height = "80"&gt;&lt;/image&gt;
+&lt;image name = "fred" src = "fred.tiff" width = "100" height = "80"&gt;&lt;/image&gt;
 </pre>
 <P>
 In the first case the image is read from "fred.jpeg" and written out as
@@ -256,7 +285,7 @@ values.
 </P>
 <P>
 Supported formats are .png, .jpeg, .gif, .bmp, .tiff and .svg. The format
-will be determiend form the file extension. Svg files will be converted to
+will be determined from the file extension. Svg files will be converted to
 raster.
 </P>
 
@@ -265,8 +294,8 @@ raster.
 <B>Attributes</B> name, src, points
 </P>
 <pre>
-&lt;font name = "fred", src = "fredsfont.ttf", points = "12"&gt;&lt;/font&gt;
-&lt;font name = "fred", src = "fredsfont.bdf"&gt;&lt;/font&gt;
+&lt;font name = "fred" src = "fredsfont.ttf" points = "12"&gt;&lt;/font&gt;
+&lt;font name = "fred" src = "fredsfont.bdf"&gt;&lt;/font&gt;
 </pre>
 <P>
 In the first case we a loading a true type font, and outputting raster
@@ -287,8 +316,8 @@ tag.
 </P>
 
 <pre>
-&lt;audio name = "fred", src = "fred.wav"&gt;&lt;/audio&gt;
-&lt;audio name = "fred", src = "fred.mp3", samplerate = "22050"&gt;&lt;/audio&gt;
+&lt;audio name = "fred" src = "fred.wav"&gt;&lt;/audio&gt;
+&lt;audio name = "fred" src = "fred.mp3" samplerate = "22050"&gt;&lt;/audio&gt;
 </pre>
 <P>
 In the first case we are inputting "fred,wav" and writing the data out
@@ -306,7 +335,7 @@ If you have facilities for playing MP3 streams, loas the MP3 with the
 <B>Attributes</B> name, src
 </P>
 <pre>
-&lt;cursor name = "fred", src = "fred.cur"&gt;&lt;/cursor&gt;
+&lt;cursor name = "fred" src = "fred.cur"&gt;&lt;/cursor&gt;
 </pre>
 <P>
 In the first case we are loading a Microsoft .cur file, and outputting it 
@@ -315,16 +344,60 @@ as 32 bit rgba buffer plus a hotspot.
 
 <H3> &lt;dataframe&gt; tag</H3>
 <P>
-<B>Attributes</B> name, src
+<B>Attributes</B> name, src, xpath, useattributes, usechildren
 </P>
 <pre>
-&lt;dataframe name = "payroll", src = "employees.csv"&gt;&lt;/dataframe&gt;
+&lt;dataframe name = "payroll" src = "employees.csv"&gt;&lt;/dataframe&gt;
+&lt;dataframe src="books.xml" xpath="//book" useattributes="false"&gt;&lt/dataframe&gt;
+&lt;dataframe src="books.xml"&gt;
+      &lt;field name="title" /&gt;
+      &lt;field name="category" xpath="//book@category /&gt;
+      &lt;field name="price" ctype="uint8_t *" format="&amp;quot£%4.2f&amp;quot" /&gt;
+&lt;/dataframe&gt;
 </pre>
 <P>
 We load in a dataframe, which in C is simply an array of structs which 
-represent data from an external source. Currently the only format 
-supported is csv.
-</P> 
+represent data from an external source. CSV, JSON, and XML are all supported. If the file does
+not have too complex a structure, then just including it should do the right thing.
+</P>
+<P>
+In the second case, data is in the form of an xml document. And we fish for the records using an XPath query. The document has meta data in attributes that we wish to ignore.
+<P>
+<P>
+In the third case, we are specifying the fields directly and picking them out with XPath.
+However we don't always have to do this exlicitly, as the resource compiler is clever enough to fish for fields intelligently based on the name. We can also specify a format string for the output.
+</P>
+Because of the dataframe tag's complexity, full documention is <A href="dataframes.html"> here</A>.
+</P>
+<H3>&lt;field&gt; tag </H3>
+<P>
+<B>Attributes</B> name, xpath, ctype, format, external
+</P>
+<pre>
+&lt;dataframe src="books.xml"&gt;
+      &lt;field name="title" /&gt;
+      &lt;field name="category" xpath="//book@category" /&gt;
+      &lt;field name="copyright" /&gt;
+             &lt;field name="owner" xpath="/bookstore/book/author" /&gt;"
+             &lt;field name="year" ctype="char *" format="&amp;quot;(c) %d AD)&amp;quot;" /&gt;
+      &lt;/field&gt;
+&lt;/dataframe&gt;
+</pre>
+<P>
+The field tag is used for specifying the fields of a structure. So when you don't want your dataframe to match the structure of the XML data directly. The basic concept is that you specify a name, which becomes the C structure member name, and a XPath expression to specify the XML element that you want. JSON and CSV are transformed inot XML internally so XPath expressions wotk on the too. Snce the C structure memeber name and the XML element tag name areso often identical, for simple data, you can just specify a name.
+</P>
+<P>
+Fields also allow hierarchy. So you can specify sub structures by nesting fields. By defaut, string data is cat * and numerical data is double, but yu can oveeride this with the ctype attribute. If you use an externally defined type like uint8_t, you will haveto incude stdint.h with the &lt;include&gt; tag. The C structure itself is generated. If you are using an externally defined structuture, set "external" to true to suppress this.
+</P>
+<P>
+Then you can also specify the output format using a format specifier to pass to fprintf(). The obvious use case is for floating point. A less obvious use is to suppress quoting when data isaC enum category rayhaher than a string. Say we have an enum title with "MR", "MRS", "DR", etc. If we treat the data as default, we will get the data as strings "MR", "MRS", etc. However if we do
+</P>
+<pre>
+    &lt;field name="title" ctype="enum TITLE" format="%s" /&gt;
+</pre>
+<P>
+   then we get the output MR, MRS, etc, and the C structure contains an enum TITLE as a member. The &lt;incude&gt; tag allows us to include the header which defines that enum.
+</P>
 <H3>&lt;international&gt; tag</H3>
 <P>
 <B>Attributes</B> name <BR>
@@ -385,7 +458,7 @@ tag process function.
 </P>
 <P>
 If the tag has children or for other reasons is difficult to process using 
-the abvoe interface, the  write a "processtagnamenode" function which 
+the above interface, the  write a "processtagnamenode" function which
 takes the node as a parameter. You'll then need to use the xml functions 
 in xmlparser.h to access the node's information.
  </P> 

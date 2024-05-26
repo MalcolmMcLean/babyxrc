@@ -182,12 +182,12 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
     }
     else if (xpath)
     {
-         if (!xml_xpathvalid(xpath, error, 1024))
+         if (!xml_xpath_isvalid(xpath, error, 1024))
          {
              fprintf(stderr, "Bad xpath attribute to dataframe element\n");
              fprintf(stderr, "%s\n", error);
          }
-        nodes = xml_selectxpath(doc, xpath, &Nnodes, error, 1024);
+        nodes = xml_xpath_select(doc, xpath, &Nnodes, error, 1024);
         if (!nodes)
         {
             fprintf(stderr, "%s\n", error);
@@ -344,14 +344,14 @@ int fillfields_r(XMLDOC *doc, FIELD *field)
     
        if (field->attribute)
        {
-          field->attributes = xml_xpathgetattributes(doc, field->xpath, error, 1024);
+          field->attributes = xml_xpath_selectattributes(doc, field->xpath, error, 1024);
           N = 0;
           for (i = 0; field->attributes[i]; i++)
             N++;
         }
         else
         {
-            field->nodes = xml_selectxpath(doc, field->xpath, &N, error, 1024);
+            field->nodes = xml_xpath_select(doc, field->xpath, &N, error, 1024);
         }
         
         field->Nnodes = N;
@@ -591,7 +591,7 @@ FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildre
    {
       if (node->attributes)
       {
-          pathtonode = xml_getnodepath(doc, node);
+          pathtonode = xml_xpath_getnodepath(doc, node);
           pathtonodea = mystrconcat(pathtonode, "@");
       }
       for (attr = node->attributes; attr; attr = attr->next)
@@ -622,7 +622,7 @@ FIELD *getfields_r(XMLNODE *node, XMLDOC *doc, int useattributes, int usechildre
           
          field->name = mystrdup(child->tag);
          field->tag = mystrdup(node->tag);
-         field->xpath = xml_getnodepath(doc, child);
+         field->xpath = xml_xpath_getnodepath(doc, child);
          field->attribute = 0;
          field->datatype = TYPE_UNKNOWN;
           field->attributes = 0;
@@ -714,7 +714,7 @@ FIELD *processfieldnode(XMLNODE *node, const char *format)
         field->xpath = mystrdup(xpath);
         if (!field->xpath)
             goto out_of_memory;
-        if (xml_xpathselectsattributes(xpath, 0, 0))
+        if (xml_xpath_selectsattributes(xpath, 0, 0))
             field->attribute = 1;
     }
     else
