@@ -28,7 +28,17 @@
 &lt;dataframe src="chinesepopulation.json" /&gt;
         </pre>
         <P>
-        And that is the ideal. You just specify the file you wish to import, and the Baby X resource compiler will work out what you want.
+        And that is the ideal. You just specify the file you wish to import, and the Baby X resource compiler will work out what you want. Of coure it takes quite a bit of work behind the scenes to keep this amagic in operatin, but that is what computers are for. If the input data is clean, you can just include it, and no need to worry.
         </P>
+        <pre>
+&lt;dataframe src="books.xml" useattributes="false" xpath="/book" /&gt;
+        </pre>
+        <P>
+        This way givesa little bit more control. XML files have attributes as well as data arrached to nodes. But defualt the attributes are treated as containing meaningful data, and are converted to fields. But this isn't always what you want. Sometimes attributes contain meta data which it is best to ignore. So "usrattributes" can be set to false. Other times you will want to ignore children and just use the attributes, so "usechildren" can also be set to false. (You can't set both to false or you shall have no data at all).
+        </P>
+        <P>
+        Then by default, the Baby X resource compiler uses heuristics to pick out the nodes that ae likely to represent the records, and the data you want. So it looks for long lists of nodes with the same structure. Of course this method can fail. So you can pass it an XPath expression to pick out the record nodes. Normally this wiil be "//elementtag", where the tag is the tag of the record. "//" picks out all descendants with that tag.
+        </P>
+        
     </BODY>
 </HTML>

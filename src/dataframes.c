@@ -86,22 +86,34 @@ static char *mystrdup(const char *str);
 
 int processdataframenode(FILE *fp, XMLNODE *node, int header)
 {
-    const char *name;
+    const char *namestr;
     const char *src;
     const char *xpath;
+    const char *ctype;
     int useattributes = 1;
     int usechildren = 1;
+    int external = 0;
     int i;
     
-    char *ext;
+    char *ext = 0;
+    char *name = 0;
+    char *structname = 0;
     char error[1024];
     int err;
     
+    XMLNODE *parent = 0;
+    XMLNODE *child = 0;
+    FIELD *fields =  0;
+    XMLNODE **nodes;
+    int Nnodes;
+    
+    
     XMLDOC *doc = 0;
     
-    name = xml_getattribute(node, "name");
+    namestr = xml_getattribute(node, "name");
     src = xml_getattribute(node, "src");
     xpath = xml_getattribute(node, "xpath");
+    ctype = xml_getattribute(node, "ctype");
     
     if (xml_getattribute(node, "useattributes"))
     {
@@ -121,31 +133,51 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         }
     }
     
+    if (xml_getattribute(node, "external"))
+    {
+        external = parseboolean(xml_getattribute(node, "external"), &err);
+        if (err)
+        {
+            fprintf(stderr, "dataframe element external attribute must be boolean\n");
+        }
+    }
+    
     ext = getextension((char *)src);
     if (ext)
         makelower(ext);
-    
-    if(name)
-      name = mystrdup(name);
+
+    if (name)
+      name = mystrdup(namestr);
     else if(src)
       name = getbasename((char *)src);
     else
     {
         fprintf(stderr, "No dataframe name specified\n");
-        return -1;
+        goto parse_error;
     }
-    
-    
+
     if (!strcmp(ext, ".csv"))
     {
         CSV *csv;
         FILE *tempfp;
         
         csv = loadcsv(src);
+        if (!csv)
+        {
+            fprintf(stderr, "Can't load CSV  file %s\n", src);
+            goto parse_error;
+        }
         tempfp = tmpfile();
+        if (!tempfp)
+            goto out_of_memory;
         xml_fromCSV(tempfp, csv);
         fseek(tempfp, 0, SEEK_SET);
-        doc = floadxmldoc2(tempfp, error, 1024);
+        doc = floadxmldoc(tempfp, error, 1024);
+        if (!doc)
+        {
+            fprintf(stderr, "dataframe internal error %s\n", error);
+            goto parse_error;
+        }
         fclose(tempfp);
     }
     else if (!strcmp(ext, ".json"))
@@ -155,27 +187,46 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         char *jsonstr;
         
         tempfp = fopen(src, "r");
+        if (!tempfp)
+            goto out_of_memory;
         jsonstr = fslurp(tempfp);
         fclose(tempfp);
+        if (!jsonstr)
+            goto out_of_memory;
+       
         
         json = cJSON_Parse(jsonstr);
+        free(jsonstr);
+        jsonstr = 0;
         tempfp = tmpfile();
+        if (!tempfp)
+            goto out_of_memory;
         xml_fromJSON(tempfp, json);
         fseek(tempfp, 0, SEEK_SET);
-        doc = floadxmldoc2(tempfp, error, 1024);
+        doc = floadxmldoc(tempfp, error, 1024);
+        if (!doc)
+        {
+            fprintf(stderr, "dataframe internal error %s\n", error);
+            goto parse_error;
+        }
         fclose(tempfp);
     }
     else if(!strcmp(ext, ".xml"))
     {
-        doc = loadxmldoc2(src, error, 1024);
+        doc = loadxmldoc(src, error, 1024);
+        if (!doc)
+        {
+            fprintf(stderr, "Can't load xml file %s error %s\n", src, error);
+            goto parse_error;
+        }
+    }
+    else
+    {
+        fprintf(fp, "datafrsme unrecognised forat %s\n", ext);
+        goto parse_error;
     }
     
-    XMLNODE *parent = 0;
-    XMLNODE *child = 0;
-    FIELD *fields =  0;
-    XMLNODE **nodes;
-    int Nnodes;
-    
+  
     if (xml_Nchildrenwithtag(node, "field") > 0)
     {
         fields = fieldsfromnodes_r(node->child, ext);
@@ -215,17 +266,45 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         fprintf(stderr, "xpath matches different number of data items\n");
         return -1;
     }
+
+    if (ctype)
+        structname = mystrdup(ctype);
+    else
+        structname = mystrconcat("struct ", name);
+    if (!structname)
+        goto out_of_memory;
     
-    writestructuredefinition_r(fp, fields, name);
+    if (!external)
+        writestructuredefinition_r(fp, fields, structname);
     if (!header)
     {
-        writedatafreme(fp, doc, fields, name, name);
+        writedatafreme(fp, doc, fields, name, structname);
     }
     
     killxmldoc(doc);
+    free(structname);
     free(ext);
+    free(name);
     
     return 0;
+    
+out_of_memory:
+    killxmldoc(doc);
+    free(structname);
+    free(ext);
+    free(name);
+    
+    fprintf(stderr, "Out of memory");
+    
+    return -1;
+    
+parse_error:
+    killxmldoc(doc);
+    free(structname);
+    free(ext);
+    free(name);
+    
+    return  -2;
 }
 
 int writestructuredefinition_r(FILE *fp, FIELD *fields, const char *structname)
@@ -261,7 +340,7 @@ int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const
     int height;
 
     height = fields->Nnodes;
-    fprintf(fp, "struct %s %s[%d] =\n", name, structname, height);
+    fprintf(fp, "%s %s[%d] =\n", structname, name, height);
     fprintf(fp, "{\n");
     for (i = 0; i < height; i++)
     {

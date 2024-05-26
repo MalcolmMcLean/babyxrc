@@ -16,6 +16,7 @@ typedef struct xmlnode
   XMLATTRIBUTE *attributes;  /* attributes */
   char *data;                /* data as ascii */
   int position;              /* position of the node within parent's data string */
+  int lineno;                /* line number of node in document */
   struct xmlnode *next;      /* sibling node */
   struct xmlnode *child;     /* first child node */
 } XMLNODE;
@@ -26,9 +27,9 @@ typedef struct
 } XMLDOC;
 
 
-XMLDOC *loadxmldoc2(const char *fname, char *errormessage, int Nerr);
-XMLDOC *floadxmldoc2(FILE *fp, char *errormessage, int Nerr);
-XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nerr);
+XMLDOC *loadxmldoc(const char *fname, char *errormessage, int Nerr);
+XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr);
+XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
 void killxmldoc(XMLDOC *doc);
 void killxmlnode(XMLNODE *node);
 
@@ -40,5 +41,7 @@ int xml_Nchildren(XMLNODE *node);
 int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
 XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
 XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
+int xml_getlineno(XMLNODE *node);
+XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...);
 
 #endif

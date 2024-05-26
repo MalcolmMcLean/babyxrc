@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
@@ -1009,39 +1010,6 @@ int processcursortag(FILE *fp, int header, const char *fname, const char *name)
 	return answer;
 }
 
-int processdataframetag(FILE *fp, int header, const char *fname, const char *name)
-{
-    char *csvname;
-    int answer = 0;
-    CSV *csv;
-
-    if (!fname)
-    {
-        fprintf(stderr, "Error, dataframe without src attribute\n");
-        return -1;
-    }
-
-    if (name)
-        csvname = mystrdup(name);
-    else
-        csvname = getbasename((char*)fname);
-    csv = loadcsv(fname);
-    if (!csv)
-    {
-        fprintf(stderr, "can't load csv %s\n", fname);
-        return -1;
-    }
-    if (dumpcsv(fp, header, csvname, csv) < 0)
-    {
-      fprintf(stderr, "Error processing %s\n", fname);
-      answer = -1;
-    }
-    free(csvname);
-        killcsv(csv);
-
-    return answer;
-}
-
 short *resampleaudio(const short *pcm, long samplerate, int Nchannels, long Nsamples, long resamplerate, long *Nsamplesout)
 {
     float *fpcmin = 0;
@@ -1320,6 +1288,106 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
     return 0;
 }
 
+void reportunknownattributes(XMLNODE *node, XMLATTRIBUTE *bad)
+{
+    XMLATTRIBUTE *attr;
+    fprintf(stderr, "Element <%s> line %d has unrecognised attributes:\n", xml_gettag(node),xml_getlineno(node));
+    for (attr = bad; attr != NULL; attr = attr->next)
+        fprintf(stderr, "\t%s\n", attr->name);
+}
+
+int checkunknownattributes_r(XMLNODE *node)
+{
+    const char *tag = 0;
+    XMLATTRIBUTE *badattributes = 0;
+    int answer = 0;
+    char *end = 0;
+    
+    while (node)
+    {
+        tag = xml_gettag(node);
+        badattributes = 0;
+        
+        if (!strcmp(tag, "BabyXRC"))
+        {
+            badattributes = xml_unknownattributes(node, "src", end);
+            // root node, don't do sibs.
+            if (node->child)
+                answer = checkunknownattributes_r(node->child);
+            break;
+        }
+        else if (!strcmp(tag, "comment"))
+        {
+            badattributes = xml_unknownattributes(node, "src", end);
+        }
+        else if (!strcmp(tag, "include"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "system", "header", end);
+        }
+        else if (!strcmp(tag, "image"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "width", "height", end);
+         }
+        else if (!strcmp(tag, "font"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "points", end);
+        }
+        else if (!strcmp(tag, "string"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "language", end);
+        }
+        else if (!strcmp(tag, "utf8"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "language", end);
+        }
+        else if (!strcmp(tag, "utf16"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "allowsurrogatepairs", end);
+        }
+        else if(!strcmp(tag, "binary"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", end);
+        }
+        else if (!strcmp(tag, "cursor"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", end);
+        }
+        else if (!strcmp(tag, "audio"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "samplerate", end);
+        }
+        else if (!strcmp(tag, "international"))
+        {
+            badattributes = xml_unknownattributes(node, "name", end);
+        }
+        else if (!strcmp(tag, "dataframe"))
+        {
+            badattributes = xml_unknownattributes(node, "src", "name", "xpath", "ctype", "external", "usechildren", "useattributes", end);
+        }
+        else if (!strcmp(tag, "field"))
+        {
+            badattributes = xml_unknownattributes(node, "name", "xpath", "ctype", "format", "external", end);
+        }
+        else
+        {
+            fprintf(stderr, "unrecognised element tag %s line %d\n", tag, xml_getlineno(node));
+        }
+        
+        if (badattributes)
+        {
+            reportunknownattributes(node, badattributes);
+            answer = 1;
+        }
+        
+        if (node->child)
+            answer |= checkunknownattributes_r(node->child);
+        
+        node = node->next;
+    }
+    
+    return answer;
+}
+
 void usage(void)
 {
   printf("The Baby X resource compiler v1.1\n");
@@ -1359,6 +1427,8 @@ void usage(void)
 }
 
 
+
+
 int main(int argc, char **argv)
 {
   OPTIONS *opt = 0;
@@ -1380,7 +1450,6 @@ int main(int argc, char **argv)
   const char *allowsurrogatepairsstr;
   const char *system;
   const char *headerstr;
-    
   
   opt = options(argc, argv, 0);
   header = opt_get(opt, "-header", 0);
@@ -1392,7 +1461,7 @@ int main(int argc, char **argv)
   killoptions(opt);
   opt = 0;
 
-  doc = loadxmldoc2(scriptfile, errormessage, 256);
+  doc = loadxmldoc(scriptfile, errormessage, 256);
   if(!doc)
   {
     fprintf(stderr, "Can't read resource script file (%s)\n", errormessage);
@@ -1416,6 +1485,7 @@ int main(int argc, char **argv)
   }
   for(i=0;i<Nscripts;i++)
   {
+    checkunknownattributes_r(scripts[i]);
     if (i == 0 && xml_Nchildrenwithtag(scripts[i], "international") > 0)
           fprintf(stdout, "#include <string.h>\n");
     if(i == 0 && xml_Nchildrenwithtag(scripts[i], "font") > 0)
@@ -1497,12 +1567,6 @@ int main(int argc, char **argv)
             name = xml_getattribute(node, "name");
             processcursortag(stdout, header, path, name);
         }
-       // else if (!strcmp(tag, "dataframe"))
-       // {
-       //     path = xml_getattribute(node, "src");
-       //     name = xml_getattribute(node, "name");
-       //     processdataframetag(stdout, header, path, name);
-       // }
         else if (!strcmp(tag, "audio"))
         {
             path = xml_getattribute(node, "src");

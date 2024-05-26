@@ -25,6 +25,7 @@ typedef struct xmlnode
   XMLATTRIBUTE *attributes;  /* attributes */
   char *data;                /* data as ascii */
   int position;              /* position of the node within parent's data string */
+  int lineno;                /* line number of node in document */
   struct xmlnode *next;      /* sibling node */
   struct xmlnode *child;     /* first child node */
 } XMLNODE;
@@ -134,10 +135,12 @@ static void initlexer(LEXER *lex, ERROR *err, int (*getch)(void *), void *ptr);
 static int gettoken(LEXER *lex);
 static int match(LEXER *lex, int token);
 
+static char *mystrdup(const char *str);
 
 
 
-XMLDOC *loadxmldoc2(const char *filename,char *errormessage, int Nerr)
+
+XMLDOC *loadxmldoc(const char *filename,char *errormessage, int Nerr)
 {
    FILE *fp;
     ERROR error;
@@ -189,7 +192,7 @@ XMLDOC *loadxmldoc2(const char *filename,char *errormessage, int Nerr)
    }   
 }
 
-XMLDOC *floadxmldoc2(FILE *fp, char *errormessage, int Nerr)
+XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr)
 {
     ERROR error;
     LEXER lexer;
@@ -428,7 +431,7 @@ static int bbx_utf8_putch(char *out, int ch)
 
 
 
-XMLDOC *xmldoc2fromstring(const char *str,char *errormessage, int Nerr)
+XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr)
 {
    ERROR error;
    LEXER lexer;
@@ -697,6 +700,124 @@ char *xml_getnesteddata(XMLNODE *node)
 }
 
 /*
+    get a node's line number.
+    (note this one is null-guarded because it is meant to be called in error conditions)
+ */
+int xml_getlineno(XMLNODE *node)
+{
+    if (node)
+        return node->lineno;
+    return -1;
+}
+/*
+  Report any attributes which are not on a list of knowwn attributes
+ 
+  Params: node the node to test
+        ... NULL-terminated list of known node names.
+   Returns: a list of unrecognised attribures as a deep copy, 0 if
+       there are none.
+    Notes:
+       Call as
+       XMLATTRIBUTE *badattr =  0;
+       char *end = 0;
+ 
+     badatttr = xml_unknownattributes(node, "faith", "hope", "charity", end);
+     if (badattr)
+         // We've got a node with some attributes we don't recognise
+    
+    Don't pass NULL for the terminator, becuase sometimes it expands to integer 0 and gets put on the argument list as 32 bits instead of 64.
+ */
+XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...)
+{
+    int *matches;
+    va_list args;
+    char *name;
+    XMLATTRIBUTE *attr;
+    XMLATTRIBUTE *copy = 0;
+    XMLATTRIBUTE *answer = 0;
+    int Nattributes = 0;
+    int i;
+    
+    for (attr = node->attributes; attr != NULL; attr = attr->next)
+        Nattributes++;
+    
+    if (Nattributes == 0)
+        return 0;
+    
+    matches = malloc(Nattributes * sizeof(int));
+    if (!matches)
+        return 0;
+    
+    for (i = 0; i < Nattributes; i++)
+        matches[i] = 0;
+    
+    va_start(args, node);
+    name = va_arg(args, char *);
+
+    while (name)
+    {
+       
+        i = 0;
+        for (attr = node->attributes; attr != NULL; attr = attr->next)
+        {
+            if (!strcmp(attr->name, name))
+                matches[i]++;
+            i++;
+        }
+        name = va_arg(args, char *);
+    }
+    va_end(args);
+    
+    i = 0;
+    for (attr = node->attributes; attr != NULL; attr = attr->next)
+    {
+        if (!matches[i])
+        {
+            copy = malloc(sizeof(XMLATTRIBUTE));
+            if (!copy)
+                goto out_of_memory;
+            copy->name = mystrdup(attr->name);
+            if (!copy->name)
+                goto out_of_memory;
+            copy->value = mystrdup(attr->value);
+            if (!copy->value)
+                goto out_of_memory;
+            copy->next = answer;
+            answer = copy;
+            copy = 0;
+        }
+        i++;
+    }
+    
+    copy = 0;
+    while (answer)
+    {
+        attr = answer;
+        answer = answer->next;
+        attr->next = copy;
+        copy = attr;
+    }
+     answer = copy;
+    
+    free(matches);
+    
+    return answer;
+    
+out_of_memory:
+    free(matches);
+    if (copy)
+    {
+        free(copy->name);
+        free(copy->value);
+        free(copy);
+    }
+    killxmlattribute(answer);
+    
+    return  0;
+}
+
+
+/*
   xml node destructor
   Notes: destroy siblings in a list, chilren recursively
     as children are unlikely to be nested very deep
@@ -912,6 +1033,7 @@ static XMLNODE *xmlnode(LEXER *lex, ERROR *err)
     XMLNODE *lastchild = 0;
     STRING datastr;
     int shriek;
+    int lineno;
     
     if (err->set)
         return 0;
@@ -919,6 +1041,7 @@ static XMLNODE *xmlnode(LEXER *lex, ERROR *err)
     
     string_init(&datastr);
     
+    lineno = lex->lineno;
     tag = elementname(lex, err);
     if (!tag)
         goto parse_error;
@@ -937,6 +1060,7 @@ static XMLNODE *xmlnode(LEXER *lex, ERROR *err)
         node->attributes = attributes;
         node->data = 0;
         node->position = 0;
+        node->lineno = lineno;
         node->child = 0;
         node->next = 0;
         endrecursion(err);
@@ -952,6 +1076,7 @@ static XMLNODE *xmlnode(LEXER *lex, ERROR *err)
         node->attributes = attributes;
         node->data = 0;
         node->position = 0;
+        node->lineno = lineno;
         node->child = 0;
         node->next = 0;
         tag = 0;
@@ -1571,6 +1696,18 @@ static int match(LEXER *lex, int token)
    }
 }
 
+static char *mystrdup(const char *str)
+{
+  char *answer;
+
+  answer = malloc(strlen(str) + 1);
+  if(answer)
+    strcpy(answer, str);
+
+  return answer;
+}
+
+
 static void printnode_r(XMLNODE *node, int depth)
 {
     int i;
@@ -1603,11 +1740,11 @@ int xmlparser2main(int argc, char **argv)
     char error[1024];
     if (argc == 1)
     {
-        doc = xmldoc2fromstring("<!-- --><FRED attr=\"Fred\">Fred<![CDATA[character > data]]><JIM/>Bert<JIM/>Harry</FRED>", error, 1204);
+        doc = xmldocfromstring("<!-- --><FRED attr=\"Fred\">Fred<![CDATA[character > data]]><JIM/>Bert<JIM/>Harry</FRED>", error, 1204);
         //printf("%s\n", doc->root->data);
     }else
     {
-        doc = loadxmldoc2(argv[1], error, 1024);
+        doc = loadxmldoc(argv[1], error, 1024);
         if (doc)
             printf("%s\n", xml_getnesteddata(doc->root));
     }

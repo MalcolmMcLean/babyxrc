@@ -252,7 +252,7 @@ int xml_xpath_isvalid(const char *xpath, char *errormessage, int Nerr)
     int N;
     int answer = 0;
     
-    doc = xmldoc2fromstring("<root attr=\"true\">Fred</root>\n", 0, 0);
+    doc = xmldocfromstring("<root attr=\"true\">Fred</root>\n", 0, 0);
     if (!doc)
         goto out_of_memory;
     nodes = xml_xpath_select(doc, xpath, &N, errormessage, Nerr);
@@ -1145,7 +1145,7 @@ int xpathmain(int argc, char **argv)
     {
         XMLDOC *doc = 0;
         XMLDOC *filtered = 0;
-        doc = loadxmldoc2(argv[1], error, 1024);
+        doc = loadxmldoc(argv[1], error, 1024);
         if (!doc)
             fprintf(stderr, "%s\n", error);
         
