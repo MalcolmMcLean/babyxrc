@@ -11,6 +11,6 @@
 #include "xmlparser2.h"
 #include <stdio.h>
 
-int processdataframenode(FILE *fp, XMLNODE *node, int header);
+int processdataframenode(FILE *fp, XMLNODE *node, int header, void *xformcontext);
 
 #endif /* dataframes_h */

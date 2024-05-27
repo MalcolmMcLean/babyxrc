@@ -21,9 +21,18 @@
 #include "bdf2c.h"
 #include "ttf2c.h"
 #include "bbx_utf8.h"
+#include "basic.h"
 #include "samplerate/samplerate.h"
 
+typedef struct
+{
+    char **names;
+    char **scripts;
+    int Nscripts;
+} MINIBASIC;
+
 char *getextension(char *fname);
+char *xformdata(void *minibasic, const char *scriptname, const char *str);
 
 int dumpimage(FILE *fp, int header, char *name, unsigned char *rgba, int width, int height)
 {
@@ -251,6 +260,21 @@ void makelower(char *str)
     str[i] = tolower(str[i]);
 }
 
+void removetrailingnewline(char *str)
+{
+  int i;
+
+  if(!str)
+    return;
+  for(i=0;str[i];i++)
+      ;
+   if (i)
+   {
+       i--;
+       if (str[i] == '\n');
+            str[i] = 0;
+   }
+}
 char *getbasename(char *fname)
 {
   char *base;
@@ -558,7 +582,7 @@ int processfonttag(FILE *fp, int header,  const char *fname, const char *name, c
 }
 
 
-int processstringtag(FILE *fp, int header, const char *fname, const char *name, const char *str)
+int processstringtag(FILE *fp, int header, const char *fname, const char *name, const char *xform, const char *str, void *xformcontext)
 {
   char *path = 0;
   char *stringname = 0;
@@ -599,14 +623,33 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
     {
        buff = fslurp(fpstr);
        if(buff)
-         string = texttostring(buff);
+       {
+           if (xform)
+           {
+               string = xformdata(xformcontext, xform, buff);
+               if (string)
+               {
+                   free(buff);
+                   buff = string;
+               }
+               else
+               {
+                   fprintf(stderr, "Out of memory with string\n");
+                   answer = -1;
+               }
+           }
+           string = texttostring(buff);
+       }
        free(buff);
        fclose(fpstr);
     }
   }
   else if(str)
   {
-    string = addquotes(str);
+    if (xform)
+        str = xformdata(xformcontext, xform, str);
+    if (str)
+        string = addquotes(str);
   }
   if(!string)
   {
@@ -862,7 +905,7 @@ int processutf16tag(FILE *fp, int header, const char *fname, const char *name, c
   return answer;
 }
 
-int processcommenttag(FILE *fp, const char *fname, const char *str)
+int processcommenttag(FILE *fp, const char *fname, const char *xform, const char *str, void *xformcontext)
 {
     char *comment  = 0;
     char *string = 0;
@@ -876,6 +919,18 @@ int processcommenttag(FILE *fp, const char *fname, const char *str)
             fprintf(stderr, "Can't load %s\n", fname);
             goto error_exit;
         }
+        if (xform)
+        {
+            comment = xformdata(xformcontext, xform, string);
+            if (!comment)
+            {
+                fprintf(stderr, "Out of memory\n");
+                goto error_exit;
+            }
+            free (string);
+            string = comment;
+            comment = 0;
+        }
         comment = makecomment(string);
         if (!comment)
         {
@@ -885,6 +940,16 @@ int processcommenttag(FILE *fp, const char *fname, const char *str)
     }
     else if (str)
     {
+        if (xform)
+        {
+            string = xformdata(xformcontext, xform, str);
+            if (!string)
+            {
+                fprintf(stderr, "Out of memory\n");
+                goto error_exit;
+            }
+            str = string;
+        }
         comment = makecomment(str);
         if (!comment)
         {
@@ -1288,6 +1353,179 @@ int processinternationalnode(FILE *fp, XMLNODE *node, int header)
     return 0;
 }
 
+MINIBASIC *creatmininbasic(void)
+{
+    MINIBASIC *mb;
+    
+    mb = malloc(sizeof(MINIBASIC));
+    if (!mb)
+        goto out_of_memory;
+    mb->names = 0;
+    mb->scripts = 0;
+    mb->Nscripts = 0;
+    
+    return mb;
+out_of_memory:
+    return 0;
+}
+
+void killminibasic(MINIBASIC *mb)
+{
+    int i;
+    
+    if (mb)
+    {
+        for (i =0; i < mb->Nscripts; i++)
+        {
+            free(mb->names[i]);
+            free(mb->scripts[i]);
+        }
+        free(mb);
+    }
+}
+
+int loadminibasic_r(XMLNODE *node, MINIBASIC *mb)
+{
+    FILE *fp;
+    const char *name;
+    char *script;
+    void *temp;
+    int answer = 0;
+    
+    while (node)
+    {
+        if (!strcmp(xml_gettag(node), "minibasic"))
+        {
+            temp = realloc(mb->names, (mb->Nscripts + 1) * sizeof(char *));
+            if (!temp)
+                goto out_of_memory;
+            mb->names = temp;
+            mb->names[mb->Nscripts] = 0;
+            
+            temp = realloc(mb->scripts, (mb->Nscripts + 1) * sizeof(char *));
+            if (!temp)
+                goto out_of_memory;
+            mb->scripts = temp;
+            mb->scripts[mb->Nscripts] = 0;
+            
+            name = xml_getattribute(node, "name");
+            if (!name)
+            {
+                fprintf(stderr, "minibasic element line %d lacks name attribute\n",
+                        xml_getlineno(node));
+                break;
+            }
+            
+            if (xml_getattribute(node, "src"))
+            {
+                fp = fopen(xml_getattribute(node, "src"), "r");
+                if (!fp)
+                {
+                    fprintf(stderr, "minibasic element line %d can't open file %s\n",
+                            xml_getlineno(node), xml_getattribute(node, "src"));
+                    break;
+                }
+                script = fslurp(fp);
+                if (!script)
+                    goto out_of_memory;
+                fclose(fp);
+            }
+            else if (xml_getdata(node))
+            {
+                script = mystrdup(xml_getdata(node));
+                if (!script)
+                    goto out_of_memory;
+            }
+            else
+            {
+                fprintf(stderr, "don't have data for minibasic element line %d\n",
+                        xml_getlineno(node));
+            }
+                
+            mb->names[mb->Nscripts] = mystrdup(name);
+            mb->scripts[mb->Nscripts] = script;
+            mb->Nscripts++;
+        }
+        
+        if (node->child)
+            answer |= loadminibasic_r(node->child, mb);
+        
+        node = node->next;
+    }
+    
+    return answer;
+    out_of_memory:
+    return -1;
+    
+}
+
+char *xformdata(void *minibasic, const char *scriptname, const char *str)
+{
+    MINIBASIC *mb;
+    char *answer = 0;
+    FILE *fpin = 0;
+    FILE *fpout = 0;
+    int len;
+    int i;
+    int err;
+     
+    mb = minibasic;
+    
+    if (!scriptname)
+        return 0;
+    if (!str)
+        str = "";
+
+    len = strlen(str);
+    for (i = 0; i < mb->Nscripts; i++)
+    {
+        if (!strcmp(mb->names[i], scriptname))
+        {
+            fpin = tmpfile();
+            fpout = tmpfile();
+            
+            if (fwrite(str, 1, len, fpin) != len )
+                goto out_of_memory;
+            fprintf(fpin, "\n");
+            fseek(fpin, 0, SEEK_SET);
+            
+            err = basic(mb->scripts[i], fpin, fpout, stderr);
+            if (err)
+                goto error_exit;
+            fseek(fpout, 0, SEEK_SET);
+            answer = fslurp(fpout);
+            if (!answer)
+                goto out_of_memory;
+            removetrailingnewline(answer);
+            
+            fclose(fpout);
+            fclose(fpin);
+            fpout = 0;
+            fpin = 0;
+            
+            break;
+        }
+    }
+    if (i == mb->Nscripts)
+    {
+        fprintf(stderr, "transform %s does not exist.\n", scriptname);
+        goto error_exit;
+    }
+    
+    return answer;
+out_of_memory:
+    free(answer);
+    fclose(fpin);
+    fclose(fpout);
+    return 0;
+    
+error_exit:
+    free(answer);
+    fclose(fpin);
+    fclose(fpout);
+    return 0;
+}
+
 void reportunknownattributes(XMLNODE *node, XMLATTRIBUTE *bad)
 {
     XMLATTRIBUTE *attr;
@@ -1439,10 +1677,12 @@ int main(int argc, char **argv)
   XMLNODE *node;
   int Nscripts;
   int header = 0;
+  MINIBASIC *mb =0;
   int i;
   const char *path;
   const char *name;
   const char *str;
+  const char *xform;
   const char *widthstr;
   const char *heightstr;
   const char *pointsstr;
@@ -1486,6 +1726,9 @@ int main(int argc, char **argv)
   for(i=0;i<Nscripts;i++)
   {
     checkunknownattributes_r(scripts[i]);
+    mb = creatmininbasic();
+    loadminibasic_r(scripts[i]->child, mb);
+      
     if (i == 0 && xml_Nchildrenwithtag(scripts[i], "international") > 0)
           fprintf(stdout, "#include <string.h>\n");
     if(i == 0 && xml_Nchildrenwithtag(scripts[i], "font") > 0)
@@ -1508,8 +1751,9 @@ int main(int argc, char **argv)
         if (!strcmp(tag, "comment"))
         { 
             path = xml_getattribute(node, "src");
+            xform = xml_getattribute(node, "xform");
             str = xml_getdata(node);
-            processcommenttag(stdout, path, str);
+            processcommenttag(stdout, path, xform, str, mb);
         }
         if (!strcmp(tag, "include"))
         {
@@ -1537,8 +1781,9 @@ int main(int argc, char **argv)
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
+            xform = xml_getattribute(node, "xform");
             str = xml_getdata(node);
-            processstringtag(stdout, header, path, name, str);
+            processstringtag(stdout, header, path, name, xform, str, mb);
         }
         else if (!strcmp(tag, "utf8"))
         {
@@ -1580,9 +1825,10 @@ int main(int argc, char **argv)
         }
         else if (!strcmp(tag, "dataframe"))
         {
-            processdataframenode(stdout, node, header);
+            processdataframenode(stdout, node, header, mb);
         }
     }
+      killminibasic(mb);
   }
   if (header)
   {

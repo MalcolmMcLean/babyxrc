@@ -43,6 +43,7 @@ typedef struct field
    int structexternal; /* set if the type is an externally defned structure */
    char *format; /* format string to pass to fprintf */
    enum PrintFType printftype;
+   char *xform; /* xform */
    XMLNODE **nodes;
    XMLATTRIBUTE **attributes;
    int Nnodes;
@@ -51,9 +52,9 @@ typedef struct field
 } FIELD;
 
 int writestructuredefinition_r(FILE *fp, FIELD *fields, const char *structname);
-int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const char *structname);
+int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const char *structname, void *xformcontext);
 
-int writefield_r(FILE *fp, FIELD *field, int row);
+int writefield_r(FILE *fp, FIELD *field, int row, void *xformcontext);
 void writefieldstruct_r(FILE *fp, FIELD *field);
 int pointerwithspace(const char *type);
 int fillfields_r(XMLDOC *doc, FIELD *field);
@@ -69,6 +70,7 @@ FIELD *processfieldnode(XMLNODE *node, const char *format);
 int nodeshavesamestructure(XMLNODE *nodea, XMLNODE *nodeb, int useattributes, int usechildren);
 XMLNODE *chooseparentnode(XMLNODE *node, int useattributes, int usechildren);
 
+char *xformdata(void *minibasic, const char *scriptname, const char *str);
 int parseboolean(const char *boolattribute, int *error);
 char *getbasename(char *fname);
 char *getextension(char *fname);
@@ -84,7 +86,7 @@ int Nformatspecifiers(const char *fmt);
 static char *mystrconcat(const char *prefix, const char *suffix);
 static char *mystrdup(const char *str);
 
-int processdataframenode(FILE *fp, XMLNODE *node, int header)
+int processdataframenode(FILE *fp, XMLNODE *node, int header, void *xformcontext)
 {
     const char *namestr;
     const char *src;
@@ -278,7 +280,7 @@ int processdataframenode(FILE *fp, XMLNODE *node, int header)
         writestructuredefinition_r(fp, fields, structname);
     if (!header)
     {
-        writedatafreme(fp, doc, fields, name, structname);
+        writedatafreme(fp, doc, fields, name, structname, xformcontext);
     }
     
     killxmldoc(doc);
@@ -334,7 +336,7 @@ int writestructuredefinition_r(FILE *fp, FIELD *fields, const char *structname)
 }
 
 
-int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const char *structname)
+int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const char *structname, void *xformcontext)
 {
     int i;
     int height;
@@ -345,7 +347,7 @@ int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const
     for (i = 0; i < height; i++)
     {
         fprintf(fp, "  {");
-        writefield_r(fp, fields, i);
+        writefield_r(fp, fields, i, xformcontext);
         fprintf(fp, "},\n");
     }
     fprintf(fp, "};\n\n");
@@ -353,50 +355,51 @@ int writedatafreme(FILE *fp, XMLDOC *doc, FIELD *fields, const char *name, const
     return 0;
 }
 
-int writefield_r(FILE *fp, FIELD *field, int row)
+int writefield_r(FILE *fp, FIELD *field, int row, void *xformxcontext)
 {
     char *cstring;
+    const char *data;
+    char *xdata = 0;
     
     while (field)
     {
         if (field->attribute)
-        {
-            if (field->format)
-            {
-                writeformat(fp, field->format, field->printftype, field->attributes[row]->value);
-            }
-            else if (field->datatype == TYPE_STRING)
-            {
-                cstring = texttostring(field->attributes[row]->value);
-                fprintf(fp, "%s, ", cstring);
-                free(cstring);
-            }
-            else if (field->datatype == TYPE_NUMBER)
-            {
-                fprintf(fp, "%s, ", field->attributes[row]->value);
-            }
-        }
+            data = field->attributes[row]->value;
         else
+            data = field->nodes[row]->data;
+        
+        if (field->xform)
         {
-            if (field->format)
-            {
-                writeformat(fp, field->format, field->printftype, field->nodes[row]->data);
-            }
-            else if (field->datatype == TYPE_STRING)
-            {
-                cstring = texttostring(field->nodes[row]->data);
-                fprintf(fp, "%s, ", cstring);
-                free(cstring);
-            }
-            else if (field->datatype == TYPE_NUMBER)
-            {
-                fprintf(fp, "%s, ", field->nodes[row]->data);
-            }
+            if (data)
+                xdata = xformdata(xformxcontext, field->xform, data);
+            data = xdata;
         }
+        
+        if (field->format)
+        {
+            writeformat(fp, field->format, field->printftype, data);
+        }
+        else if (field->datatype == TYPE_STRING)
+        {
+            cstring = texttostring(data);
+            fprintf(fp, "%s, ", cstring);
+            free(cstring);
+        }
+        else if (field->datatype == TYPE_NUMBER)
+        {
+            fprintf(fp, "%s, ", data);
+        }
+        
+        if (xdata)
+        {
+            free(xdata);
+            xdata = 0;
+        }
+        
         if (field->child)
         {
             fprintf(fp, "{");
-            writefield_r(fp, field->child, row);
+            writefield_r(fp, field->child, row, xformxcontext);
             fprintf(fp, "},");
         }
         field = field->next;
@@ -613,6 +616,7 @@ FIELD *createfield(void)
     field->ctype = 0;
     field->format = 0;
     field->printftype = PF_UNKNOWN;
+    field->xform = 0;
     field->structexternal = 0;
     field->attributes = 0;
     field->nodes = 0;
@@ -631,6 +635,7 @@ void killfield(FIELD *field)
         free(field->xpath);
         free(field->ctype);
         free(field->format);
+        free(field->xform);
         free(field->attributes);
         free(field->nodes);
         free(field);
@@ -769,6 +774,7 @@ FIELD *processfieldnode(XMLNODE *node, const char *format)
     const char *name = 0;
     const char *xpath = 0;
     const char *ctype = 0;
+    const char *xform = 0;
     const char *formatstr = 0;
     enum PrintFType pftype;
     int err;
@@ -808,6 +814,14 @@ FIELD *processfieldnode(XMLNODE *node, const char *format)
     {
         field->ctype = mystrdup(ctype);
         if (!field->ctype)
+            goto out_of_memory;
+    }
+    
+    xform = xml_getattribute(node, "xform");
+    if (xform)
+    {
+        field->xform = mystrdup(xform);
+        if (!field->xform)
             goto out_of_memory;
     }
     
