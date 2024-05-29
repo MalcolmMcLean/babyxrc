@@ -8,5 +8,6 @@ Strings: a dataframe which is just string.
 <dataframe name = "payroll" src = "employee.csv"></dataframe>
 <dataframe src = "numbers.csv"></dataframe>
 <dataframe src = "strings.csv"></dataframe>
+<dataframe src = "SP.POP.TOTL.json"></dataframe>
 </BabyXRC>
 

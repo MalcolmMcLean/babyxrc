@@ -80,9 +80,9 @@ int guessdatatype(XMLNODE **nodes, int N);
 int guessdatataattributes(XMLATTRIBUTE **attr, int N);
 int getdatatype(const char *str);
 int writeformat(FILE *fp, const char *fmt, enum PrintFType pftype, const char *data);
-enum PrintFType getformttype_pf(const char *fmt);
-const char *getformattype(const char *fmt);
-int Nformatspecifiers(const char *fmt);
+static enum PrintFType getformttype_pf(const char *fmt);
+static const char *getformattype(const char *fmt);
+static int Nformatspecifiers(const char *fmt);
 static char *mystrconcat(const char *prefix, const char *suffix);
 static char *mystrdup(const char *str);
 
@@ -1085,7 +1085,7 @@ int writeformat(FILE *fp, const char *fmt, enum PrintFType pftype, const char *d
     fprintf(fp, ", ");
 }
 
-enum PrintFType getformttype_pf(const char *fmt)
+static enum PrintFType getformttype_pf(const char *fmt)
 {
     const char *type;
     
@@ -1111,7 +1111,7 @@ enum PrintFType getformttype_pf(const char *fmt)
     return PF_UNKNOWN;
 }
 
-const char *getformattype(const char *fmt)
+static const char *getformattype(const char *fmt)
 {
     int i, j;
     char specifier[16];
@@ -1201,7 +1201,7 @@ const char *getformattype(const char *fmt)
     return "unknown";
 }
 
-int Nformatspecifiers(const char *fmt)
+static int Nformatspecifiers(const char *fmt)
 {
     int answer = 0;
     

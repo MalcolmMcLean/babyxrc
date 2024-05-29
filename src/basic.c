@@ -13,6 +13,8 @@
 #include <ctype.h>
 #include <assert.h>
 
+#include "printfv.h"
+
 /* tokens defined */
 #define EOS 0 
 #define VALUE 1
@@ -55,6 +57,7 @@
 #define TO 111
 #define NEXT 112
 #define STEP 113
+#define PRINTF 114
 
 #define SIN 5
 #define COS 6
@@ -114,6 +117,7 @@
 #define ERR_INPUTTOOLONG 19
 #define ERR_BADVALUE 20
 #define ERR_NOTINT 21
+#define ERR_BADPRINTF 22
 
 #define MAXFORS 32    /* maximum number of nested fors */
 
@@ -184,6 +188,7 @@ static int findline(int no);
 
 static int line(void);
 static void doprint(void);
+static void doprintf(void);
 static void dolet(void);
 static void dodim(void);
 static int doif(void);
@@ -499,6 +504,9 @@ static void reporterror(int lineno)
 	case ERR_NOTINT:
 	  fprintf(fperr, "Not an integer at line %d\n", lineno);
 	  break;
+    case ERR_BADPRINTF:
+      fprintf(fperr, "Bad PRINTF format at line %d\n", lineno);
+      break;
 	default:
 	  fprintf(fperr, "ERROR line %d\n", lineno);
 	  break;
@@ -554,6 +562,9 @@ static int line(void)
     case PRINT:
 	  doprint();
 	  break;
+    case PRINTF:
+      doprintf();
+      break;
     case LET:
 	  dolet();
 	  break;
@@ -644,6 +655,87 @@ static void doprint(void)
   }
   else
     fprintf(fpout, "\n");
+}
+
+static void doprintf(void)
+{
+    double numargs[100];
+    char *strargs[100];
+    char argtypes[101] = {0};
+    char fieldtypes[101] = {0};
+    char *str;
+    double x;
+    int Nnumbers = 0;
+    int Nstrings = 0;
+    char *format = 0;
+    int Nfields;
+    int i;
+    
+    match(PRINTF);
+    format = stringexpr();
+    
+    if (token == COMMA)
+    {
+        match(COMMA);
+        
+        while(1)
+        {
+            if(isstring(token))
+            {
+                str = stringexpr();
+                if(str)
+                {
+                    argtypes[Nstrings + Nnumbers] = 's';
+                    strargs[Nstrings++] = str;
+                    
+                }
+            }
+            else
+            {
+                x = expr();
+                argtypes[Nstrings + Nnumbers] = 'n';
+                numargs[Nnumbers++] = x;
+                
+            }
+            if(token == COMMA)
+            {
+                match(COMMA);
+            }
+            else
+                break;
+        }
+    }
+    
+    if (format)
+    {
+        if (checkprintformat(format, &Nfields, NULL, 0) < 0)
+            seterror(ERR_BADPRINTF);
+        else if (Nfields != Nnumbers + Nstrings)
+            seterror(ERR_BADPRINTF);
+        else
+        {
+            getformatfieldtypes(format, fieldtypes, Nfields);
+            for (i = 0;  i < Nfields; i++)
+            {
+                if (fieldtypes[i] != 's' && argtypes[i] != 's')
+                    seterror(ERR_BADPRINTF);
+                else if (fieldtypes[i] == 'c')
+                    seterror(ERR_BADPRINTF);
+            }
+        }
+        if (!errorflag)
+            fprintfv(fpout, format, numargs, strargs);
+    }
+    else
+        seterror(ERR_BADPRINTF);
+    
+    if(token == SEMICOLON)
+    {
+      match(SEMICOLON);
+      fflush(fpout);
+    }
+    else
+      fprintf(fpout, "\n");
 }
 
 /*
@@ -2638,6 +2730,8 @@ static int gettoken(const char *str)
 		return SQRT;
 	  if(!strncmp(str, "PRINT", 5) && !isalnum(str[5]))
 		return PRINT;
+      if(!strncmp(str, "PRINTF", 6) && !isalnum(str[6]))
+        return PRINTF;
 	  if(!strncmp(str, "LET", 3) && !isalnum(str[3]))
 		return LET;
 	  if(!strncmp(str, "DIM", 3) && !isalnum(str[3]))
@@ -2801,6 +2895,8 @@ static int tokenlen(const char *str, int token)
 	  return 0;
 	case PRINT:
 	  return 5;
+    case PRINTF:
+      return 6;
     case LET:
 	  return 3;
 	case DIM:

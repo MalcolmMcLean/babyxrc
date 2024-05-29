@@ -271,10 +271,11 @@ void removetrailingnewline(char *str)
    if (i)
    {
        i--;
-       if (str[i] == '\n');
+       if (str[i] == '\n')
             str[i] = 0;
    }
 }
+
 char *getbasename(char *fname)
 {
   char *base;
