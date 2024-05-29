@@ -404,7 +404,7 @@ error_exit:
     
 }
 
-static int parseboolaen(const char *boolattribute, int *error)
+static int parseboolean(const char *boolattribute, int *error)
 {
     int answer = 0;
     
@@ -556,7 +556,7 @@ int processfonttag(FILE *fp, int header,  const char *fname, const char *name, c
 }
 
 
-int processstringtag(FILE *fp, int header, const char *fname, const char *name, const char *str)
+int processstringtag(FILE *fp, int header, const char *fname, const char *name, const char *xconst, const char *str)
 {
   char *path = 0;
   char *stringname = 0;
@@ -564,7 +564,9 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
   FILE *fpstr;
   int answer = 0;
   char *buff;
-
+  int constflag = 0;
+  int error;
+    
   if(fname)
     path = mystrdup(fname);
   if(name)
@@ -577,9 +579,22 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
     answer = -1;
    }
     
+    if (xconst)
+    {
+        constflag = parseboolean(xconst, &error);
+        if (error)
+        {
+            fprintf(stderr, "Bad boolean value to const attribute: \"%s\"\n", xconst);
+            answer = -1;
+        }
+    }
+    
   if (header)
   {
-      fprintf(fp, "extern char %s[];\n", stringname);
+      if (constflag)
+          fprintf(fp, "extern const char *%s;\n", stringname);
+      else
+          fprintf(fp, "extern char %s[];\n", stringname);
       free(path);
       free(stringname);
       return 0;
@@ -618,7 +633,10 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
   }
   else if(stringname && string)
   {
-    fprintf(fp, "char %s[] = ", stringname);
+    if (constflag)
+        fprintf(fp, "const char *%s = ", stringname);
+    else
+        fprintf(fp, "char %s[] = ", stringname);
     fputs(string, fp);
     fprintf(fp, ";\n"); 
   }
@@ -813,7 +831,7 @@ int processutf16tag(FILE *fp, int header, const char *fname, const char *name, c
     
   if (allowsurrogatepairs)
   {
-      allowsurrogatesflag = parseboolaen(allowsurrogatepairs, &error);
+      allowsurrogatesflag = parseboolean(allowsurrogatepairs, &error);
       if (error)
       {
           fprintf(stderr, "Bad boolean value to allowsurrogatepairs: \"%s\"\n", allowsurrogatepairs);
@@ -1333,6 +1351,7 @@ int main(int argc, char **argv)
   const char *path;
   const char *name;
   const char *str;
+  const char *xconst;
   const char *widthstr;
   const char *heightstr;
   const char *pointsstr;
@@ -1418,8 +1437,9 @@ int main(int argc, char **argv)
         {
             path = xml_getattribute(node, "src");
             name = xml_getattribute(node, "name");
+            xconst = xml_getattribute(node, "const");
             str = xml_getdata(node);
-            processstringtag(stdout, header, path, name, str);
+            processstringtag(stdout, header, path, name, xconst, str);
         }
         else if (!strcmp(tag, "utf8"))
         {

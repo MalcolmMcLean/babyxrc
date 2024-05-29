@@ -158,20 +158,20 @@ tags &lt;string&gt; &lt;utf8&gt; &lt;utf16&gt; can omit the
 
 <H3> &lt;string&gt; tag </H3>
 <P>
-<B>Attributes</B> name, src
+<B>Attributes</B> name, src, const
 </P>
 
 <pre>
 &lt;string name = "fred"&gt;Fred Bloggs&lt;/string&gt;
-&lt;string name = "fred"&gt;"My name is \"Fred Bloggs\"\n"&lt;/string&gt;
+&lt;string name = "fred" const="true"&gt;"My name is \"Fred Bloggs\"\n"&lt;/string&gt;
 &lt;string name = "fred", src = "fred.txt"&gt;&lt;/string&gt;
 </pre>
 <P>
-In the first case we are creating a string wit the value "Fred Bloggs".
+In the first case we are creating a string with the value "Fred Bloggs".
 In the second case the string is quoted, so it is not escaped but is
 output as is. (This is useful for entering printf format strings).
-In the third case, the string is read from an external file. It will
-be escaped so tabs will be exanede to "\t" and newlines to "\n". 
+And it is also const.In the third case, the string is read from an external
+file. It will be escaped so tabs will be expanded to "\t" and newlines to "\n". 
 </P>
 
 <H3> &lt;utf8&gt; tag </H3>

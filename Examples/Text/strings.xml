@@ -1,6 +1,6 @@
 <BabyXRC>
 <string name = "hello">Hello world\n</string>
-<string name = "mary">Mary had a little lamb
+<string name = "mary" const="true">Mary had a little lamb
 Its fleece was white as snow,
 And everywhere that Mary went
 The lamb was sure to go.
