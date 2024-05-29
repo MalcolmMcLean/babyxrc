@@ -107,8 +107,8 @@ tag which inserts a comment into the output. It's vital for attaching
 licence data to open source resources that might be GPLed. 
 
 Often you want add an entire directory. This cannot be achieved portably 
-because there is no way to traversea directory tree in ANSI C. However there 
-is now a solution which uses the supplementary program directorttoxml. It's 
+because there is no way to traverse a directory tree in ANSI C. However there 
+is now a solution which uses the supplementary program directorytoxml. It's 
 documented [here](http://malcolmmclean.github.io/babyxrc/importingdirectories.html).
 
 Currently I use the resource compiler myself, and the intention is
