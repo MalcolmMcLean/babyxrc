@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 /*
- strdup dtop in replacement
+ strdup drop in replacement
  */
 static char *mystrdup(const char *str)
 {
@@ -24,7 +24,7 @@ static char *mystrdup(const char *str)
 }
 
 /*
-    Concatenate two strings, returuning an allocated result.
+    Concatenate two strings, returning an allocated result.
  */
 static char *mystrconcat(const char *prefix, const char *suffix)
 {
@@ -129,12 +129,15 @@ static unsigned char *slurpb(const char *fname, int *len)
         answer[N++] = ch;
         if (N >= capacity)
         {
+            if (capacity > INT_MAX/2)
+                goto  out_of_memory;
             temp = realloc(answer, capacity + capacity / 2);
             if (!temp)
                 goto out_of_memory;
             answer = temp;
             capacity = capacity + capacity / 2;
         }
+      
     }
     *len = N;
     fclose(fp);
@@ -199,7 +202,7 @@ static char *xml_escape(const char *data)
 {
     int i;
     int size = 0;
-    char * answer;
+    char *answer;
     char *ptr;
     
     for (i = 0; data[i]; i++)
@@ -232,6 +235,39 @@ static char *xml_escape(const char *data)
     
     return answer;
 out_of_memory:
+    return 0;
+}
+
+static int xml_writecdata(FILE *fp, const char *data)
+{
+    int i;
+    int err;
+    
+    err = fprintf(fp, "<![CDATA[");
+    if (err < 0)
+        return -1;
+    for (i = 0; data[i]; i++)
+    {
+        err = fputc(data[i], fp);
+        if (err == EOF)
+            return -1;
+        if (data[i] == ']' && data[i+1] == ']' && data[i+2] == '>')
+        {
+            i++;
+            err = fputc(data[i], fp);
+            if (err == EOF)
+                return -1;
+            err = fprintf(fp, "]]>");
+            if (err < 0)
+                return  -1;
+            err = fprintf(fp, "<![CDATA[");
+            if (err < 0)
+                return -1;
+        }
+    }
+    err = fprintf(fp, "]]>");
+    if (err < 0)
+        return -1;
     return 0;
 }
 
@@ -460,6 +496,7 @@ int writebinaryfile(FILE *fpout, const char *fname)
     int N;
     unsigned char *binary = 0;
     char *uucode = 0;
+    char *badclose;
     int i;
     
     binary = slurpb(fname, &N);
@@ -468,10 +505,7 @@ int writebinaryfile(FILE *fpout, const char *fname)
     uucode = uuencodestr(binary,N);
     if (!uucode)
         goto out_of_memory;
-    fprintf(fpout, "<![CDATA[");
-    for (i = 0; uucode[i];i++)
-        fputc(uucode[i], fpout);
-    fprintf(fpout, "]]>");
+    xml_writecdata(fpout, uucode);
     free(binary);
     free(uucode);
     
@@ -585,7 +619,7 @@ out_of_memory:
 
 int directorytoxml(const char *directory)
 {
-    char *filename= 0 ;
+    char *filename = 0 ;
     char *xmlfilename = 0;
     
     if (!is_directory(directory))
@@ -595,7 +629,11 @@ int directorytoxml(const char *directory)
     }
     
     filename = getfilename(directory);
+    if (!filename)
+        goto out_of_memory;
     xmlfilename = xml_escape(filename);
+    if (!xmlfilename)
+        goto out_of_memory;
     
     printf("<FileSystem>\n");
     printf("\t<directory name=\"%s\">\n", xmlfilename);
@@ -603,13 +641,20 @@ int directorytoxml(const char *directory)
     printf("\t</directory>\n");
     printf("</FileSystem>\n");
     
+    free(filename);
+    free(xmlfilename);
     return 0;
+out_of_memory:
+    free(filename);
+    free(xmlfilename);
+    
+    return -1;
 }
 
 void usage(void)
 {
     fprintf(stderr, "directorytoxml: converts a directory to an xml file\n");
-    fprintf(stderr, "Usage: directortoxml <directory>\n");
+    fprintf(stderr, "Usage: directorytoxml <directory>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "by Malcolm McLean\n");
     fprintf(stderr, "For use with the program directory to query the XML for files\n");
