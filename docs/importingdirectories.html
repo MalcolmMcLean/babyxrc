@@ -1,0 +1,129 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+<script>
+function fileClick(a) {
+
+        var linkTag = a.href;
+        var substring = "file:///";
+        if (linkTag.includes(substring)) {
+            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
+            fileOpen(url);
+        }
+        else {
+            window.open(linkTag, '_blank');
+        }
+    }
+
+    function fileOpen(url) {
+        $.ajax({
+            url: url,
+            complete: function (jqxhr, txt_status) {
+                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
+                if (txt_status == 'success') {
+                    window.open(url, '_self');
+                }
+                else {
+                    alert("File not found[404]!");
+                }
+                // }
+            }
+        });
+    }
+    </script>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+<H1> Importing Directories into C programs with the Baby X Resource Compiler </H1>
+<P>
+You often have data in a directory or folder somewhere on your machine, and want to import the entire folder into a C program. And it would be nice to achieve this with the resource compiler with a "folder" tag. But this cannot be done because the resource compiler is written in portable ANSI C, and there is no way of traversing a computer's directory structure. For that you must go to Posix. However there is now a solution, but it involves a second program written in Posix.
+</P>
+<H3>directorytoxml</H3>
+<P>
+The solution is to use a program called directorytoxml, which crawls a C source directory for files and writes them as xml. You then have a big xml file which you embed in the C program as a string. You then call the xmlparser on the string to get a document tree, which is your file structure. You then use a function provided to load files a FILE *, which you can pass to functions in your C program which operate on streams.
+ </P>
+ <P>
+ <pre>
+     
+     directorytoxml &lt;targetfolder&gt;
+    
+     The program accepts a folder as an argument, traverses it,
+     and spits out the results as XML to stdout.
+     
+     Example:
+        directorytoxml  data/myfolder > myfolder.xml
+        
+ </pre>
+ </P>
+ <P>
+ directorytoxml is simple but very powerful, and produces clean XML with text files represented a plain text and binary files uuencoded.
+ </P>
+ 
+ <H3>Embedding the directory in a C program</H3>
+ <P>
+ Once we've got the XML, we need to get it into our C program and mount it as a directory. And so of course to embed a string, we use the Baby X resource compiler with a simple script.
+ </P>
+ <P>
+ <pre>
+     
+ &lt;BabyXRC&gt;
+    &lt;string src="myfolder.xml"&gt;&lt;/string&gt;
+ &lt;/BabyXRC&gt;
+
+ </pre>
+ </P>
+ <P>
+ Now we need to mount the string as filesystem. So first we need to load it as an XML document using the function
+  xmldocfromstring() from the fie xmlparser2.h. Then we use the function xml_fopen() from the file directory.c to get a FILE * with the desired file.
+ </P>
+ <P>
+ <pre><code class="language-c">
+ #include "xmlparser2.h"
+ #include "xml_fload.h" /* you need to steal this yourself from directory.c */
+ 
+ XMLDOC *doc;
+ char error[1024];
+ FILE * fp;
+ 
+ /* load the documents. babyxrc will have created the string "myfolder" */
+ doc = xmldocfromstring(myfolder, error, 1024);
+ if (!doc)
+    fprintf(stderr, "%s\n", error); /* whoops */
+ 
+ fp = xml_fload("/myfolder/books/MalcolmMcLean/Adam_and_Abagail_Go_to_St_Toms.pdf", "r");
+ </code></pre>
+ <BR></BR>
+ Very simple.
+ </P>
+ <P>
+ It's rather a greedy solution in terms of memory, but that's seldom much of a consderation with machines with many gigabyres installed. But the power and simplicity win out, and it is all completely open source and no dependencies.
+ </P>
+ 
+ <H3> C source files </H3>
+ <P>
+ <UL>
+     
+ <LI> <A onclick='fileClick(this)' href="file:./src/directorytoxml.c">directorytoxml.c</A></LI>
+ <LI><A onclick='fileClick(this)' href="file:./src/directory.c">directory.c</A></LI>
+ <LI><A onclick='fileClick(this)' href="file:./src/xmlparser2.c">xmlparser2.c</A></LI>
+ <LI><A onclick='fileClick(this)' href="file:./src/xmlparser2.h">xmlparser2.h</A></LI>
+ </UL>
+</P>
+
+</BODY> </HTML>
+

@@ -103,8 +103,13 @@ data. It is then written out as an array of C structs, with the fields
 determined by the header. This might or might not work out in actual use.
 
 Sometimes the small things make all the difference. There is now a \<comment\>
-tag whcih inserts a comment into the output. It's vital for attaching 
+tag which inserts a comment into the output. It's vital for attaching 
 licence data to open source resources that might be GPLed. 
+
+Often you want add an entire directory. This cannot be achieved portably 
+because there is no way to traversea directory tree in ANSI C. However there 
+is now a solution which uses the supplementary program directorttoxml. It's 
+documented [here](http://malcolmmclean.github.io/babyxrc/importingdirectories.html).
 
 Currently I use the resource compiler myself, and the intention is
 to gradually roll it out as a standalone tool for general users.
