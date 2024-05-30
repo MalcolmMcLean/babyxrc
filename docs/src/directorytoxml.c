@@ -164,6 +164,14 @@ static int is_binary(const char *path)
         return 0;
     while ((ch = fgetc(fp)) != EOF)
     {
+      if (ch < 32)
+      {
+          if (ch != '\t' && ch != '\n' && ch != '\r')
+          {
+              answer = 1;
+              break;
+          }
+      }
        if (ch > 127)
        {
            answer = 1;
