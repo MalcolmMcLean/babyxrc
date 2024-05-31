@@ -48,3 +48,10 @@ add_executable( "babyxrc" ${bbx_sources} ${bbx_headers} )
 target_link_libraries( "babyxrc" ${libs} )
 
 
+add_executable("testbabyxfilesystem"
+    "babyxfs_src/bbx_filesystem.c"
+    "babyxfs_src/bbx_filesystem.h"
+    "babyxfs_src/xmlparser2.c"
+    "babyxfs_src/xmlparser2.h"
+    "babyxfs_src/testbabyxfilesystem.c")
+target_link_libraries( "testbabyxfilesystem" ${libs} )
