@@ -55,3 +55,15 @@ add_executable("testbabyxfilesystem"
     "babyxfs_src/xmlparser2.h"
     "babyxfs_src/testbabyxfilesystem.c")
 target_link_libraries( "testbabyxfilesystem" ${libs} )
+
+add_executable("listdirectory"
+    "babyxfs_src/xmlparser2.c"
+    "babyxfs_src/xmlparser2.h"
+    "babyxfs_src/listdirectory.c")
+target_link_libraries( "listdirectory" ${libs} )
+
+add_executable("directorytoxml"
+    "babyxfs_src/directorytoxml.c")
+target_link_libraries( "directorytoxml" ${libs} )
+
+
