@@ -18,6 +18,7 @@ bbx_writesource_flat.c - ANSI compliant function which doesn't create directorie
 babyxfs_dirtoxml.c - babyxfs_dirtoxml main file.
 babyxfs_xmltodir.c - babyxfs_xmltodir main file.
 babyxfs_ls.c - babyxfs_ls main file.
+babyxfs_extract.c - babyxfs_extract main file.
 testbabyxfilesystem.c - testbabyxfilesystem main file. 
 
 source.c - test data to pass to bbx_writesource.c.
@@ -34,7 +35,11 @@ Converts an xml file to a directory.
 
 babyxfs_ls 
 
-Lists the files is a FileSystem xml file using globs (wildcards, eg "*.c")   
+Lists the files is a FileSystem xml file using globs (wildcards, eg "*.c")
+
+babyxfs_extract
+
+Extracts a file from a FileSystem xml file.    
 
 testbabyxfilessystem 
 
