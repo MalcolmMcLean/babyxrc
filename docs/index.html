@@ -19,7 +19,7 @@ pre{
 <BODY bgcolor="#c0c0ff">
 <H1> The Baby X resource compiler </H1>
 <P>
-The Baby X resource compiler takes binary resources - images, fonts, audio 
+The <A href="https://github.com/MalcolmMcLean/babyxrc">Baby X resource compiler</A> takes binary resources - images, fonts, audio
 clips and text - and converts them to compileable C source. Unike most 
 other resource compilers, it doesn't simply package binary data, it reads 
 in the resource file and converts into data in a form ready to use in 
@@ -46,7 +46,7 @@ can include audio from any source and store it at the samplerate required
 by your platform.
 </P>
 <P>
-The Baby X resource compiler will also take in text in most common formats, 
+The Baby X resource compiler will also take in text in most common formats,
 and save it as human-readable ASCII strings, UTF-8, or UTF-16. Text files 
 commonly have non-standard extensions, so the format has to be determined 
 by heuristic analysis. For this reason it is recommended to use UTF-8 
@@ -58,7 +58,10 @@ However you can turn them on with the "allowsurrogatepairs" attribute. You
 can incorporate UTF-8 in your source with the &lt;string&gt; tag, but some 
 compilers and editors won't accept it. So the &lt;utf8&gt; tag dumps UTF-8 
 as ASCII-encoded binary. 
- </P> 
+ </P>
+ <P>
+ We now have an anciliary project, <A href = "http://malcolmmclean.github.io/babyxrc/importingdirectories.html"> BabyXFS </A>, or the Baby X filesystem project. This is designed to allow Baby X programmers to mount directories and embed them in programs. The files use the <A href = "FileSystemXML.html">&lt;FileSystem&gt;</A> XML file format. This allows directories to be packaged up and then imported via he Baby X resource compiler. There is now a suite of babyxfs_ programs to manipulate the FileSystem XML files. A paricularly intetesting use case is allowing a program to print out its own source so it can be recompiled on a diferent platform. This is explained as part of the BabyXFS project, <A href="https://github.com/MalcolmMcLean/babyxrc/tree/master/Examples/BabyXFS/writing_own_source">here</A>.
+ </P>
 <P>
 Users of the Baby X resource compiler will be C programmers, so it is the 
 work of a moment to modify the program slightly to output data in a 

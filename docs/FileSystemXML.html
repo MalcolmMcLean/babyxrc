@@ -1,0 +1,151 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+<H1> The FileSystem XML file format</H1>
+<P>
+ FileSystem is an XML file format designed for storing directories. It is intended for Baby X and works with the BabyXFS (Baby X FileSystem) suite of progtams and functions. However it is independent of Baby X and is open to anyone for any use.
+</P>
+
+<H3> What is FileSystem XML </H3>
+<P>
+FileSystem XML is a format for storing hierarchical data. The root tag is &lt;FileSystem&gt; and then there are two descendant tags &lt;directory&gt; and &lt;file&gt; Files are leaf nodes which contain data, whist directories can nest and contain files and other directories.
+</P>
+<H4> Example FileSystem XML file </H3>
+<pre>
+    &lt;FileSystem>&gt;
+        &lt;directory name="owl_and_text"&gt;
+            &lt;directory name="owl"&gt;
+                &lt;file name="Cartoon_Owl_clip_art.png" type="binary"&gt;
+    &lt;![CDATA[M)"E3'U@":H````0#)A$12!````$```@/(8````PF!UQ;````!,G4')$`NZ,'
+    MI#``;&lt;02$%$5H50S;='=&lt;6=E_W4U4ETHND5R]*N!&&lt;PQ&lt;=&lt;H'@0HX0"F$(GE
+    M4V-+)9A-;.DE-9A`!(]$(+_1.LA`$@L`!,$P8&lt;!;&ltO)9)9999)9)9-2SH13O
+    M7V?W/IQ:D0V28T&gt;.[UGG^^FO7]&gt;?W^[95X_[`-&lt;HSFE\,I#Y:4GFRS2KV*TH
+    M25I)2E:!LLH4`%PZ5I"P)_&gt;CJ5IZ8)3EZ,1B'O[0Q2T3P88(6O+6\R2"6FV!
+
+    More uuencoding removed for brevity
+
+    M+"V\!9?&L7&70/8OM,$601^1[G\T8[--DD-W#)]9Z"^TZ'P$M.L/@GXKFYLI
+    M,7!2BWZH1C967$-;OEPX-/2\H+LLX:V^Q#C-U0L7+44\[Y`$E!2U??NCM&gt;3J
+    MCD7'DNLEFC%WJN(J_;'.,^P3$/V"*-AFW@OOC3$__B21_%V'AX-M`3WF!E%E
+    M:*7=)U7,^6T_&lt;U].$&gt;?&gt;%8^\T3QSTY@8OU7(N-RE?BV'$/-;KX!G`Z,K%715
+    M%B[CGH^`\8`/0-%@O(#I_P#X%M7;!XVX-?;W=Y"/+;;W*]8:Z/_O!MW)SX-&lt;
+    .9_(`````)5D3$YJ0@)(I
+    ]]&gt;
+                &lt;/file&gt
+            &lt;/directory&gt;
+            &lt;file name="readme.txt" type="text"&gt;
+    In the beginning was the Word, and the Word was with God, and the Word was God.
+    The same was in the beginning with God.
+    All things were made by Him, and without Him was made nothing that was made:
+    in Him was life, and the life was the Light of men;
+    and the Light shineth in darkness, and the darkness did not comprehend it.
+
+            &lt;/file&gt;
+        &lt;/directory&gt;
+    &lt;/FileSystem&gt;
+
+</pre>
+
+<P>
+And it is fairy simple and self explanatory. Directories have names, but are otherwise just containers. Whilst files have names, and can be binary or text. Text is stored as plain ASCII, whilst binary data is uuencoded and put in a CDATA section. So it's a vety clean format.
+</P>
+<H4>The &lt;FileSystem&gt; tag </H3>
+<P>
+The FileSystem tag identifies the format. It should be the root element, and has one child, which is always a directory. The name of the root directory identies the name of the FileSystem. Only diectory and file tag elements are allowed within FileSystem elements.
+</P>
+<H4>The &lt;directory&gt; tag</H4>
+<P>
+The directory tag has one compulsory element, which is the name. IT can contain files and directories in any order. directories are all normal and should not have names which suggest special directories like symbolic links on common computer systems, eg "..". A directory can be empty.
+</P>
+<H4>The &lt;file&gt; tag</H4>
+<P>
+The file tag is the leaf element which contains data. It has two compulsory attributes, a name and a type, which must be "text" or "binary". Text data is plain, whilst binary data is uuencoded. uuencoding is a common system and decoders are widely available, and there is of course code at the <A href="https://github.com/MalcolmMcLean/babyxrc">BabyXRC project</A>.
+</P>
+
+<H3> Whitespace handling </H3>
+<P>
+Whitespace is diffficult with XML. ANd most text files are robust to a bit of whitespace bein added or trimmmed. However ideall users want textv whitespace perefectly preserved. ANd threfore the program babyxfs_dirtoxml, which generates the files, uses the following system. A newline is added immediately after the opening  &lt;file&gt; tag. Then a newline is added imediately after the data. Then a series of tabs are added to indent the closing tag. So by replacing the opening and closing newlines with nulls, you obtain the original text.
+</P>
+<P>
+The following code is used to trim text data.
+</P>
+<pre>
+    <code class="language-c">
+        if (!strcmp(type, "text"))
+        {
+            leading = 0;
+            len = (int) strlen(data);
+            for (i = 0; data[i]; i++)
+                if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                    break;
+            if (data[i] == '\n')
+                leading = i + 1;
+            
+            trailing = 0;
+            i = len - 1;
+            for (i = len - 1; i &gt; 0; i--)
+                if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                    break;
+            if (i &gt; 0 && data[i] == '\n')
+                trailing = len - i;
+            
+            if (trailing + leading &gt;= len )
+                ;
+            else
+            {
+                if (fwrite(data + leading, 1, len - trailing - leading, fp) != len - trailing - leading)
+                    goto error_exit;
+            }
+        }
+        
+</code>
+</pre>
+<P>
+You should use this algorithm to trim text data. If the whitespace has not been manipulated, the leading space is always 1 whilst the trailing space is always the nesting level of the element plus one, and is the newline which terminates the text data.
+</P>
+<P>
+Note that XML only allows newlines, carriage returns, and tabs as control characters under 32 (space). Some text files gave form feeds, backspaces, or other characters. So a "binary tag does not necessarily mean that the data is binary on the host computer.
+</P>
+<H3>Motivation</H3>
+<P>
+There was a need to allow users to packaged directories in the Baby X resource compiler. And because the spirit of the resource compiler is extreme portability, binary formatss were not acceptable. And XML was the natural choice. There was also a desire to show off the XML parser, which has stood up to the files magnificently.
+</P>
+<P>
+Baby X is designed for running small or baby programs on large computers, so there is not much need to save memory by going for a very compressed format. Instead I chose something which is robust andd simple to use, and aimed at the hobby programmer, although of course professionals who derive their living from programming are perfectly welcome to use it, and as all of Baby X, it is free to anyone for any use.
+</P>
+
+<H4>Concluding</4>
+<P>
+Enjoy programming. - Malcolm.
+</P>
+<P>
+Here are some useful links.
+
+<UL>
+<LI> <A href="https://github.com/MalcolmMcLean/babyxrc" BabyXRC project </A>. Baby X resource compiler </LI>
+<LI> <A href="https://github.com/MalcolmMcLean/babyx" BabyX project </A>. Baby X is the portable cross platform windowing sysytem for small programs.</LI>
+<LI> <A href="https://github.com/MalcolmMcLean/minixml" Mini XML </A>The home of the XML parser</LI>
+<LI> <A href="https://www.lulu.com/spotlight/bgy1mm" Malcolm&apos;s books </A>Where you can get books on programming and other subjects by Malcolm.</LI>
+</UL>
+</P>
+
+</BODY>
+</HTML>
