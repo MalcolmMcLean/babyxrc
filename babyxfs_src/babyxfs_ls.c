@@ -1,5 +1,5 @@
 //
-//  listdirectory.c
+//  babyxlsxml.c
 //  directorytoxml
 //
 //  Created by Malcolm McLean on 28/05/2024.
@@ -269,14 +269,20 @@ char **xml_listdirectory(XMLDOC *doc, const char *glob)
 
 void usage()
 {
-    fprintf(stderr, "listdirectory: ls command for FileSystem XML files\n");
-    fprintf(stderr, "Usage: listdirectory <filesystem.xml> <pathtofile>\n");
+    fprintf(stderr, "babyxfs_ls: ls command for FileSystem XML files\n");
+    fprintf(stderr, "Usage: babyxfs_ls <filesystem.xml> <pathtofile>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "For example, listdirectory poemfiles.xml /poems/Blake/*\n");
     fprintf(stderr, "The XML files poemfiles.xml is FileSystem file which\n");
     fprintf(stderr, "contains poems. The command will list all the poems \n");
     fprintf(stderr, "by Blake\n");
-    fprintf(stderr, "Generate the FileSystem files with the program directorytoxml\n");
+    fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "By Malcolm McLean\n");
+    fprintf(stderr, "Part of the BabyX project.\n");
+    fprintf(stderr, "Check us out on github and get involved.\n");
+    fprintf(stderr, "Program and source free to anyone for any use.\n");
+    exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv)
@@ -287,10 +293,7 @@ int main(int argc, char **argv)
     int i;
     
     if (argc != 3)
-    {
         usage();
-        return -1;
-    }
     
     doc = loadxmldoc(argv[1], error, 1024);
     if (!doc)

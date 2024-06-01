@@ -661,11 +661,17 @@ out_of_memory:
 
 void usage(void)
 {
-    fprintf(stderr, "directorytoxml: converts a directory to an xml file\n");
-    fprintf(stderr, "Usage: directorytoxml <directory>\n");
+    fprintf(stderr, "babyxdirtoxml: converts a directory to an xml file\n");
+    fprintf(stderr, "Usage: babyxdirtoxml <directory>\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "by Malcolm McLean\n");
-    fprintf(stderr, "For use with the program directory to query the XML for files\n");
+    fprintf(stderr, "By Malcolm McLean\n");
+    fprintf(stderr, "Part of the BabyX project.\n");
+    fprintf(stderr, "Check us out on github and get involved.\n");
+    fprintf(stderr, "Program and source free to anyone for any use.\n");
+    fprintf(stderr, "By Malcolm McLean\n");
+    fprintf(stderr, "Part of the BabyX project.\n");
+    fprintf(stderr, "Check us out on github and get involved.\n");
+    fprintf(stderr, "Program and source free to anyone for any use.\n");
 }
 
 int main(int argc, char **argv)

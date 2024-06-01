@@ -4,8 +4,6 @@
 
 cmake_minimum_required(VERSION 3.0)
 
-
-
 project(babyxrc)
 
 if(CMAKE_SYSTEM_NAME MATCHES Windows)
@@ -47,6 +45,7 @@ source_group("samplerate" FILES ${BBX_SAMPLERATEH} )
 add_executable( "babyxrc" ${bbx_sources} ${bbx_headers} )
 target_link_libraries( "babyxrc" ${libs} )
 
+# Baby X file system programs
 
 add_executable("testbabyxfilesystem"
     "babyxfs_src/bbx_filesystem.c"
@@ -56,14 +55,24 @@ add_executable("testbabyxfilesystem"
     "babyxfs_src/testbabyxfilesystem.c")
 target_link_libraries( "testbabyxfilesystem" ${libs} )
 
-add_executable("listdirectory"
+add_executable("babyxfs_ls"
     "babyxfs_src/xmlparser2.c"
     "babyxfs_src/xmlparser2.h"
-    "babyxfs_src/listdirectory.c")
-target_link_libraries( "listdirectory" ${libs} )
+    "babyxfs_src/babyxfs_ls.c")
+target_link_libraries( "babyxfs_ls" ${libs} )
 
-add_executable("directorytoxml"
-    "babyxfs_src/directorytoxml.c")
-target_link_libraries( "directorytoxml" ${libs} )
+add_executable("babyxfs_dirtoxml"
+    "babyxfs_src/babyxfs_dirtoxml.c")
+target_link_libraries( "babyxfs_dirtoxml" ${libs} )
+
+add_executable("babyxfs_xmltodir"
+ "babyxfs_src/asciitostring.c"
+ "babyxfs_src/asciitostring.h"
+ "babyxfs_src/xmlparser2.c"
+ "babyxfs_src/xmlparser2.h"
+ "babyxfs_src/bbx_write_source.c"
+ "babyxfs_src/bbx_write_source.h"
+ "babyxfs_src/babyxfs_xmltodir.c")
+target_link_libraries( "babyxfs_xmltodir" ${libs} )
 
 
