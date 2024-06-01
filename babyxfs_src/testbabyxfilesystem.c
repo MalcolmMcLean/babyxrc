@@ -101,6 +101,12 @@ int main(int argc, char **argv)
     int ch;
     char *xmlstring;
     int err;
+    unsigned char *data_xml;
+    unsigned char *data_stdio;
+    int N_xml;
+    int N_stdio;
+    int i;
+    
     if (argc != 4)
     {
         usage();
@@ -145,6 +151,27 @@ int main(int argc, char **argv)
     }
     else
     {
+        data_xml = bbx_filesystem_slurp(bbx_fs_xml, argv[3], "r", &N_xml);
+        data_stdio = bbx_filesystem_slurp(bbx_fs_stdio, argv[3], "r", &N_stdio);
+        if (!data_stdio)
+            fprintf(stderr, "Can't slurp target file on stdio system\n");
+        if (!data_xml)
+            fprintf(stderr, "Can't slurp target file on xml system\n");
+        if (N_xml != N_stdio)
+            fprintf(stderr, "N_xml %d N_stdio %d\n", N_xml, N_stdio);
+        else
+        {
+            for (i = 0; i < N_xml; i++)
+                if (data_stdio[i] != data_xml[i])
+                    break;
+            if (i != N_xml)
+                fprintf(stderr, "xml and stdio data differ at byte %d\n", i);
+        }
+        free(data_xml);
+        free(data_stdio);
+        data_xml = 0;
+        data_stdio = 0;
+        
         fp_stdio = bbx_filesystem_fopen(bbx_fs_stdio, argv[3], "r");
         if (!fp_stdio)
         {
@@ -170,6 +197,8 @@ int main(int argc, char **argv)
         err = bbx_filesystem_fclose(bbx_fs_xml, fp_xml);
         if (err)
             fprintf(stderr, "error closing xml file\n");
+        
+        
     }
     
     bbx_filesystem_kill(bbx_fs_stdio);

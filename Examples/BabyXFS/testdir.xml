@@ -1,0 +1,426 @@
+<FileSystem>
+	<directory name="testdir">
+		<file name="readme.txt" type="text">
+FileSystem test files
+
+These are files designed to test the system.
+
+text/whitespace contains files consisting entirely of white space.
+text/newlines contains files with surrounding newlines and other space.
+text/src contains the program used to generate the test files.
+text/books.xml is an xml file
+
+binary/images/Cartoon_Owl_clip_art.png is an image of an owl
+binary.*.bin
+   all1to127.bin - all bytes 1 127 ascending
+   allbytes.bin - all bytes 0 to 255 ascending
+   allunder128.bin - all bytes 0 - 128 ascending
+   zeros_12.bin - 12 zero bytes
+
+See if you can extract these correctly with the program directory.
+
+Have fun.
+
+Malcolm.
+
+
+
+
+
+
+		</file>
+		<directory name="binary">
+			<file name="allunder128.bin" type="binary">
+<![CDATA[M`$@`#00!&<`")HP",T@#/`1$2,!%58Q%8DA&;P1'>\!(A(R(D4B)G@2*JL"+
+MMXR+P$C,S03-V<#.YHS.\TC/_`40"-$1%9T1(ED2+Q43.]$41)U445E57A56
+F:M%7=YU7@%F8C169F=&:IIV:LUF;O!7<R-'=U9W=XEG>[Q7?^]W4
+]]>
+			</file>
+			<directory name="images">
+				<file name="Cartoon_Owl_clip_art.png" type="binary">
+<![CDATA[M)"E3'U@":H````0#)A$12!````$```@/(8````PF!UQ;````!,G4')$`NZ,'
+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
+.9_(`````)5D3$YJ0@)(I
+]]>
+				</file>
+			</directory>
+			<file name="all1to127.bin" type="binary">
+<![CDATA[M!(P`$4@!'@0"*L`#-XP#0$A$301%6<!&9HQ&<TA'?`2(B,")E8R)HDB*KP2+
+MN\",Q(S,T4C-W@3.ZL#/]XS/`%D0#141&=$2)IT2,UD3/!542-%559U58EE6
+E;Q57>]%8A)V8D5F9GA6:JM&;MYV;P%G<S17=V='>YIW>\UG?_-%5
+]]>
+			</file>
+			<file name="allbytes.bin" type="binary">
+<![CDATA[M`$@`#00!&<`")HP",T@#/`1$2,!%58Q%8DA&;P1'>\!(A(R(D4B)G@2*JL"+
+MMXR+P$C,S03-V<#.YHS.\TC/_`40"-$1%9T1(ED2+Q43.]$41)U445E57A56
+M:M%7=YU7@%F8C169F=&:IIV:LUF;O!7<R-'=U9W=XEG>[Q7?^]'@!*X@$6HA
+M'B8B*N(C-ZXC0&ID329E6>)F9JYF<VIG?":HB.*IE:ZIHFJJKR:KN^*LQ*[L
+MT6KMWB;NZN+O]Z[O`'LP#3<Q&?,R)K\R,WLS/#=T2/-U5;]U8GMV;S=W>_-X
+?A+^XD7NYGC>ZJO.[M[^[P'O\S3?]V?/^YK_^\WO__/-U
+]]>
+			</file>
+			<file name="zeroes_12.bin" type="binary">
+<![CDATA[,````````````````
+]]>
+			</file>
+		</directory>
+		<directory name="text">
+			<directory name="newlines">
+				<file name="mary_nl.txt" type="text">
+Mary had a little lamb
+
+				</file>
+				<file name="nl_mary_nl_nl.txt" type="text">
+
+Mary had a little lamb
+
+
+				</file>
+				<file name="tab_mary.txt_nl" type="text">
+	Mary had a little lamb
+
+				</file>
+				<file name="mary.txt" type="text">
+Mary had a little lamb
+				</file>
+			</directory>
+			<file name="books.xml" type="text">
+    &lt;bookstore&gt;  
+      &lt;book category=&quot;COOKING&quot;&gt;  
+        &lt;title lang=&quot;en&quot;&gt;Everyday Italian&lt;/title&gt;  
+        &lt;author&gt;Giada De Laurentiis&lt;/author&gt;  
+        &lt;year&gt;2005&lt;/year&gt;  
+        &lt;price&gt;30.00&lt;/price&gt;  
+      &lt;/book&gt;  
+      &lt;book category=&quot;CHILDREN&quot;&gt;  
+        &lt;title lang=&quot;en&quot;&gt;Harry Potter&lt;/title&gt;  
+        &lt;author&gt;J K. Rowling&lt;/author&gt;  
+        &lt;year&gt;2005&lt;/year&gt;  
+        &lt;price&gt;29.99&lt;/price&gt;  
+      &lt;/book&gt;  
+      &lt;book category=&quot;WEB&quot;&gt;  
+        &lt;title lang=&quot;en&quot;&gt;Learning XML&lt;/title&gt;  
+        &lt;author&gt;Erik T. Ray&lt;/author&gt;  
+        &lt;year&gt;2003&lt;/year&gt;  
+        &lt;price&gt;39.95&lt;/price&gt;  
+      &lt;/book&gt;  
+    &lt;/bookstore&gt;  
+			</file>
+			<directory name="whitespace">
+				<file name="carriagereturns_12.txt" type="text">
+
+				</file>
+				<file name="crnl_12.txt" type="text">
+
+
+
+
+
+
+
+
+
+
+
+
+
+				</file>
+				<file name="spaces_12.txt" type="text">
+            
+				</file>
+				<file name="backspaces_12.txt" type="binary">
+<![CDATA[,(@`"(@`"(@`"(@`"
+]]>
+				</file>
+				<file name="tabs_12.txt" type="text">
+												
+				</file>
+				<file name="formfeeds_12.txt" type="binary">
+<![CDATA[,,P`#,P`#,P`#,P`#
+]]>
+				</file>
+				<file name="nlcr_12.txt" type="text">
+
+
+
+
+
+
+
+
+
+
+
+
+
+				</file>
+				<file name="newlines_12.txt" type="text">
+
+
+
+
+
+
+
+
+
+
+
+
+
+				</file>
+			</directory>
+			<directory name="src">
+				<file name="filesystemtestfiles.c" type="text">
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+  FILE *fp;
+  int i;
+
+  fp = fopen(&quot;spaces_12.txt&quot;, &quot;w&quot;);
+  for (i = 0; i &lt; 12 ; i++)
+     fputc(&apos; &apos;, fp);
+   fclose(fp);
+  
+  fp = fopen(&quot;newlines_12.txt&quot;, &quot;w&quot;);
+  for (i = 0; i &lt; 12 ; i++)
+     fputc(&apos;\n&apos;, fp);
+   fclose(fp);
+
+    fp = fopen(&quot;tabs_12.txt&quot;, &quot;w&quot;);
+    for (i = 0; i &lt; 12 ; i++)
+       fputc(&apos;\t&apos;, fp);
+     fclose(fp);
+
+   fp = fopen(&quot;formfeeds_12.txt&quot;, &quot;w&quot;);
+   for (i = 0; i &lt; 12 ; i++)
+      fputc(&apos;\f&apos;, fp);
+    fclose(fp);
+
+   fp = fopen(&quot;carriagereturns_12.txt&quot;, &quot;w&quot;);
+   for (i = 0; i &lt; 12 ; i++)
+      fputc(&apos;\r&apos;, fp);
+    fclose(fp);
+
+    fp = fopen(&quot;backspaces_12.txt&quot;, &quot;w&quot;);
+    for (i = 0; i &lt; 12 ; i++)
+       fputc(&apos;\b&apos;, fp);
+     fclose(fp);
+
+    fp = fopen(&quot;crnl_12.txt&quot;, &quot;w&quot;);
+    for (i = 0; i &lt; 12 ; i++)
+    {
+       fputc(&apos;\r&apos;, fp);
+       fputc(&apos;\n&apos;, fp);
+     }
+     fclose(fp);
+
+    fp = fopen(&quot;nlcr_12.txt&quot;, &quot;w&quot;);
+    for (i = 0; i &lt; 12 ; i++)
+    {  
+       fputc(&apos;\n&apos;, fp);
+       fputc(&apos;\r&apos;, fp);
+     }
+     fclose(fp);
+ 
+     fp = fopen(&quot;mary_nl.txt&quot;, &quot;w&quot;);
+     fprintf(fp, &quot;Mary had a little lamb\n&quot;);
+     fclose(fp);
+
+     fp = fopen(&quot;nl_mary_nl_nl.txt&quot;, &quot;w&quot;);
+     fprintf(fp, &quot;\nMary had a little lamb\n\n&quot;);
+     fclose(fp);
+
+     fp = fopen(&quot;mary.txt&quot;, &quot;w&quot;);
+     fprintf(fp, &quot;Mary had a little lamb&quot;);
+     fclose(fp);
+
+     fp = fopen(&quot;tab_mary.txt_nl&quot;, &quot;w&quot;);
+     fprintf(fp, &quot;\tMary had a little lamb\n&quot;);
+     fclose(fp);
+
+
+     fp = fopen(&quot;allbytes.bin&quot;, &quot;w&quot;);
+     for(i = 0; i &lt; 256; i++)
+        fputc(i, fp);
+      fclose(fp);
+      
+    fp = fopen(&quot;allunder128.bin&quot;, &quot;w&quot;);
+     for (i = 0; i &lt; 128; i++)
+        fputc(i, fp);
+      fclose(fp);
+
+    fp = fopen(&quot;all1to127.bin&quot;, &quot;w&quot;);
+     for (i = 1; i &lt; 128; i++)
+        fputc(i, fp);
+      fclose(fp);
+
+     fp = fopen(&quot;zeroes_12.bin&quot;, &quot;w&quot;);
+     for (i = 0; i &lt; 12; i++)
+        fputc(0, fp);
+      fclose(fp);
+
+    return  0;
+
+}
+
+				</file>
+			</directory>
+		</directory>
+	</directory>
+</FileSystem>

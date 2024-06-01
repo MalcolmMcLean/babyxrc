@@ -18,6 +18,7 @@ void bbx_filesystem_kill(BBX_FileSystem *bbx_fs);
 int bbx_filesystem_set(BBX_FileSystem *bbx_fs, const char *pathorxml, int mode);
 FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char *mode);
 int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
+unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N);
 const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
 
 #endif /* bbx_filesystem_h */

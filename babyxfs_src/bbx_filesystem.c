@@ -30,13 +30,14 @@ static char *bbx_strdup(const char *str)
 
 static const char *getfilesystemname_r(XMLNODE *node);
 static char *makepath(const char *base, const char *query);
+static unsigned char *fslurpb(FILE *fp, int *len);
 static FILE *xml_fopen(XMLDOC *doc, const char *path, const char *mode);
 
 BBX_FileSystem *bbx_filesystem(void)
 {
     BBX_FileSystem *bbx_fs;
     int i;
-    
+
     bbx_fs = bbx_malloc(sizeof(BBX_FileSystem));
     
     bbx_fs->mode = 0;
@@ -109,7 +110,7 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
       return 0;
   }
 
-  if (strcmp(mode, "r"))
+  if (mode == NULL || mode[0] != 'r')
   {
       fprintf(stderr, "Baby X files system, fopen only support for reading \"r\" mode");
       return 0;
@@ -169,6 +170,28 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp)
    fprintf(stderr, "bbx_filessytem_fclose, file system not initialised\n");
    assert(0);
    return -1;
+}
+
+unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N)
+{
+    FILE *fp;
+    unsigned char *answer = 0;
+    int dummy = 0;
+    
+    if (N)
+        *N = 0;
+    else
+        N = &dummy;
+    
+    fp = bbx_filesystem_fopen(bbx_fs, path, mode);
+    if (!fp)
+        return 0;
+    answer = fslurpb(fp, N);
+    if (answer && *N >= 0)
+        answer[*N] = 0;
+    bbx_filesystem_fclose(bbx_fs, fp);
+    
+    return answer;
 }
 
 const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
@@ -265,6 +288,40 @@ static char *makepath(const char *base, const char *query)
     strcpy(answer + i, query);
     
     return answer;
+}
+
+static unsigned char *fslurpb(FILE *fp, int *len)
+
+{
+    unsigned char *answer = 0;
+    unsigned char *temp;
+    int capacity = 1024;
+    int N = 0;
+    int ch;
+
+    answer = malloc(capacity);
+    if (!answer)
+        goto out_of_memory;
+    while ( (ch = fgetc(fp)) != EOF)
+    {
+        answer[N++] = ch;
+        if (N >= capacity - 4)
+        {
+            temp = realloc(answer, capacity + capacity / 2);
+            if (!temp)
+                goto out_of_memory;
+            answer = temp;
+            capacity = capacity + capacity / 2;
+        }
+    }
+    *len = N;
+    
+    return answer;
+    
+out_of_memory:
+    *len = -1;
+    free(answer);
+    return 0;
 }
 
 /*
