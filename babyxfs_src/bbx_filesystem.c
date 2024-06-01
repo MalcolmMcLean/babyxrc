@@ -12,7 +12,7 @@
 typedef struct bbx_filesystem
 {
     int mode;
-    FILE *openfiles[32];
+    FILE *openfiles[FOPEN_MAX+1];
     int Nopenfiles;
     char *filepath;
     XMLDOC *filesystemdoc;
@@ -35,11 +35,13 @@ static FILE *xml_fopen(XMLDOC *doc, const char *path, const char *mode);
 BBX_FileSystem *bbx_filesystem(void)
 {
     BBX_FileSystem *bbx_fs;
+    int i;
     
     bbx_fs = bbx_malloc(sizeof(BBX_FileSystem));
     
     bbx_fs->mode = 0;
-    bbx_fs->openfiles[0] = 0;
+    for (i = 0; i < FOPEN_MAX + 1; i++)
+        bbx_fs->openfiles[i] = 0;
     bbx_fs->Nopenfiles = 0;
     bbx_fs->filepath = 0;;
     XMLDOC *filesystemdoc = 0;
@@ -101,7 +103,7 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
   FILE *fp = 0;
   char *stdpath = 0;
     
-  if (bbx_fs->Nopenfiles > 30)
+  if (bbx_fs->Nopenfiles >= FOPEN_MAX)
   {
       fprintf(stderr, "Baby X file system, too many open files\n");
       return 0;
@@ -190,6 +192,9 @@ const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
     return answer;
 }
 
+/*
+   THec FileSystem node should have one child, which is a directory with the name of the directory passed to directorytoxml
+*/
 static const char *getfilesystemname_r(XMLNODE *node)
 {
     const char *answer = 0;
@@ -210,6 +215,7 @@ static const char *getfilesystemname_r(XMLNODE *node)
                     }
                 }
             }
+            break;
         }
         if (answer == 0)
             answer = getfilesystemname_r(node->child);
@@ -220,6 +226,8 @@ static const char *getfilesystemname_r(XMLNODE *node)
     
     return answer;
 }
+
+
 /*
     The external directory mounted should be of the form
          "/users/fred/babyxdevelopment/mydir"
@@ -487,6 +495,8 @@ static FILE *file_fopen(XMLNODE *node)
     if (!fp)
         goto error_exit;
     data = xml_getdata(node);
+    if (!data)
+        return fp;
     len = (int) strlen(data);
     last = strrchr(data, '\n');
     if (last && strwhitespace(last))
@@ -495,7 +505,7 @@ static FILE *file_fopen(XMLNODE *node)
         goto error_exit;
     if (!strcmp(type, "text"))
     {
-        if (fwrite(data +1, 1, len - trailing - 1, fp) != len - trailing - 1)
+        if (fwrite(data + 1, 1, len - trailing - 1, fp) != len - trailing - 1)
             goto error_exit;
     }
     else if (!strcmp(type, "binary"))

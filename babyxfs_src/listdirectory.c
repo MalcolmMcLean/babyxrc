@@ -193,6 +193,7 @@ char **directory_list_r(XMLNODE *node, const char *glob, int pos)
     XMLNODE *child;
     char **sub;
     int lastdir;
+    char buff[FILENAME_MAX];
     
     nameglob = directoryname(glob, pos);
     lastdir = glob[pos + strlen(nameglob) + 1] == 0 ? 1 : 0;
@@ -204,7 +205,10 @@ char **directory_list_r(XMLNODE *node, const char *glob, int pos)
             if (nodename && matchwild(nodename, nameglob))
             {
                 if (lastdir)
-                    answer = cat_string(answer, nodename);
+                {
+                    snprintf(buff, FILENAME_MAX, "%s/", nodename);
+                    answer = cat_string(answer, buff);
+                }
                 else
                 {
                     sub = directory_list_r(node->child, glob, pos + (int) strlen(nameglob) + 1);
