@@ -477,6 +477,7 @@ out_of_memory:
     return 0;
 }
 
+/*
 static FILE *file_fopen(XMLNODE *node)
 {
     FILE *fp = 0;
@@ -526,6 +527,75 @@ error_exit:
     fclose(fp);
     return 0;
 }
+*/
+static FILE *file_fopen(XMLNODE *node)
+{
+    FILE *fp = 0;
+    int len;
+    const char *data;
+    int trailing = 0;
+    int leading = 0;
+    unsigned char *plain = 0;
+    int Nplain;
+    const char *type;
+    int i;
+    
+    type = xml_getattribute(node, "type");
+    if (!type)
+        goto error_exit;
+    fp = tmpfile();
+    if (!fp)
+        goto error_exit;
+    data = xml_getdata(node);
+    if (!data)
+        return fp;
+    
+    if (!strcmp(type, "text"))
+    {
+        leading = 0;
+        len = (int) strlen(data);
+        for (i = 0; data[i]; i++)
+            if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                break;
+        if (data[i] == '\n')
+            leading = i + 1;
+        
+        trailing = 0;
+        i = len - 1;
+        for (i = len - 1; i > 0; i--)
+            if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                break;
+        if (i > 0 && data[i] == '\n')
+            trailing = len - i;
+        
+        if (trailing + leading >= len )
+            ;
+        else
+        {
+            if (fwrite(data + leading, 1, len - trailing - leading, fp) != len - trailing - leading)
+                goto error_exit;
+        }
+    }
+    else if (!strcmp(type, "binary"))
+    {
+        plain = uudecodestr(data, &Nplain);
+        if (!plain)
+            goto error_exit;
+        if (fwrite(plain, 1, Nplain, fp) != Nplain)
+            goto error_exit;
+        free(plain);
+        plain = 0;
+    }
+    fseek(fp, 0, SEEK_SET);
+    return fp;
+    
+error_exit:
+    free(plain);
+    fclose(fp);
+    return 0;
+}
+
+
 
 static FILE *directory_fopen_r(XMLNODE *node, const char *path, int pos)
 {

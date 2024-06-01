@@ -196,11 +196,12 @@ static FILE *file_fopen(XMLNODE *node)
     FILE *fp = 0;
     int len;
     const char *data;
-    char *last;
     int trailing = 0;
+    int leading = 0;
     unsigned char *plain = 0;
     int Nplain;
     const char *type;
+    int i;
     
     type = xml_getattribute(node, "type");
     if (!type)
@@ -211,16 +212,32 @@ static FILE *file_fopen(XMLNODE *node)
     data = xml_getdata(node);
     if (!data)
         return fp;
-    len = (int) strlen(data);
-    last = strrchr(data, '\n');
-    if (last && strwhitespace(last))
-        trailing = len - (int)(last - data);
-    if (len - trailing < 1)
-        goto error_exit;
+    
     if (!strcmp(type, "text"))
     {
-        if (fwrite(data + 1, 1, len - trailing - 1, fp) != len - trailing - 1)
-            goto error_exit;
+        leading = 0;
+        len = (int) strlen(data);
+        for (i = 0; data[i]; i++)
+            if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                break;
+        if (data[i] == '\n')
+            leading = i + 1;
+        
+        trailing = 0;
+        i = len - 1;
+        for (i = len - 1; i > 0; i--)
+            if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+                break;
+        if (i > 0 && data[i] == '\n')
+            trailing = len - i;
+        
+        if (trailing + leading >= len )
+            ;
+        else
+        {
+            if (fwrite(data + leading, 1, len - trailing - leading, fp) != len - trailing - leading)
+                goto error_exit;
+        }
     }
     else if (!strcmp(type, "binary"))
     {
