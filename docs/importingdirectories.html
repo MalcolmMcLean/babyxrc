@@ -53,25 +53,25 @@ function fileClick(a) {
 <P>
 You often have data in a directory or folder somewhere on your machine, and want to import the entire folder into a C program. And it would be nice to achieve this with the resource compiler with a "folder" tag. But this cannot be done because the resource compiler is written in portable ANSI C, and there is no way of traversing a computer's directory structure. For that you must go to Posix. However there is now a solution, but it involves a second program written in Posix.
 </P>
-<H3>directorytoxml</H3>
+<H3>babyxfs_dirtoxml</H3>
 <P>
-The solution is to use a program called directorytoxml, which crawls a C source directory for files and writes them as xml. You then have a big xml file which you embed in the C program as a string. You then call the xmlparser on the string to get a document tree, which is your file structure. You then use a function provided to load files a FILE *, which you can pass to functions in your C program which operate on streams.
+The solution is to use a program called babyxfs_dirtoxml, which crawls a C source directory for files and writes them as xml. You then have a big xml file which you embed in the C program as a string. You then call the xmlparser on the string to get a document tree, which is your file structure. You then use a function provided to load files a FILE *, which you can pass to functions in your C program which operate on streams.
  </P>
  <P>
  <pre>
      
-     directorytoxml &lt;targetfolder&gt;
+     babyxfs_dirtoxml &lt;targetfolder&gt;
     
      The program accepts a folder as an argument, traverses it,
      and spits out the results as XML to stdout.
      
      Example:
-        directorytoxml  data/myfolder > myfolder.xml
+        babysfxs_dirtoxml  data/myfolder > myfolder.xml
         
  </pre>
  </P>
  <P>
- directorytoxml is simple but very powerful, and produces clean XML with text files represented a plain text and binary files uuencoded.
+ babyxs_dirtoxml is simple but very powerful, and produces clean XML with text files represented a plain text and binary files uuencoded.
  </P>
  
  <H3>Embedding the directory in a C program</H3>
@@ -113,9 +113,10 @@ The solution is to use a program called directorytoxml, which crawls a C source 
  <P>
  It's rather a greedy solution in terms of memory, but that's seldom much of a consderation with machines with many gigabyres installed. But the power and simplicity win out, and it is all completely open source and no dependencies.
  </P>
- 
+   
  <H3> C source files </H3>
  <P>
+     These are old files which are retained here for refererence, and so that if you come to the page you have something. The programs are being developed actively in the <A href=https://github.com/MalcolmMcLean/babyxrc"> Baby X resource compiler</A> project  
  <UL>
      
  <LI> <A href="src/directorytoxml.c">directorytoxml.c</A></LI>
