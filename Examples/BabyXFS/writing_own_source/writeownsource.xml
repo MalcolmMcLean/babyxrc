@@ -1,0 +1,3821 @@
+<FileSystem>
+	<directory name="writeownsource">
+		<file name="asciitostring.h" type="text">
+#ifndef asciitostring_h
+#define asciitostring_h
+
+char *fslurp(FILE *fp);
+int validcstring(const char *str);
+char *texttostring(const char *str);
+
+#endif
+
+		</file>
+		<file name="xmlparser2.c" type="text">
+/*
+ XML parser 2, by Malcolm McLean
+ Vanilla XML parser
+*/
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdarg.h&gt;
+#include &lt;ctype.h&gt;
+
+#define MAXRECURSIONLIMIT 100
+
+
+typedef struct xmlattribute
+{
+  char *name;                /* attriibute name */
+  char *value;               /* attribute value (without quotes) */
+  struct xmlattribute *next; /* next pointer in linked list */
+} XMLATTRIBUTE;
+
+typedef struct xmlnode
+{
+  char *tag;                 /* tag to identify data type */
+  XMLATTRIBUTE *attributes;  /* attributes */
+  char *data;                /* data as ascii */
+  int position;              /* position of the node within parent&apos;s data string */
+  int lineno;                /* line number of node in document */
+  struct xmlnode *next;      /* sibling node */
+  struct xmlnode *child;     /* first child node */
+} XMLNODE;
+
+typedef struct
+{
+  XMLNODE *root;             /* the root node */
+} XMLDOC;
+
+struct strbuff
+{
+    const char *str;
+    int pos;
+};
+
+struct utf16buff
+{
+    char rack[8];
+    int pos;
+    FILE *fp;
+};
+
+typedef struct
+{
+  char *str;
+  int capacity;
+  int N;
+} STRING;
+
+typedef struct
+{
+  int set;
+  char message[1024];
+    struct lexer *lexer;
+    int recursiondepth;
+} ERROR;
+
+
+typedef struct lexer
+{
+  int (*getch)(void *ptr);
+  void *ptr;
+  int token;
+  int lineno;
+  int columnno;
+  int badmatch;
+  ERROR *err;
+} LEXER;
+
+#define UNKNOWNSHRIEK 1000
+#define COMMENT 1001
+#define CDATA 1002
+#define INCLUDE 1002
+#define IGNORE 1003
+#define DOCTYPE 1004
+#define ELEMENT 1005
+#define ATTLIST 1006
+#define NOTATION 1007
+
+#define FMT_UNKNOWN 0
+#define FMT_UTF8 1
+#define FMT_UTF16LE 2
+#define FMT_UTF16BE 3
+
+static int textencoding(FILE *fp);
+static int fileaccess(void *ptr);
+static int utf16accessbe(void *ptr);
+static int utf16accessle(void *ptr);
+static int bbx_utf8_putch(char *out, int ch);
+static int stringaccess(void *ptr);
+
+void killxmlnode(XMLNODE *node);
+static void killxmlattribute(XMLATTRIBUTE *attr);
+
+static int is_initidentifier(int ch);
+static int is_elementnamech(int ch);
+static int is_attributenamech(int ch);
+
+static int string_init(STRING *s);
+static void string_push(STRING *s, int ch, ERROR *err);
+static void string_concat(STRING *s, const char *str, ERROR *err);
+static char *string_release(STRING *s);
+
+static XMLDOC *xmldocument(LEXER *lex, ERROR *err);
+static XMLNODE *xmlnode(LEXER *lex, ERROR *err);
+static XMLNODE *comment(LEXER *lex, ERROR *err);
+static XMLATTRIBUTE *attributelist(LEXER *lex, ERROR *err);
+static XMLATTRIBUTE *xmlattribute(LEXER *lex, ERROR *err);
+static char *quotedstring(LEXER *lex, ERROR *err);
+static char *textspan(LEXER *lex, ERROR *err);
+static char *cdata(LEXER *lex, ERROR *err);
+static char *processinginstruction(LEXER *lex, ERROR *err);
+static char *attributename(LEXER *lex, ERROR *err);
+static char *elementname(LEXER *lex, ERROR *err);
+static int escapechar(LEXER *lex, ERROR *err);
+static int shriektype(LEXER *lex, ERROR *err);
+static void skipbom(LEXER *lex, ERROR *err);
+static void skipunknowntag(LEXER *lex, ERROR *err);
+static void skipwhitespace(LEXER *lex, ERROR *err);
+
+static void initerror(ERROR *err);
+static void enterrecursion(ERROR *err);
+static void endrecursion(ERROR *err);
+static void reporterror(ERROR *err, const char *fmt, ...);
+
+static void initlexer(LEXER *lex, ERROR *err, int (*getch)(void *), void *ptr);
+static int gettoken(LEXER *lex);
+static int match(LEXER *lex, int token);
+
+static char *mystrdup(const char *str);
+
+
+
+
+XMLDOC *loadxmldoc(const char *filename,char *errormessage, int Nerr)
+{
+   FILE *fp;
+    ERROR error;
+   LEXER lexer;
+   XMLDOC *answer = 0;
+    int encoding;
+    struct utf16buff utf16buf = {0};
+    
+    initerror(&amp;error);
+
+   if (errormessage &amp;&amp; Nerr &gt; 0)
+      errormessage[0] = 0;
+
+   fp = fopen(filename, &quot;r&quot;);
+   if (!fp)
+   {
+      snprintf(errormessage, Nerr, &quot;Can&apos;t open %s&quot;, filename);
+      return 0;
+   }
+   else
+   {
+      encoding = textencoding(fp);
+      if (encoding == FMT_UTF8)
+      {
+          initlexer(&amp;lexer, &amp;error, fileaccess, fp);
+      }
+      else if (encoding == FMT_UTF16BE)
+      {
+          utf16buf.fp  = fp;
+          initlexer(&amp;lexer, &amp;error, utf16accessbe, &amp;utf16buf);
+      }
+       else if (encoding == FMT_UTF16LE)
+       {
+           utf16buf.fp = fp;
+           initlexer(&amp;lexer, &amp;error, utf16accessle, &amp;utf16buf);
+       }
+       else
+       {
+           snprintf(errormessage, Nerr, &quot;Can&apos;t determine text format of %s&quot;, filename);
+           return 0;
+       }
+       
+      answer = xmldocument(&amp;lexer, &amp;error);
+      if (error.set)
+      {
+         snprintf(errormessage, Nerr, &quot;%s&quot;, error.message);
+      }
+      return answer;
+   }   
+}
+
+XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr)
+{
+    ERROR error;
+    LEXER lexer;
+    XMLDOC *answer = 0;
+    int encoding;
+    struct utf16buff utf16buf = {0};
+
+    initerror(&amp;error);
+
+    if (errormessage &amp;&amp; Nerr &gt; 0)
+       errormessage[0] = 0;
+    
+    encoding = textencoding(fp);
+    if (encoding == FMT_UTF8)
+    {
+        initlexer(&amp;lexer, &amp;error, fileaccess, fp);
+    }
+    else if (encoding == FMT_UTF16BE)
+    {
+        utf16buf.fp  = fp;
+        initlexer(&amp;lexer, &amp;error, utf16accessbe, &amp;utf16buf);
+    }
+     else if (encoding == FMT_UTF16LE)
+     {
+         utf16buf.fp = fp;
+         initlexer(&amp;lexer, &amp;error, utf16accessle, &amp;utf16buf);
+     }
+     else
+     {
+         snprintf(errormessage, Nerr, &quot;Can&apos;t determine text format of stream&quot;);
+         return 0;
+     }
+
+    answer = xmldocument(&amp;lexer, &amp;error);
+    if (error.set)
+    {
+       snprintf(errormessage, Nerr, &quot;%s&quot;, error.message);
+    }
+       
+    return answer;
+}
+
+/*
+ Get the text encoding, gobbling the the first &apos;&lt;&apos;.
+ */
+static int textencoding(FILE *fp)
+{
+    long pos;
+    int ch1, ch2;
+    int answer = 0;
+    
+    ch1 = fgetc(fp);
+    ch2 = fgetc(fp);
+    
+    if (ch1 == &apos;&lt;&apos; &amp;&amp; ch2 != 0)
+    {
+        ungetc(ch2, fp);
+        return FMT_UTF8;
+    }
+    else if (ch1 == &apos;&lt;&apos; &amp;&amp; ch2 == 0)
+        return FMT_UTF16LE;
+    else if (ch1 == 0 &amp;&amp; ch2 == &apos;&lt;&apos;)
+        return FMT_UTF16BE;
+    else if (ch1 == 0xFF &amp;&amp; ch2 == 0xFE)
+    {
+        ch1 = fgetc(fp);
+        ch2 = fgetc(fp);
+        while (ch1 + ch2 * 256 &lt; 128 &amp;&amp; isspace(ch1))
+        {
+            ch1 = fgetc(fp);
+            ch2 = fgetc(fp);
+        }
+        if (ch1 == &apos;&lt;&apos; &amp;&amp; ch2 == &apos;0&apos;)
+            return FMT_UTF16LE;
+        else
+            return FMT_UNKNOWN;
+    }
+    else if (ch1 == 0xFE &amp;&amp; ch2 == 0xFF)
+    {
+        ch1 = fgetc(fp);
+        ch2 = fgetc(fp);
+        while (ch1 * 256 + ch2 &lt; 128 &amp;&amp; isspace(ch2))
+        {
+            ch1 = fgetc(fp);
+            ch2 = fgetc(fp);
+        }
+        if (ch1 == 0 &amp;&amp; ch2 == &apos;&lt;&apos;)
+            return FMT_UTF16BE;
+        else
+            return FMT_UNKNOWN;
+    }
+    else if (ch1 == 0xEF &amp;&amp; ch2 == 0xBB)
+    {
+        ch1 = fgetc(fp);
+        ch2 = fgetc(fp);
+        if (ch1 == 0xBF)
+        {
+            while (isspace(ch2))
+                ch2 = fgetc(fp);
+            if (ch2 == &apos;&lt;&apos;)
+                return FMT_UTF8;
+            else
+                return FMT_UNKNOWN;
+        }
+        else
+            return FMT_UNKNOWN;
+    }
+    else if (isspace(ch1) &amp;&amp; ch2 == 0)
+    {
+        while (ch1 + ch2 * 256 &lt; 128 &amp;&amp; isspace(ch1))
+        {
+            ch1 = fgetc(fp);
+            ch2 = fgetc(fp);
+        }
+        if (ch1 == &apos;&lt;&apos; &amp;&amp; ch2 == 0)
+            return FMT_UTF16LE;
+        else
+            return FMT_UNKNOWN;
+    }
+    else if (ch1 == 0 &amp;&amp; isspace(ch2))
+    {
+        while (ch1 * 256 + ch2 &lt; 128 &amp;&amp; isspace(ch2))
+        {
+            ch1 = fgetc(fp);
+            ch2 = fgetc(fp);
+        }
+        if (ch1 == 0 &amp;&amp; ch2 == &apos;&lt;&apos;)
+            return FMT_UTF16BE;
+        else
+            return FMT_UNKNOWN;
+    }
+    else if (ch1 != 0 &amp;&amp; ch2 != 0)
+    {
+        while (isspace(ch1))
+        {
+            ch1 = ch2;
+            ch2 = fgetc(fp);
+        }
+        if (ch1 == &apos;&lt;&apos;)
+        {
+            ungetc(ch2, fp);
+            return FMT_UTF8;
+        }
+        else
+            return FMT_UNKNOWN;
+    }
+    return FMT_UNKNOWN;
+}
+
+static int fileaccess(void *ptr)
+{
+   FILE *fp = ptr;
+   return fgetc(fp);
+}
+
+static int utf16accessbe(void *ptr)
+{
+    struct utf16buff *up = ptr;
+    int Nchars;
+    int wch;
+    int ch;
+    
+    if (up-&gt;rack[up-&gt;pos])
+        return up-&gt;rack[up-&gt;pos++];
+    else {
+        wch = fgetc(up-&gt;fp);
+        if (wch == EOF)
+            return EOF;
+        wch *= 256;
+        ch = fgetc(up-&gt;fp);
+        if (ch == EOF)
+            return EOF;
+        wch |= ch;
+        Nchars = bbx_utf8_putch(up-&gt;rack, wch);
+        up-&gt;rack[Nchars] = 0;
+        up-&gt;pos = 0;
+        return up-&gt;rack[up-&gt;pos++];
+    }
+    
+}
+
+static int utf16accessle(void *ptr)
+{
+    struct utf16buff *up = ptr;
+    int Nchars;
+    int wch;
+    int ch;
+    
+    if (up-&gt;rack[up-&gt;pos])
+        return up-&gt;rack[up-&gt;pos++];
+    else {
+        wch = fgetc(up-&gt;fp);
+        if (wch == EOF)
+            return EOF;
+        ch = fgetc(up-&gt;fp);
+        if (ch == EOF)
+            return EOF;
+        wch |= (ch * 256);
+        Nchars = bbx_utf8_putch(up-&gt;rack, wch);
+        up-&gt;rack[Nchars] = 0;
+        up-&gt;pos = 0;
+        return up-&gt;rack[up-&gt;pos++];
+    }
+    
+}
+
+static int bbx_utf8_putch(char *out, int ch)
+{
+  char *dest = out;
+  if (ch &lt; 0x80)
+  {
+     *dest++ = (char)ch;
+  }
+  else if (ch &lt; 0x800)
+  {
+    *dest++ = (ch&gt;&gt;6) | 0xC0;
+    *dest++ = (ch &amp; 0x3F) | 0x80;
+  }
+  else if (ch &lt; 0x10000)
+  {
+     *dest++ = (ch&gt;&gt;12) | 0xE0;
+     *dest++ = ((ch&gt;&gt;6) &amp; 0x3F) | 0x80;
+     *dest++ = (ch &amp; 0x3F) | 0x80;
+  }
+  else if (ch &lt; 0x110000)
+  {
+     *dest++ = (ch&gt;&gt;18) | 0xF0;
+     *dest++ = ((ch&gt;&gt;12) &amp; 0x3F) | 0x80;
+     *dest++ = ((ch&gt;&gt;6) &amp; 0x3F) | 0x80;
+     *dest++ = (ch &amp; 0x3F) | 0x80;
+  }
+  else
+    return 0;
+  return dest - out;
+}
+
+
+
+XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr)
+{
+   ERROR error;
+   LEXER lexer;
+   XMLDOC *answer = 0;
+   struct strbuff strbuf;
+    int ch;
+    
+    initerror(&amp;error);
+
+   if (errormessage &amp;&amp; Nerr &gt; 0)
+      errormessage[0] = 0;
+
+    strbuf.str = str;
+    strbuf.pos = 0;
+    /* the lexer has been hacked to support non-seekable streams, so
+     we need to pull out the first character */
+    ch = stringaccess(&amp;strbuf);
+    if (ch != &apos;&lt;&apos;)
+    {
+        snprintf(errormessage, Nerr, &quot;string must start with a \&apos;&lt;\&apos; character&quot;);
+        return 0;
+    }
+    initlexer(&amp;lexer, &amp;error, stringaccess, &amp;strbuf);
+    answer = xmldocument(&amp;lexer, &amp;error);
+    if (error.set)
+    {
+         snprintf(errormessage, Nerr, &quot;%s&quot;, error.message);
+    }
+    return answer;
+}
+
+static int stringaccess(void *ptr)
+{
+    struct strbuff *s = ptr;
+    if (s-&gt;str[s-&gt;pos])
+        return s-&gt;str[s-&gt;pos++];
+    else
+        return EOF;
+}
+
+
+/*
+  document destructor
+*/
+void killxmldoc(XMLDOC *doc)
+{
+  if(doc)
+  {
+      killxmlnode(doc-&gt;root);
+      free(doc);
+  }
+}
+
+/*
+  get the root node of the document
+*/
+XMLNODE *xml_getroot(XMLDOC *doc)
+{
+  return doc-&gt;root;
+}
+
+/*
+  get a node&apos;s tag
+*/
+const char *xml_gettag(XMLNODE *node)
+{
+    return node-&gt;tag;
+}
+
+/*
+  get a node&apos;s data
+*/
+const char *xml_getdata(XMLNODE *node)
+{
+    return node-&gt;data;
+}
+
+/*
+  get a node&apos;s attributes
+*/
+const char *xml_getattribute(XMLNODE *node, const char *attr)
+{
+  XMLATTRIBUTE *next;
+
+  for(next = node-&gt;attributes; next; next = next-&gt;next)
+    if(!strcmp(next-&gt;name, attr))
+        return next-&gt;value;
+
+  return 0;
+}
+
+/*
+  get the number of direct children of the node
+*/
+int xml_Nchildren(XMLNODE *node)
+{
+  XMLNODE *next;
+  int answer = 0;
+
+  if(node-&gt;child)
+  {
+    next = node-&gt;child;
+    while(next)
+    {
+      answer++;
+      next = next-&gt;next;
+    }
+  }
+
+  return answer;
+}
+
+/*
+  get the number of direct children with a particular tag
+  Params: node - the node
+          tag - the tag (NULL for all children)
+  Returns: numer of children with that tag
+*/
+int xml_Nchildrenwithtag(XMLNODE *node, const char *tag)
+{
+  XMLNODE *next;
+  int answer = 0;
+
+  if(node-&gt;child)
+  {
+    next = node-&gt;child;
+    while(next)
+    {
+      if(tag == 0 || (next-&gt;tag &amp;&amp; !strcmp(next-&gt;tag, tag)))
+        answer++;
+      next = next-&gt;next;
+    }
+  }
+
+  return answer;
+}
+
+/*
+  get child with tag and index
+  Params: node - the node
+          tag - tag of child (NULL for all children)
+          index - index number of child to retrieve
+  Returns: child, or null on fail
+  Notes: slow, only call for nodes with relatively small
+    numbers of children. If the child list is very long,
+    step through the linked list manually.
+*/
+XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index)
+{
+  XMLNODE *next;
+  int count = 0;
+
+  if(node-&gt;child)
+  {
+    next = node-&gt;child;
+    while(next)
+    {
+      if(tag == 0 || (next-&gt;tag &amp;&amp; !strcmp(next-&gt;tag, tag)))
+      {
+        if(count == index)
+          return next;
+        count++;
+      }
+      next = next-&gt;next;
+    }
+  }
+
+  return 0;
+}
+
+/*
+  recursive get descendants
+  Params; node the the node
+          tag - tag to retrieve
+          list = pointer to return list of pointers to matchign nodes
+          N - return for number of nodes found, also index of current place to write
+  Returns: 0 on success -1 on out of memory
+  Notes:
+    we are descending the tree, allocating space for a pointer for every
+    matching node.
+
+*/
+static int getdescendants_r(XMLNODE *node, const char *tag,  XMLNODE ***list, int *N)
+{
+  XMLNODE **temp;
+  XMLNODE *next;
+  int err;
+
+  next = node;
+  while(next)
+  {
+    if(tag == 0 || (next-&gt;tag &amp;&amp; !strcmp(next-&gt;tag, tag)))
+    {
+      temp = realloc(*list, (*N +1) * sizeof(XMLNODE *));
+      if(!temp)
+        return -1;
+      *list = temp;
+      (*list)[*N] = next;
+      (*N)++;
+    }
+    if(next-&gt;child)
+    {
+      err = getdescendants_r(next-&gt;child, tag, list, N);
+      if(err)
+        return err;
+    }
+    next = next-&gt;next;
+  }
+
+  return 0;
+}
+
+/*
+ get all descendants that match a particular tag
+   Params: node - the root node
+           tag - the tag
+           N - return for number found
+   Returns: 0 on success, -1 on out of memory
+   Notes: useful for fishing. Save you are reading the crossword
+     tag, but you don&apos;t know exactly whther it is root or
+     some child element. You also don&apos;t know if several of them are
+     in the file. Just call to extract a list, then query for
+     children so you know that the tag is an actual match.
+     Don&apos;t call for huge lists as inefficient.
+*/
+XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N)
+{
+  XMLNODE **answer = 0;
+  int err;
+
+  *N = 0;
+  err = getdescendants_r(node, tag, &amp;answer, N);
+  if(err)
+  {
+    free(answer);
+    return 0;
+  }
+
+  return answer;
+}
+
+static void getnestedata_r(XMLNODE *node, STRING *str, ERROR *err)
+{
+    XMLNODE *child;
+    int i = 0;
+    
+    for (child = node-&gt;child; child; child = child-&gt;next)
+    {
+        while (node-&gt;data &amp;&amp; i &lt; child-&gt;position &amp;&amp; node-&gt;data[i])
+            string_push(str, node-&gt;data[i++], err);
+        getnestedata_r(child, str, err);
+    }
+    while (node-&gt;data &amp;&amp; node-&gt;data[i])
+        string_push(str, node-&gt;data[i++], err);
+    
+}
+
+char *xml_getnesteddata(XMLNODE *node)
+{
+    ERROR error;
+    STRING str;
+    initerror(&amp;error);
+    string_init(&amp;str);
+    getnestedata_r(node, &amp;str, &amp;error);
+    return string_release(&amp;str);
+}
+
+/*
+    get a node&apos;s line number.
+    (note this one is null-guarded because it is meant to be called in error conditions)
+ */
+int xml_getlineno(XMLNODE *node)
+{
+    if (node)
+        return node-&gt;lineno;
+    return -1;
+}
+/*
+  Report any attributes which are not on a list of knowwn attributes
+ 
+  Params: node the node to test
+        ... NULL-terminated list of known node names.
+   Returns: a list of unrecognised attribures as a deep copy, 0 if
+       there are none.
+    Notes:
+       Call as
+       XMLATTRIBUTE *badattr =  0;
+       char *end = 0;
+ 
+     badatttr = xml_unknownattributes(node, &quot;faith&quot;, &quot;hope&quot;, &quot;charity&quot;, end);
+     if (badattr)
+         // We&apos;ve got a node with some attributes we don&apos;t recognise
+    
+    Don&apos;t pass NULL for the terminator, becuase sometimes it expands to integer 0 and gets put on the argument list as 32 bits instead of 64.
+ */
+XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...)
+{
+    int *matches;
+    va_list args;
+    char *name;
+    XMLATTRIBUTE *attr;
+    XMLATTRIBUTE *copy = 0;
+    XMLATTRIBUTE *answer = 0;
+    int Nattributes = 0;
+    int i;
+    
+    for (attr = node-&gt;attributes; attr != NULL; attr = attr-&gt;next)
+        Nattributes++;
+    
+    if (Nattributes == 0)
+        return 0;
+    
+    matches = malloc(Nattributes * sizeof(int));
+    if (!matches)
+        return 0;
+    
+    for (i = 0; i &lt; Nattributes; i++)
+        matches[i] = 0;
+    
+    va_start(args, node);
+    name = va_arg(args, char *);
+
+    while (name)
+    {
+       
+        i = 0;
+        for (attr = node-&gt;attributes; attr != NULL; attr = attr-&gt;next)
+        {
+            if (!strcmp(attr-&gt;name, name))
+                matches[i]++;
+            i++;
+        }
+        name = va_arg(args, char *);
+    }
+    va_end(args);
+    
+    i = 0;
+    for (attr = node-&gt;attributes; attr != NULL; attr = attr-&gt;next)
+    {
+        if (!matches[i])
+        {
+            copy = malloc(sizeof(XMLATTRIBUTE));
+            if (!copy)
+                goto out_of_memory;
+            copy-&gt;name = mystrdup(attr-&gt;name);
+            if (!copy-&gt;name)
+                goto out_of_memory;
+            copy-&gt;value = mystrdup(attr-&gt;value);
+            if (!copy-&gt;value)
+                goto out_of_memory;
+            copy-&gt;next = answer;
+            answer = copy;
+            copy = 0;
+        }
+        i++;
+    }
+    
+    copy = 0;
+    while (answer)
+    {
+        attr = answer;
+        answer = answer-&gt;next;
+        attr-&gt;next = copy;
+        copy = attr;
+    }
+     answer = copy;
+    
+    free(matches);
+    
+    return answer;
+    
+out_of_memory:
+    free(matches);
+    if (copy)
+    {
+        free(copy-&gt;name);
+        free(copy-&gt;value);
+        free(copy);
+    }
+    killxmlattribute(answer);
+    
+    return  0;
+}
+
+
+/*
+  xml node destructor
+  Notes: destroy siblings in a list, chilren recursively
+    as children are unlikely to be nested very deep
+
+*/
+void killxmlnode(XMLNODE *node)
+{
+  XMLNODE *next;
+
+  if(node)
+  {
+    while(node)
+    {
+      next = node-&gt;next;
+      if(node-&gt;child)
+        killxmlnode(node-&gt;child);
+      killxmlattribute(node-&gt;attributes);
+      free(node-&gt;data);
+      free(node-&gt;tag);
+      free(node);
+      node = next;
+    }
+  }
+}
+
+/*
+  destroy the attributes list
+*/
+static void killxmlattribute(XMLATTRIBUTE *attr)
+{
+  XMLATTRIBUTE *next;
+  if(attr)
+  {
+    while(attr)
+    {
+       next = attr-&gt;next;
+       free(attr-&gt;name);
+       free(attr-&gt;value);
+       free(attr);
+       attr = next;
+    }
+  }
+}
+
+static int is_initidentifier(int ch)
+{
+   if (isalpha(ch) || ch == &apos;_&apos;)
+     return 1;
+   return 0;
+}
+
+static int is_elementnamech(int ch)
+{
+   if (isalpha(ch) || isdigit(ch) || ch == &apos;_&apos; || ch == &apos;-&apos; || ch == &apos;.&apos; || ch == &apos;:&apos;)
+     return 1;
+   return 0;
+}
+
+static int is_attributenamech(int ch)
+{
+   if (isalpha(ch) || isdigit(ch) || ch == &apos;_&apos; || ch == &apos;-&apos; || ch == &apos;.&apos; || ch == &apos;:&apos;)
+     return 1;
+   return 0;
+}
+
+static void trim(char *str)
+{
+    int i;
+    
+    for (i = 0; str[i]; i++)
+        if (!isspace((unsigned char) str[i]))
+            break;
+    if (i != 0)
+        memmove(str, &amp;str[i], strlen(str) -i + 1);
+    if (str[0])
+    {
+        i = strlen(str) -1;
+        while (i &gt;= 0 &amp;&amp; isspace((unsigned char)str[i]))
+           str[i--] = 0;
+    }
+        
+}
+
+static int string_init(STRING *s)
+{
+  s-&gt;str = 0;
+  s-&gt;capacity = 0;
+  s-&gt;N = 0;
+    
+  return 0;
+}
+
+static void string_push(STRING *s, int ch, ERROR *err)
+{
+    char *temp = 0;
+    
+   if (s-&gt;capacity &lt; s-&gt;N * 2 + 2)
+   {
+     temp = realloc(s-&gt;str, s-&gt;N * 2 + 2);
+     if (!temp)
+       goto out_of_memory;
+     s-&gt;str = temp;
+     s-&gt;capacity = s-&gt;N * 2 + 2; 
+   }
+   s-&gt;str[s-&gt;N++] = ch;
+   s-&gt;str[s-&gt;N] = 0;
+   return;
+out_of_memory:
+   reporterror(err, &quot;out of memory&quot;);
+
+}
+
+static void string_concat(STRING *s, const char *str, ERROR *err)
+{
+    int i;
+    
+    for (i =0; str[i]; i++)
+        string_push(s, str[i], err);
+}
+
+static char *string_release(STRING *s)
+{
+   char *answer;
+
+   if (s-&gt;str == 0)
+   {
+       s-&gt;str = malloc(1);
+       if (s-&gt;str)
+           s-&gt;str[0] = 0;
+       else
+           return 0;
+       
+   }
+   answer = realloc(s-&gt;str, s-&gt;N + 1);
+   s-&gt;str = 0;
+   s-&gt;N = 0;
+   s-&gt;capacity = 0;
+
+   return answer;
+}
+
+static XMLDOC *xmldocument(LEXER *lex, ERROR *err)
+{
+    XMLNODE *node;
+    XMLDOC *doc;
+    int ch;
+    int shriek;
+    
+    doc = malloc(sizeof(XMLDOC));
+    if (!doc)
+    {
+        reporterror(err, &quot;out of memory&quot;);
+        return 0;
+    }
+    
+    skipbom(lex, err);
+
+    do {
+        skipwhitespace(lex, err);
+        if (!match(lex, &apos;&lt;&apos;))
+            reporterror(err, &quot;can&apos;t find opening tag&quot;);
+        ch = gettoken(lex);
+        if (is_initidentifier(ch))
+        {
+            node = xmlnode(lex, err);
+            if (node)
+            {
+                if (!err-&gt;set)
+                {
+                    doc-&gt;root = node;
+                    return doc;
+                }
+                else
+                {
+                    killxmlnode(node);
+                    break;
+                }
+            }
+            else
+            {
+                reporterror(err, &quot;bad root node&quot;);
+            }
+        }
+        else if (ch == &apos;!&apos;)
+        {
+            shriek = shriektype(lex, err);
+            if (shriek == COMMENT)
+                comment(lex, err);
+            else
+                skipunknowntag(lex, err);
+        }
+        else  if (ch == &apos;?&apos;)
+        {
+            char *text;
+            text = processinginstruction(lex, err);
+            free(text);
+        }
+        else {
+            skipunknowntag(lex, err);
+        }
+    } while (ch != EOF);
+    
+    free(doc);
+    return 0;
+}
+
+static XMLNODE *xmlnode(LEXER *lex, ERROR *err)
+{
+    int ch;
+    char *tag = 0;
+    XMLATTRIBUTE *attributes = 0;
+    XMLNODE *node = 0;
+    XMLNODE *lastchild = 0;
+    STRING datastr;
+    int shriek;
+    int lineno;
+    
+    if (err-&gt;set)
+        return 0;
+    enterrecursion(err);
+    
+    string_init(&amp;datastr);
+    
+    lineno = lex-&gt;lineno;
+    tag = elementname(lex, err);
+    if (!tag)
+        goto parse_error;
+    attributes = attributelist(lex, err);
+    skipwhitespace(lex, err);
+    ch = gettoken(lex);
+    if (ch == &apos;/&apos;)
+    {
+        match(lex, &apos;/&apos;);
+        if (!match(lex, &apos;&gt;&apos;))
+            goto parse_error;
+        node = malloc(sizeof(XMLNODE));
+        if (!node)
+            goto out_of_memory;
+        node-&gt;tag = tag;
+        node-&gt;attributes = attributes;
+        node-&gt;data = 0;
+        node-&gt;position = 0;
+        node-&gt;lineno = lineno;
+        node-&gt;child = 0;
+        node-&gt;next = 0;
+        endrecursion(err);
+        return node;
+    }
+    else if (ch == &apos;&gt;&apos;)
+    {
+        match(lex, &apos;&gt;&apos;);
+        node = malloc(sizeof(XMLNODE));
+        if (!node)
+            goto out_of_memory;
+        node-&gt;tag = tag;
+        node-&gt;attributes = attributes;
+        node-&gt;data = 0;
+        node-&gt;position = 0;
+        node-&gt;lineno = lineno;
+        node-&gt;child = 0;
+        node-&gt;next = 0;
+        tag = 0;
+        attributes = 0;
+        
+        do {
+            char *text = textspan(lex, err);
+            if (text)
+            {
+                string_concat(&amp;datastr, text, err);
+                free(text);
+                text = 0;
+            }
+            ch = gettoken(lex);
+            if (ch == &apos;&lt;&apos;)
+            {
+                match(lex, &apos;&lt;&apos;);
+                ch = gettoken(lex);
+                if (is_initidentifier(ch))
+                {
+                    XMLNODE *child = xmlnode(lex, err);
+                    if (!child)
+                        goto parse_error;
+                    if (lastchild)
+                        lastchild-&gt;next = child;
+                    else
+                        node-&gt;child = child;
+                    lastchild = child;
+                    child-&gt;position = datastr.N;
+                }
+                else if(ch == &apos;/&apos;)
+                {
+                    match(lex, &apos;/&apos;);
+                    tag = elementname(lex,err);
+                    if (tag &amp;&amp; !strcmp(tag, node-&gt;tag))
+                    {
+                        node-&gt;data = string_release(&amp;datastr);
+                        free(tag);
+                        match(lex, &apos;&gt;&apos;);
+                        endrecursion(err);
+                        return node;
+                    }
+                    else
+                    {
+                        reporterror(err, &quot;bad closing tag %s&quot;, tag);
+                        goto parse_error;
+                    }
+                }
+                else if (ch == &apos;!&apos;)
+                {
+                    shriek = shriektype(lex, err);
+                    if (shriek == COMMENT)
+                        comment(lex, err);
+                    else if(shriek == CDATA)
+                    {
+                        text = cdata(lex, err);
+                        if (text)
+                            string_concat(&amp;datastr, text, err);
+                        free(text);
+                    }
+                }
+                else if (ch == &apos;?&apos;)
+                {
+                    text = processinginstruction(lex, err);
+                    free (text);
+                }
+                else
+                {
+                    goto parse_error;
+                }
+            }
+        } while (ch != EOF);
+    }
+    else
+    {
+        goto parse_error;
+    }
+parse_error:
+    reporterror(err, &quot;error parsing element&quot;);
+    endrecursion(err);
+    return 0;
+out_of_memory:
+    reporterror(err, &quot;out of memory&quot;);
+    endrecursion(err);
+    return 0;
+}
+
+static XMLNODE *comment(LEXER *lex, ERROR *err)
+{
+    char buff[4] = {0};
+    int ch;
+    int lineno;
+    
+    lineno = lex-&gt;lineno;
+    
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        match(lex, ch);
+        memmove(buff, buff+1, 3);
+        buff[2] = ch;
+        if (!strcmp(buff, &quot;--&gt;&quot;))
+            return 0;
+    }
+    
+    reporterror(err, &quot;bad comment (starts line&quot;);
+    return 0;
+          
+}
+
+static XMLATTRIBUTE *attributelist(LEXER *lex, ERROR *err)
+{
+    int ch;
+    XMLATTRIBUTE *answer = 0;
+    XMLATTRIBUTE *last = 0;
+    XMLATTRIBUTE *attr = 0;
+    
+    while(1)
+    {
+        skipwhitespace(lex, err);
+        ch = gettoken(lex);
+        if (is_initidentifier(ch))
+        {
+            attr = xmlattribute(lex, err);
+            if (!attr)
+                goto parse_error;
+            if (last)
+            {
+                last-&gt;next = attr;
+                last = attr;
+            }
+            else
+            {
+                answer = attr;
+                last = answer;
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    
+    return answer;
+parse_error:
+    killxmlattribute(answer);
+    
+    return 0;
+}
+
+static XMLATTRIBUTE *xmlattribute(LEXER *lex, ERROR *err)
+{
+    char *name = 0;
+    char *value = 0;
+    XMLATTRIBUTE *answer = 0;
+    
+    name = attributename(lex, err);
+    if (!name)
+        goto parse_error;
+    skipwhitespace(lex, err);
+    if (!match(lex, &apos;=&apos;))
+        goto parse_error;
+    skipwhitespace(lex, err);
+    value = quotedstring(lex, err);
+    if (!value)
+        goto parse_error;
+    
+    answer = malloc(sizeof(XMLATTRIBUTE));
+    if (!answer)
+        goto out_of_memory;
+    answer-&gt;name = name;
+    answer-&gt;value = value;
+    answer-&gt;next = 0;
+    return answer;
+    
+parse_error:
+    reporterror(err, &quot;error in attribute&quot;);
+    free(name);
+    free(value);
+    free(answer);
+    return 0;
+    
+out_of_memory:
+    reporterror(err, &quot;out of memory&quot;);
+    free(name);
+    free(value);
+    free(answer);
+    return 0;
+}
+
+
+
+static char *quotedstring(LEXER *lex, ERROR *err)
+{
+    int quotech;
+    STRING str;
+    int ch;
+    
+    string_init(&amp;str);
+    
+    quotech = gettoken(lex);
+    if (quotech != &apos;\&quot;&apos; &amp;&amp; quotech != &apos;\&apos;&apos;)
+    {
+        goto parse_error;
+    }
+    match(lex, quotech);
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        if (ch == quotech)
+            break;
+        else if (ch == &apos;&amp;&apos;)
+        {
+            ch = escapechar(lex, err);
+            string_push(&amp;str, ch, err);
+        }
+        else if (ch == &apos;\n&apos;)
+            goto parse_error;
+        else
+        {
+            string_push(&amp;str,ch, err);
+            match(lex, ch);
+        }
+    }
+    if (!match(lex, quotech))
+        goto parse_error;
+    return string_release(&amp;str);
+parse_error:
+    free(string_release(&amp;str));
+    reporterror(err, &quot;bad quoted string&quot;);
+    return 0;
+    
+}
+
+static char *textspan(LEXER *lex, ERROR *err)
+{
+   int ch;
+   STRING str;
+
+   string_init(&amp;str);
+
+   while ( (ch = gettoken(lex)) != EOF)
+   {
+      if (ch == &apos;&lt;&apos;)
+          break;
+      if (ch == &apos;&amp;&apos;)
+        ch = escapechar(lex, err);
+      else
+         match(lex, ch);
+      string_push(&amp;str, ch, err);
+   } 
+   
+    return string_release(&amp;str);
+}
+
+static char *cdata(LEXER *lex, ERROR *err)
+{
+    char buff[4] = {0};
+    int ch;
+    int i;
+    STRING str;
+    int lineno;
+    
+    lineno = lex-&gt;lineno;
+    
+    string_init(&amp;str);
+    
+    match(lex, &apos;[&apos;);
+    
+    for (i =0; i &lt; 3; i++)
+    {
+        ch = gettoken(lex);
+        buff[i] = ch;
+        match(lex, ch);
+    }
+    
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        string_push(&amp;str, buff[0], err);
+        buff[0] = buff[1];
+        buff[1] = buff[2];
+        buff[2] = ch;
+        match(lex, ch);
+        if (!strcmp(buff, &quot;]]&gt;&quot;))
+            return string_release(&amp;str);
+    }
+    free (string_release(&amp;str));
+    reporterror(err, &quot;unterminated CDATA tag (starts line %d)&quot;, lineno);
+    
+    return 0;
+}
+
+static char *processinginstruction(LEXER *lex, ERROR *err)
+{
+    int ch;
+    STRING str;
+    int lineno;
+    
+    string_init(&amp;str);
+    lineno = lex-&gt;lineno;
+    
+    match(lex, &apos;?&apos;);
+    
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        match(lex, ch);
+        if (ch == &apos;?&apos;)
+        {
+            if (gettoken(lex) == &apos;&gt;&apos;)
+            {
+                match(lex, &apos;&gt;&apos;);
+                return string_release(&amp;str);
+            }
+        }
+    }
+    reporterror(err, &quot;&lt;? tag not closed (starts line %d)&quot;, lineno);
+    free (string_release(&amp;str));
+    
+    return 0;
+}
+
+static char *attributename(LEXER *lex, ERROR *err)
+{
+    int ch;
+    STRING str;
+
+    string_init(&amp;str);
+    
+    ch = gettoken(lex);
+    if (!is_initidentifier(ch))
+      goto parse_error;
+    while (is_attributenamech(ch))
+    {
+       match(lex, ch);
+       string_push(&amp;str, ch, err);
+       ch = gettoken(lex);
+    }
+    return string_release(&amp;str);
+ parse_error:
+    free(string_release(&amp;str));
+    return 0;
+}
+
+static char *elementname(LEXER *lex, ERROR *err)
+{
+   int ch;
+   STRING str;
+    char *temp = 0;
+
+   string_init(&amp;str);
+   
+   ch = gettoken(lex);
+   if (!is_initidentifier(ch))
+     goto parse_error;
+   while (is_elementnamech(ch))
+   {
+      match(lex, ch);
+      string_push(&amp;str, ch, err);
+      ch = gettoken(lex);
+   }
+   return string_release(&amp;str);
+parse_error:
+    temp = string_release(&amp;str);
+    free(temp);
+   return 0;
+}
+
+static int escapechar(LEXER *lex, ERROR *err)
+{
+    int ch;
+    STRING str;
+    char *escaped = 0;
+    int answer = 0;
+    
+    string_init(&amp;str);
+    
+    ch = gettoken(lex);
+    if (!match(lex, &apos;&amp;&apos;))
+        goto parse_error;
+    string_push(&amp;str, ch, err);
+    while ( (ch = gettoken(lex)) != EOF)
+    {
+        string_push(&amp;str, ch, err);
+        match(lex, ch);
+        if (ch == &apos;;&apos;)
+            break;
+        if (ch == &apos;\n&apos;)
+            goto parse_error;
+    }
+    escaped = string_release(&amp;str);
+    if (!strcmp(escaped, &quot;&amp;amp;&quot;))
+        answer = &apos;&amp;&apos;;
+    else if (!strcmp(escaped, &quot;&amp;gt;&quot;))
+        answer = &apos;&gt;&apos;;
+    else if (!strcmp(escaped, &quot;&amp;lt;&quot;))
+        answer = &apos;&lt;&apos;;
+    else if (!strcmp(escaped, &quot;&amp;quot;&quot;))
+        answer = &apos;\&quot;&apos;;
+    else if (!strcmp(escaped, &quot;&amp;apos;&quot;))
+        answer = &apos;\&apos;&apos;;
+    if (answer == 0)
+        reporterror(err, &quot;Unrecognised escape sequence %s&quot;, escaped);
+    
+    free(escaped);
+    return answer;
+parse_error:
+    free(escaped);
+    return 0;
+}
+
+
+/*
+&lt;!-- begins a comment, which ends with --&gt;
+
+&lt;![CDATA[ begins a CDATA section, which ends with ]]&gt;
+
+&lt;![INCLUDE[ and &lt;![IGNORE[ begin conditional sections, which end with ]]&gt;.
+
+&lt;!DOCTYPE begins a document type declaration.
+
+&lt;!ELEMENT begins an element type declaration.
+
+&lt;!ATTLIST begins an attribute list declaration.
+
+&lt;!ENTITY begins an entity declaration.
+
+&lt;!NOTATION begins a notation declaration.
+*/
+
+static int shriektype(LEXER *lex, ERROR *err)
+{
+    char buff[32] = {0};
+    int ch;
+    int i  = 0;
+    
+    match(lex, &apos;!&apos;);
+    buff[i++] = &apos;!&apos;;
+    
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        if (ch == &apos;&lt;&apos; || ch == &apos;&gt;&apos;)
+            return UNKNOWNSHRIEK;
+        if (isspace(ch))
+            return UNKNOWNSHRIEK;
+        buff[i++] = ch;
+        if (i &gt;= sizeof(buff))
+            break;
+        if (!strcmp(buff, &quot;!--&quot;))
+        {
+            match(lex, ch);
+            return COMMENT;
+        }
+        if (!strcmp(buff, &quot;![CDATA[&quot;))
+            return  CDATA;
+        if (!strcmp(buff, &quot;![INCLUDE[&quot;))
+            return INCLUDE;
+        if (!strcmp(buff, &quot;![IGNORE[&quot;))
+            return IGNORE;
+        if (!strcmp(buff, &quot;!DOCTYPE&quot;))
+        {
+            match(lex, ch);
+            return DOCTYPE;
+        }
+        if (!strcmp(buff, &quot;!ELEMENT&quot;))
+        {
+            match(lex, ch);
+            return ELEMENT;
+        }
+        if (!strcmp(buff, &quot;!ATTLIST&quot;))
+        {
+            match(lex, ch);
+            return ATTLIST;
+        }
+        if (!strcmp(buff, &quot;NOTATION&quot;))
+        {
+            match(lex, ch);
+            return NOTATION;
+        }
+        match(lex, ch);
+    }
+    
+    return UNKNOWNSHRIEK;
+}
+
+static void skipbom(LEXER *lex, ERROR *err)
+{
+    int ch;
+    ch = gettoken(lex);
+    if (ch == 0xEF)
+    {
+        match(lex, ch);
+        if (!match(lex, 0xBB))
+            reporterror(err, &quot;input has bad byte order marker&quot;);
+        if (!match(lex, 0xBF))
+            reporterror(err, &quot;input has bad byte order marker&quot;);
+    }
+}
+               
+static void skipunknowntag(LEXER *lex, ERROR *err)
+{
+    int ch;
+    
+    enterrecursion(err);
+    while ((ch = gettoken(lex)) != EOF)
+    {
+        match(lex, ch);
+        if (ch == &apos;&lt;&apos;)
+            skipunknowntag(lex, err);
+        if (ch == &apos;&gt;&apos;)
+            break;
+    }
+    endrecursion(err);
+}
+
+static void skipwhitespace(LEXER *lex, ERROR *err)
+{
+   int ch = gettoken(lex);
+   while (isspace(ch))
+   {
+     match(lex, ch);
+     ch = gettoken(lex);
+   }
+}
+static void initerror(ERROR *err)
+{
+    err-&gt;set = 0;
+    err-&gt;message[0] = 0;
+    err-&gt;lexer = 0;
+    err-&gt;recursiondepth = 0;
+}
+
+static void enterrecursion(ERROR *err)
+{
+    err-&gt;recursiondepth++;
+    if (err-&gt;recursiondepth &gt; MAXRECURSIONLIMIT)
+    {
+        reporterror(err, &quot;nesting too deep&quot;);
+        if (err-&gt;lexer)
+            match(err-&gt;lexer, EOF);
+    }
+}
+
+static void endrecursion(ERROR *err)
+{
+    err-&gt;recursiondepth--;
+    if (err-&gt;recursiondepth &lt; 0)
+        reporterror(err, &quot;nesting problem&quot;);
+}
+           
+static void reporterror(ERROR *err, const char *fmt, ...)
+{
+    char buff[1024];
+    va_list args;
+    
+    if (!err-&gt;set)
+    {
+        va_start(args, fmt);
+        vsnprintf(buff, 1024, fmt, args);
+        va_end(args);
+        if (err-&gt;lexer)
+            snprintf(err-&gt;message, 1024, &quot;Error line %d: %s.&quot;, err-&gt;lexer-&gt;lineno, buff);
+        else
+            strcpy(err-&gt;message, buff);
+        err-&gt;set = 1;
+    }
+}
+
+static void initlexer(LEXER *lex, ERROR *err, int (*getch)(void *), void *ptr)
+{
+  lex-&gt;getch = getch;
+  lex-&gt;ptr = ptr;
+  lex-&gt;err = err;
+  lex-&gt;lineno = 0;
+  lex-&gt;columnno = 0;
+  lex-&gt;badmatch = 0;
+  err-&gt;lexer = lex;
+  /* hacked. Put a &apos;&lt;&apos; sitting in the token becuase non-seekable UTF-16 streams
+   need to read this character to determine data format */
+    lex-&gt;token = &apos;&lt;&apos;; //(*lex-&gt;getch)(lex-&gt;ptr);
+  if (lex-&gt;token != EOF)
+  {
+    lex-&gt;lineno = 1;
+    lex-&gt;columnno = 1; 
+  }
+  else
+  {
+     reporterror(lex-&gt;err, &quot;Can&apos;t read data\n&quot;);
+  }
+
+}
+
+static int gettoken(LEXER *lex)
+{
+    if (lex-&gt;badmatch)
+        return EOF;
+   return lex-&gt;token;
+}
+
+static int match(LEXER *lex, int token)
+{
+   if (lex-&gt;token == token)
+   {
+       if (lex-&gt;token == &apos;\n&apos;)
+       {
+          lex-&gt;lineno++;
+          lex-&gt;columnno = 1;
+       }
+      else
+      {
+        lex-&gt;columnno++;
+      }
+       lex-&gt;token = (*lex-&gt;getch)(lex-&gt;ptr);
+      return 1;
+   }
+   else
+   {
+       lex-&gt;badmatch = 1;
+     return 0;
+   }
+}
+
+static char *mystrdup(const char *str)
+{
+  char *answer;
+
+  answer = malloc(strlen(str) + 1);
+  if(answer)
+    strcpy(answer, str);
+
+  return answer;
+}
+
+
+static void printnode_r(XMLNODE *node, int depth)
+{
+    int i;
+    XMLNODE *child;
+    
+    for (i =0; i &lt; depth; i++)
+        printf(&quot;\t&quot;);
+    printf(&quot;&lt;%s&gt;\n&quot;, node-&gt;tag);
+    for (child = node-&gt;child; child; child = child-&gt;next)
+        printnode_r(child, depth +1);
+    for (i =0; i &lt; depth; i++)
+        printf(&quot;\t&quot;);
+    printf(&quot;&lt;/%s&gt;\n&quot;, node-&gt;tag);
+}
+
+static void printdocument(XMLDOC *doc)
+{
+    if (!doc)
+        printf(&quot;Document was null\n&quot;);
+    else if(!doc-&gt;root)
+        printf(&quot;root null\n&quot;);
+    else
+        printnode_r(doc-&gt;root, 0);
+}
+
+int xmlparser2main(int argc, char **argv)
+{
+    XMLDOC *doc;
+    
+    char error[1024];
+    if (argc == 1)
+    {
+        doc = xmldocfromstring(&quot;&lt;!-- --&gt;&lt;FRED attr=\&quot;Fred\&quot;&gt;Fred&lt;![CDATA[character &gt; data]]&gt;&lt;JIM/&gt;Bert&lt;JIM/&gt;Harry&lt;/FRED&gt;&quot;, error, 1204);
+        //printf(&quot;%s\n&quot;, doc-&gt;root-&gt;data);
+    }else
+    {
+        doc = loadxmldoc(argv[1], error, 1024);
+        if (doc)
+            printf(&quot;%s\n&quot;, xml_getnesteddata(doc-&gt;root));
+    }
+    if (error[0])
+        printf(&quot;%s\n&quot;, error);
+    else
+        printdocument(doc);
+    
+    return 0;
+}
+
+
+		</file>
+		<file name="bbx_write_source.c" type="text">
+//
+//  bbx_write_source.c
+//  testbabyxfilesystem
+//
+//  Created by Malcolm McLean on 31/05/2024.
+//
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;ctype.h&gt;
+
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+
+#include &quot;bbx_write_source.h&quot;
+#include &quot;asciitostring.h&quot;
+#include &quot;xmlparser2.h&quot;
+
+/*
+   Does a string consist entirely of white space? (also treat nulls as white)
+ */
+static int strwhitespace(const char *str)
+{
+    if (!str)
+        return 1;
+    while (*str)
+    {
+        if (!isspace((unsigned char) *str))
+            return  0;
+        str++;
+    }
+    
+    return 1;
+}
+
+/*
+    Concatenate two strings, returning an allocated result.
+ */
+static char *mystrconcat(const char *prefix, const char *suffix)
+{
+    int lena, lenb;
+    char *answer;
+    
+    lena = (int) strlen(prefix);
+    lenb = (int) strlen(suffix);
+    answer = malloc(lena + lenb + 1);
+    if (answer)
+    {
+        strcpy(answer, prefix);
+        strcpy(answer + lena, suffix);
+    }
+    return  answer;
+}
+
+/*
+ The functions
+ 
+ unsigned char *uudecodestr(const char *uucode, int *N)
+ char *uuencodestr(const unsigned char *binary, int N)
+ 
+ Have been modifed by Malcolm McLean from the functions
+ 
+ void UUEncode( char * pSrcFilename, FILE * pSrcFile, FILE * pDstFile )
+ bool UUDecode( FILE * pSrcFile )
+ 
+ by Tom Weatherhead.
+ 
+ They appear in Tom&apos;s github project &quot;helix&quot;.
+ 
+The MIT License (MIT)
+
+Copyright (c) 2002-2021 Tom Weatherhead
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the &quot;Software&quot;), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED &quot;AS IS&quot;, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ 
+ */
+
+static unsigned char *uudecodestr(const char *uucode, int *N)
+{
+    int Nmaxout;
+    unsigned char *out;
+    int ix = 0;
+    int jx = 0;
+    int k;
+    int i;
+    
+    Nmaxout = ((int)strlen(uucode)/60 +1) * 45;
+    out = malloc(Nmaxout);
+    
+    while( uucode[ix] )
+    {
+        // Get a line of the src text file.
+        char acSrcData[128];
+        
+        k = 0;
+        while (uucode[ix] != &apos;\n&apos; &amp;&amp; uucode[ix])
+        {
+            acSrcData[k++] = uucode[ix++];
+            if (k &gt; 126)
+                goto error_exit;
+        }
+        acSrcData[k++] = 0;
+        if (uucode[ix])
+            ix++;
+        if( strlen( acSrcData ) == 0 )
+        {
+            // continue;
+        }
+        else if( acSrcData[0] &gt; 32  &amp;&amp;  acSrcData[0] &lt;= 77 )
+        {
+            int knBytesToWrite = (int)( acSrcData[0] - 32 );
+            unsigned char acDstData[45];
+            int nDstIndex = 0;
+
+            for( int i = 1; i &lt; strlen( acSrcData ); i += 4 )
+            {
+                int j;
+                int anSrc1[4];
+
+                for( j = 0; j &lt; 4; ++j )
+                {
+                    const char c = acSrcData[i + j];
+
+                    if( c &lt; 32  ||  c &gt; 96 )
+                    {
+                        break;
+                    }
+
+                    anSrc1[j] = (int)( ( c - 32 ) &amp; 63);
+                }
+
+                for( ; j &lt; 4; ++j )
+                {
+                    anSrc1[j] = 0;
+                }
+
+                int k = 0;
+
+                for( j = 0; j &lt; 4; ++j )
+                {
+                    k |= ( anSrc1[j] &lt;&lt; ( j * 6 ) );
+                }
+
+                for( j = 0; j &lt; 3; ++j )
+                {
+                    acDstData[nDstIndex++] = (unsigned char)( k &gt;&gt; ( j * 8 ) );
+                }
+            }
+
+            for (i = 0; i &lt; knBytesToWrite; i++)
+                out[jx++] = acDstData[i];
+        }
+    }
+    
+    if (N)
+        *N = jx;
+
+    return out;
+    
+error_exit:
+    free(out);
+    if (N)
+        *N = -1;
+    return 0;
+}
+
+int makedirectory(const char *path)
+{
+    int status;
+
+    //status = mkdir(&quot;/home/cnd/mod1&quot;, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    status = mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    
+    return status;
+}
+
+
+static FILE *file_fopen(XMLNODE *node)
+{
+    FILE *fp = 0;
+    int len;
+    const char *data;
+    char *last;
+    int trailing = 0;
+    unsigned char *plain = 0;
+    int Nplain;
+    const char *type;
+    
+    type = xml_getattribute(node, &quot;type&quot;);
+    if (!type)
+        goto error_exit;
+    fp = tmpfile();
+    if (!fp)
+        goto error_exit;
+    data = xml_getdata(node);
+    if (!data)
+        return fp;
+    len = (int) strlen(data);
+    last = strrchr(data, &apos;\n&apos;);
+    if (last &amp;&amp; strwhitespace(last))
+        trailing = len - (int)(last - data);
+    if (len - trailing &lt; 1)
+        goto error_exit;
+    if (!strcmp(type, &quot;text&quot;))
+    {
+        if (fwrite(data + 1, 1, len - trailing - 1, fp) != len - trailing - 1)
+            goto error_exit;
+    }
+    else if (!strcmp(type, &quot;binary&quot;))
+    {
+        plain = uudecodestr(data, &amp;Nplain);
+        if (!plain)
+            goto error_exit;
+        if (fwrite(plain, 1, Nplain, fp) != Nplain)
+            goto error_exit;
+        free(plain);
+        plain = 0;
+    }
+    fseek(fp, 0, SEEK_SET);
+    return fp;
+    
+error_exit:
+    free(plain);
+    fclose(fp);
+    return 0;
+}
+
+
+
+int bbx_write_source_r(XMLNODE *node, const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name)
+{
+    char *pathslash = 0;
+    char *filename = 0;
+    const char *name;
+    FILE *fpout = 0;
+    FILE *fpin = 0;
+    int ch;
+    int err = 0;
+    
+    pathslash = mystrconcat(path, &quot;/&quot;);
+    while (node)
+    {
+        if (!strcmp(xml_gettag(node), &quot;file&quot;))
+        {
+            name = xml_getattribute(node, &quot;name&quot;);
+            if (!name)
+                goto skip_node;
+            filename = mystrconcat(pathslash, name);
+            if (!filename)
+                goto out_of_memory;
+            fpout = fopen(filename, &quot;w&quot;);
+            if (!fpout)
+                break;
+            fpin = file_fopen(node);
+            if (!fpin)
+                break;
+            if (!strcmp(name, source_xml_file))
+            {
+                char *escaped = texttostring(source_xml);
+                if (!escaped)
+                    break;
+                fprintf(fpout, &quot;char %s[] = %s;\n&quot;, source_xml_name, escaped);
+                free(escaped);
+            }
+            else
+            {
+               while ((ch = fgetc(fpin)) != EOF)
+                   err |= (fputc(ch, fpout) == EOF) ? -1 : 0;
+            }
+            fclose(fpout);
+            fclose(fpin);
+            fpout = 0;
+            fpin = 0;
+            free(filename);
+            filename = 0;
+        }
+        else if (!strcmp(xml_gettag(node), &quot;directory&quot;))
+        {
+            name = xml_getattribute(node, &quot;name&quot;);
+            if (!name)
+                goto skip_node;
+            filename = mystrconcat(pathslash, name);
+            if (!filename)
+                goto out_of_memory;
+            makedirectory(filename);
+            err |= bbx_write_source_r(node-&gt;child, source_xml, filename, source_xml_file, source_xml_name);
+            free (filename);
+            filename = 0;
+        }
+        
+    skip_node:
+        node = node-&gt;next;
+    }
+    
+    free (pathslash);
+    if (fpin || fpout)
+    {
+        fclose(fpin);
+        fclose(fpout);
+        err = -2;
+    }
+    
+    return err;
+    
+out_of_memory:
+    free (pathslash);
+    fclose(fpin);
+    fclose(fpout);
+        
+    return -1;
+}
+
+int bbx_write_source(const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name)
+{
+    XMLDOC *doc = 0;
+    char error[1024];
+    XMLNODE *root;
+    int answer = 0;
+    
+    doc = xmldocfromstring(source_xml, error, 1024);
+    if (!doc)
+    {
+        fprintf(stderr, &quot;%s\n&quot;, error);
+        return -1;
+    }
+    root = xml_getroot(doc);
+    if (strcmp(xml_gettag(root), &quot;FileSystem&quot;))
+    {
+        killxmldoc(doc);
+        return -1;
+    }
+    
+    answer = bbx_write_source_r(root-&gt;child, source_xml, path, source_xml_file, source_xml_name);
+    
+    killxmldoc(doc);
+    
+    return  answer;
+}
+
+		</file>
+		<file name="writeownsource.c" type="text">
+//
+//  writeownsource.c
+//  babyxrc
+//
+//  Created by Malcolm McLean on 01/06/2024.
+//
+
+/*
+  program to write its own source to disk, including a documention folder with an image.
+ 
+   
+ How was this achieved? With the Baby X resource compiler and suite of helper programs to convert directories to xml.
+ 
+ We replace the file source. c with a short placeholder.
+ 
+ Then we convert the tree to xml.
+ 
+ Then we run the xml throught the Baby X resource compiler to create a string with the name &quot;source&quot;.
+ Then we replace the placeholder with the real file &quot;source.c&quot;, and recompile.
+ 
+ The result is a program which writes it&apos;s own source and any binaries etc to disk. Very easy to do, with the power of the Baby X resource compiler.
+ 
+ Check out the Baby X project on github.
+ 
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#include &quot;bbx_write_source.h&quot;
+
+void usage()
+{
+    fprintf(stderr, &quot;writeownsource - writes its own source to disk.\n&quot;);
+    fprintf(stderr, &quot;\n&quot;);
+    fprintf(stderr, &quot;usage: writeownsource &lt;destination folder&gt;\n&quot;);
+    
+    exit(EXIT_FAILURE);
+}
+
+extern char source[];
+
+int main(int argc, char **argv)
+{
+    int err;
+    
+    if (argc != 2)
+        usage();
+        
+    err = bbx_write_source(source, argv[1], &quot;source.c&quot;, &quot;source&quot;);
+    if (err)
+        fprintf(stderr, &quot;error writing source\n&quot;);
+    
+    exit(err ? EXIT_FAILURE : 0);
+}
+
+
+		</file>
+		<file name="asciitostring.c" type="text">
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;ctype.h&gt;
+
+#include &quot;asciitostring.h&quot;
+
+static size_t linesbiggerthan(const char *str, size_t maxlen);
+static int escaped(int ch);
+static char escapechar(int ch);
+
+/*
+  load a text file into memory
+
+*/
+char *fslurp(FILE *fp)
+{
+  char *answer;
+  char *temp;
+  int buffsize = 1024;
+  int i = 0;
+  int ch;
+
+  answer = malloc(1024);
+  if(!answer)
+    return 0;
+  while( (ch = fgetc(fp)) != EOF )
+  {
+    if(i == buffsize-2)
+    {
+      if(buffsize &gt; INT_MAX - 100 - buffsize/10)
+      {
+	free(answer);
+        return 0;
+      }
+      buffsize = buffsize + 100 * buffsize/10;
+      temp = realloc(answer, buffsize);
+      if(temp == 0)
+      {
+        free(answer);
+        return 0;
+      }
+      answer = temp;
+    }
+    answer[i++] = (char) ch;
+  }
+  answer[i++] = 0;
+
+  temp = realloc(answer, i);
+  if(temp)
+    return temp;
+  else
+    return answer;
+}
+
+/*
+  test if a string is a valid C string - can it go in the place
+   of a C string literal?
+ */
+int validcstring(const char *str)
+{
+  size_t len;
+  size_t i, j;
+  size_t start;
+  size_t end;
+
+  len = strlen(str);
+  if(len &lt; 2)
+    return 0;
+  for(start=0; start &lt; len; start++)
+    if(!isspace( (unsigned char) str[start]))
+      break;
+  end = len;
+  while(end--)
+    if(!isspace((unsigned char) str[end]))
+      break;
+  if(start == len || end == (size_t) -1)
+    return 0;
+  if(str[start] == &apos;L&apos;)
+    start++;
+  if(start == end || str[start] != &apos;\&quot;&apos; || str[end] != &apos;\&quot;&apos;)
+    return 0;
+  start++;
+  end--;
+
+  for(i=start;i&lt;=end;i++)
+  {
+    if(str[i] == &apos;\\&apos;)
+    {
+      if(i == end)
+        return 0;
+      if(strchr(&quot;aftbrnvxou01234567\?\\\&apos;\&quot;&quot;, str[i+1]))
+      {
+        i++;
+        continue;
+      }
+      else
+        return 0;
+    }
+      
+    if(str[i] == &apos;\&quot;&apos;)
+    {
+      for(j=i+1;j&lt;end;j++)
+        if(!isspace((unsigned char) str[j]))
+          break;
+      if(str[j] == &apos;\&quot;&apos;)
+        i = j;
+      else
+        return 0;
+     }
+     if(!isgraph( (unsigned char) str[i]) &amp;&amp; str[i] != &apos; &apos;)
+       return 0;
+  }
+  
+  return 1;
+}
+
+
+/*
+  convert a string to a C language string;
+  Params:
+    str - the string to convert
+  Returns: C version of string, 0 on out of memory
+  Notes: newlines are represented by breaks in the string.
+*/
+char *texttostring(const char *str)
+{
+  size_t len = 0;
+  size_t i;
+  size_t j = 0;
+  size_t linelen = 0;
+  char *answer;
+
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == &apos;\n&apos;)
+      len += 5;
+    else if(escaped(str[i]))
+      len+=2;
+   else
+     len += 1;
+  }
+  len += linesbiggerthan(str, 100) * 3;
+  len++;
+  len += 2;
+  answer = malloc(len);
+  if(!answer)
+    return 0;
+  answer[j++] = &apos;&quot;&apos;;
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == &apos;\n&apos; &amp;&amp; str[i+1] != 0)
+    {
+      answer[j++] = &apos;\\&apos;;
+      answer[j++] = &apos;n&apos;;
+      answer[j++] = &apos;\&quot;&apos;;
+      answer[j++] = &apos;\n&apos;;
+      answer[j++] = &apos;\&quot;&apos;;
+      linelen = 0;
+    }
+    else if(escaped(str[i]))
+    {
+      answer[j++] = &apos;\\&apos;;
+      answer[j++] = escapechar(str[i]);
+      linelen++;
+    }
+    else
+    {
+      answer[j++] = str[i];
+      linelen++;
+    }
+    if(linelen == 100 &amp;&amp; str[i+1] != &apos;\n&apos;)
+    {
+      answer[j++] = &apos;\&quot;&apos;;
+      answer[j++] = &apos;\n&apos;;
+      answer[j++] = &apos;\&quot;&apos;;
+      linelen = 0;
+    }
+  }
+  answer[j++] = &apos;\&quot;&apos;;
+  answer[j++] = 0;
+
+  return answer;
+
+}
+
+/*
+  test if a character is escaped in C
+  Params: ch - the character to test
+  Returns: 1 if escaped in C strings, else 0
+*/
+static int escaped(int ch)
+{
+  char *escapes = &quot;\a\b\f\n\r\t\v\?\&apos;\&quot;\\&quot;;
+
+  if(ch == 0)
+    return 1;
+  return strchr(escapes, ch) ? 1 : 0;
+
+}
+
+/*
+  get the escape character to represent ch
+  Params: ch - an escaped character
+  Returns: character that stands in for it in esacpe sequence,
+    0 if ch is not an escaped character
+*/
+static char escapechar(int ch)
+{
+  char *escapes = &quot;\a\b\f\n\r\t\v\?\&apos;\&quot;\\&quot;;
+  char *characters = &quot;abfnrtv?\&apos;\&quot;\\&quot;;
+  char *ptr;
+
+  if(ch == 0)
+    return &apos;0&apos;;
+  ptr = strchr(escapes, ch);
+  if(ptr)
+    return characters[ptr - escapes];
+  else
+    return 0;
+
+}
+
+/*
+  get the number of lines bigger than a certain value
+*/
+static size_t linesbiggerthan(const char *str, size_t maxlen)
+{
+  size_t len = 0;
+  size_t answer = 0;
+
+  while(*str)
+  {
+    if(*str == &apos;\n&apos;)
+     len = 0;
+    else
+    {
+      len++;
+      if(len &gt; maxlen)
+      {
+       len = 0;
+       answer++;
+      }
+    }
+     str++;
+   }
+
+  return answer;
+}
+
+		</file>
+		<directory name="doc">
+			<file name="Screenshot 2023-08-08 at 13.04.56.png" type="binary">
+<![CDATA[M)"E3'U@":H````0#)A$12!``$H,``(`3(8````P"*KDQ``@"HFV0#!52#-$(
+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
+M%"^'VDZV_+S]_T#445%2__[^_%0)^0PCZ;UG'!```H898ED9-U$`J````@``
+M$$@&`4````0`````^$P&`4````0`````&%`*`,````0``(```<8:`0````0`
+M````.!`````````D````!`````)```0``,@D&"P!````2````@'H"``!````
+M!```$H,H#``!````!```"P$`````!-U0)E$```P4C)79EYV<H]&=!M/`-"``
+M`D`<(EU<``@%E```642`))%)P#``!<=:4A%=8U$3Z,V;MY28D]F8EY">M!'`
+M`````P#>Z@7;PU69T%&(XU&;N-G.XUC(A1V;B5F.N-G.M5&=A]B(@@G.XU&<
+MTM6/B@530!R0O)79@8C+PX",BXC"@`"(\('9FIC4$9$(XU&;N-G.R1F9](":
+MT1'<Z\R+W=W=N<W,N\F<G]2,YD3.O`C,O(C,M('9FUR<YY&=AA7+N-W(BXC"
+M@`"(@`"(\('9FI#1E-W8RE&<TEV;N!B<D9F.A)V;U17/B(B"@`"(@`"(@`"(
+M@`"(XU&;N-G.EA7:FUC(H1'=PIS+OXV<N$&9O)69N,V;M]29XEF9O$C+P\B(
+M^H`(@`"(@`"(@`"/EA7:FI#4IA79LE%1IU69N-7:OYF/U@#.\\29XEF9Z`5:
+MX5&;914:M5F;SEV;NYC"@`"(@`"(@`"(\4&>I9F.0E&>EQ&6$E6;EYV<I]F;
+M^$C,R8#/O4&>I9F.0E&>EQ&6$E6;EYV<I]F;^H`(@`"(@`"(@`"/EA7:FI35
+MS5F<#]6;M5F;TYS4C)79EYV<H]&=\\29XEF9Z4U<E)W0OU6;EY&=^H`(@`"(
+M@`"/O('9FI#1E-W8RE&<TEV;NYC"@`"(\\B<D9F.21D1^H`/O@G.XU&<M5&=
+MAYC">1;^\!```P1:$]$5````"````````$@)````H```!8"``$@)```9#7,P
+M@D+```$`)1404A7`LW=!<255;<<\G%0I+!I$D&687I6$%%$4ZN#E&1T7ZR`4
+M:I4I#1%9)$DN#!!)44!IDN#1`)D0:$EW9&D+[PL+[L[.S]</WYW^Y#O<SSYY
+M\]9>1YOS<G@NKC?$^!!0`$`!0`$`!0`$`!0`$`!0`$`!0@`<!"B@R"P?%`+?
+M$`!0`$`!0`$`!0`$`!0`$`!0`$PE`$4&O0`!0`$`!0`$`!0`$`!0`$`!0`$`
+M!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$
+M`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`
+M$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`
+M!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$
+M`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O
+M,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`
+M!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$
+M`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!E
+MQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`
+M!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$
+M`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"0
+M09\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`
+M!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$
+M`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA
+M`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`
+M!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$
+M`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!
+M<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`
+M!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$
+M`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!
+M0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`
+M!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$
+M`!0`$`!0`$`!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!
+M0`$PA`$4&O,`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`
+M!0`$`!0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,
+M`!0`$`!0`$`!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!0`$`!0`$`!
+M0`$`!<(`!EQ+#0`$`!0`$`!0`$`!0`$`!0`$`!0`$PA`$4&O,`!0`$`!0`$`
+M!0`$`!0`$`!0`$`!0`'"009\R`$`!0`$`!0`$`!"X%HMMMM!\&``(`"@`(`"
+M$;%8LC=LQV;UR=?$4FEKE0!A`(`"@`(`"@`(@9*@S0R&WX&G9.E,7(`"@`(`
+M"8K$H]MO]RH&UHL%K)"*S6T&91@`(`"@`(`"@`(0L1@VUNV)K?]K7VY.W9LY
+MVY>0`$`!0`$`!<(`!EQ+#0`$`!0`$`!0`$`!T<!X=2FFW`CEE?#;0#DB^L%-
+M6>W<;(@^*P)^M3(CTF\.^1?["VW*G@R,Y>+/S(,9P9Z0`$`!0`;E`VIG9$VJ
+M&#+&E+`!EI\6@2*@Q.VQ(MI-\,I3)XSDJ4!6R26L4MJ5=E6#,YV7!(H,3LWZ
+M\M#/_+X;B@S4A`(`"@`V.!<^/+=TC>TVNU%+($(N*0$#*KZ5X5D"GQ4&7'2N
+M?O0@@\BKQ?<)]92SWUP>W[>7_QPS8B`6>!F\DGDT\FW"7U99>I70*1.2OEOF
+MI`MF"LM3=)91K<-N5<$4F;<X?WA@R\O^RHC`(`"@`V?!(H,[?/F58L3@(&46
+M?:>MDJOU='[&(N++O`SO(A*]?2SS5=.LA-4IS=N+6^:F"$!\U",BA/<IS=Y>
+MOVOK-N62CV!_9>^:C#4&O%XX/3M?_W?FZ]7S$4V]EP$^](&46MK5MD7L$OH)
+M,K,%FA`\?-/S09F#$`!"4%8#_P&DYO@%X:Y309!JO*@U=T)`!E%="9?._<+<
+MHR`F\]"*S98!=L3=R^LX8E@`>I`]M/]1Z3?[KKK^];6MEZLM=YEW)7&"XN`$
+M4F[>8Z[%Q@R^D/YCENVUN9ZU`3("@`(`"@`ZF`?R'_QR;_.OCKRF@RTMN'UK
+M9)`!E962K^Y9V%*4903Y>!E-FQ,:IMMM=JOHH"0`36@.[(@X1,R1Z:6[7+JE
+M4UMP[H,3N%8;F."*3QM2"*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E9R@KPI;:%
+M,$9H3]>/CR^L/;\2K;];JPJAI&!4C`O>+;I,QP#WUD/D663I<;>/JI086U>!
+M(H,%W")H,%W`8Z1`$`!0`M4`"*3+;;4TFL`$4F)#N"GNP#-_RHG^]^XH/I)%
+MNTLFU<%6-,U(@:$H!UO^RLF]L=-YCHE57>I-O/U4(,K:O`$4FB;A$4FB;`,]
+M(`"@`(@6*`!EIEM-*:36`"*SD!7A3WX#.ORG/K%[J"FQ,^:I!-HA*L:8J1`U
+M(05K:5DENTEY:R_TF7%YYVZ!53APLJ]"009*N%209*N!PTC`(`"@`:I`$4F6
+MVVHH-9!(H,3&<%.=#-'Y0FV"^&75PB6TBDJ5MJIPJAI&!4C`!%40&3\7VT*)
+M%>['V8?V`!B)"009Q$M\#7+!EY'0EA$!0`$`!L]"009V^6,+0?@`$4F/`1-9
+M(Z3&SLLH5\=NJV5OZ5+ORK\*:2E39B`^.!B8093MQE3"9''WW-X,2!4"009*
+MN=309*N!PTC`(`"@`:I`$4F6VVHH-9!(H,3&<%.==*9I26_/N)75P&WX&EB5
+MLBIPJAI&!4C`1,HL9VP2+Y>/G2-%"SJV+`!EIX6(!EIX&`3/"@`(`"HE"009
+M:9;CBVD%@@R,9P5XT5ES^7RI_C_P5%LW]N7)X@#6A5#3-"H&!B809SKNE0RV
+M!.K:*$F5M7`"*3QM0"*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E9R@KHI[./>\D
+MB%AO=_.UI.EDQ,F1%5-,M(@Z$(B!EMP:_"26.TY57QP,KU"009*N]109*N!P
+MTC`(`"@`:I`$4F6VVHH-9!(H,3&<%-=7Z)3L\*K^7-F]K?]K+).Q)V8?V`!"
+M4$H@%L@R.VQ.<M<G?=?1)K'X<!*+=6G^8!(H,?,HQTAC@RBIBQUC`(`"@`(@
+M($4&O*`!B>!(HLHW([P5<R<\$2U6P/[:IX\=2FSW19\#"$(*PS_\/GLQ->OG
+M5?SM>E0R^^YC>9@XK#\%K9"*S7H8<8,(HLX`><K(`"@`(0`K`$46`;KG%>,0
+M`"*+&@E&?I[-TL(-:ZKVU*H25JBRR6VRUX5#E."$[%HLEM,RJ7]]^V?=6-L4
+M2NVSIC]#&W9`M`$4FB;_$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!713W/'
+M6>DV$^2<-[O1K:E\Y?Q7HH*AI%!4K`5K:556R26JKB8:O69D\MK3HV"B97;%
+M@@R4<KC@R4<#@I'!0`$`!T2!(H,MLM11;R"009F,X*:Z6:8A(],\Y[:V[;?Z
+MCTK>W;%5),M(@:%HA-H!R,GUL<5$3J)50*PO>4U60,[:K`$4FB;=$4FB;`,]
+M(`"@`(@6*`!EIEM-*:36`"*SD!7137XAF/9T3?ANF]O\+G@TR6^Z*J28:1`U
+M*0K>]77^R).17%QGW\*+%=K'2M%$SNV*`!EIX6'!EIX&`3/"@`(`"HE"009:
+M9;CBVD%@@R,9P5TTUW,F99AKX>/7F6^R7N4Q*61%5),M(@:%HS=J3R(&Y(=5
+M$CL%57*Y6VG:+(F=M5`"*3QM."*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E9R@K
+MHIK2_QEDS<V[]M[WNVUND0")$%5),M(@:%PY']X^TW^ZJ(&4+JE4AML;U60,
+M[:K`$4FB;=$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!7!3WE2;BE7Y[^5C9
+M^B7\B2J25J,VG-0@`)!&^P'FTENT57+YWO9U6JSVV5@TRGUJ/4`"*S'B9L9H
+M(HL8C:</(`"@`(0@N`$46@^K`8][-"009>C2Z]U<X\E!I>S<]N6$A&:(R.W)
+M!#HW=4J^XB`3:2A+MH%MTU0T^7K&2+VU>C+#'W;`L`$4FB;^$4FB;`,](`"@
+M`(@6*`!EIEM-*:36`"*SD!7!3W&"+O2[#?QNFY7OEM4FP7^E*H*8*1`KA`+:
+M1+2J1-JAKBI1ULB27/R1L&%&5AV)`!EIX6&!EIX&`3/"@`(`"HE"009:9;CB
+MVD%@@R,9P5PT-S"%J,DI,/7SLS_<QNVMNI@J@I$!L&"\#_P/(ELDET5Q4N2]
+MBR0NXYL&%&5AV)`!EIX6&!EIX&`3/"@`(`"HE"009:9;CBVD%@@R,9P5PTUO
+M,E%9!?SJ=-S.?WT4MJ5-%4%,E(@U0@]MO])Y+?YS5QDFGX)DO-SIU:484%:G
+M`$4FB;9$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!WDGN_)!Q3>VMN/C9=O[
+M=O2P!'LQ^L!"$H)P?^G_IDVT^@PQ^A2$JDD_ZV!:,PZU'(`!EY#0,N,$$46<
+M1/N7$`!0`$(05`"*+0MSSZ.F(`!E%3T2_NV?/G/A4]Y_SN*\X%OX)WZ6W220
+M"2@^M0HB1`?H`)+9)5NVUNNK1<I5O82&/VE\AC.#5@B`$4FB[T$4FB;`,](`
+M"@`(@6*`!EIEM-*:36`"*SD!WDGN?.L\(M)\EX:6?U&V09Z?]7;R5`3'"8]$
+MH25JBRW\-KP5A]5-J,2^WY)L>%)5DE7`"*3QM("*3Q-`F>$`!0`$0+%@@RTR
+MV&%M)+`!E9R@;R3W75@0DA]5SWULZ\/3D'D_F<#@IS2*0;;3;DQ]I?JK:;4M
+MHZ2)VR#^X);)+8**+I`$4FB;+$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!W
+MDGNBLC#8,CK<EK4*7Y*GQ^L!"$H*0$_W/H'-KV2=WVN"4I@U=<0`"*+.@GOX
+M6)H,?AB,&(`"@`(0@F`1\?18G_S2']H'=@&!L>1@H5`"*+:)2;O@+D^D(E];
+MWN1]?Z3?:)#9(#&[S&(0@J`S>VS6J?]KOKE?CK5EDN<X#'H2!K[X@`$46<`/
+M?QM209^"%9,0`$`!0@`-!(HL`M..KW8C`$46L1-]X>V6ARI\Z39YN*VR5NR*
+MK<E?K>4X4E(@?6@-MI-)/WS]<NFE0S7PR4>L_U//C,\V1!(H,%W5)H,%W`8Z
+M1`$`!0`M4`"*3+;;4TFL`$4F)#N).=3O@A(?R4OWSGL^WO^)?0/[I).[,5(@
+MU5@S>VS*I/]IWH`7?I>&)97\6&[S&(@W(`!EY-*Y'O&"*S/B+#-"@`(`"8;%
+M@@RLMM668^0!(H,?(F6LA*B/?R6Q*6A4^R7>+6%2Y@`J3@\FW\('X`'T5!,G
+MZ_22.VW?HNBA96+%@@R4<;C@R4<#@I'!0`$`!T2!(H,MLM11;R"009F,XFTT
+M=ZLE:I*+:C&SV=O[=-VF-0`$0DWH5M2FP7^ENH@OY+Y5$Q&!(HL8C:^P[A@R
+M\A8R0A`(`"@`!,"009!,M:6HQ!!(HLX`>6X;==%-?2GGX"=5A-L!-0^Z9,#+
+M<U2IA`FO`C<$C0Z4G[LK)NS-N623VQN-_B@94K%@@R4<[C@R4<#@I'!0`$`!
+MT2!(H,MLM11;R"009F,XFTT-T<D#9:+X;<-;?VG->IUM^--I9FI!!T#!6Y*7
+MI4A*4!7%;Y?Y2(#^//K>4X4E6&!(H,%W*(H,%W`8Z1`$`!0`M4`"*3+;;4TF
+ML`$4F)#N),=7)U)4*UZVIQ,MS=N3)T0#U8?V`!0`1^M?[WDLFUL:0QW7R0ED
+M>Y;;L/;@`1G`$46T)D?^\$4F?&8&>$`!0`$P6*`!E9+;KLH\Q"009^80M`#W
+M6*<NDW8R+S5E\</7QD?^G?PSJ,+0Y1)@`6&!R7^"6VW^VOKZ9&OZ++Y9WGTR
+M4;4(6?!(H,%WC(H,%W`8Z1`$`!0`M4`"*3+;;4TFL`$4F)#N),=C/X\*?^L6
+MLK9:P#:0R[^>OG),K,%(@^)0GZ8'E1.J1YJP'8+JE4QMPSI,]K+JN*F@R4G]
+MNF9"*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E9R@[GGNKG\'7*Q&VEQLLQ-N1I8
+M%K8&[S&(`"\`!FZ4GBTTFV,7'XUJ1%EN=TC\@3R6(0T(`!E%-`YO/-!EYO%F
+MQ'!0`$`!LC"009VQN*K)?M`$4FO64U.>1\C=9HA&BLS=^@0S4;EQLC`6/!<^
+M\[K`%H`&%V&?V\)/VM^'C]9#$X1)`!E]HTQ$.'!E9"(S4@`(`"@`V.!(H,;7
+M+E%D?0`"*S/@J"'R1GG<+A/GEZJ"XC=I";$,U:C`I-MI5^S_\/=5OSLAE6R]
+M>.EV4[4HJ5`"*3M^+$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!W/.=7,=)1
+M*SJVNQ,LEML%I(%I(&[S&(`"XI`=L#=0&UH'MK3T?'/GRJ"/GR\$).2D*`!E
+M%IL8>'D@R,/K9F0`$`!0`[C`$4F]I7R*Q_)`!EY_LUL'YU5T\)=>B+TUT6^R
+M7.9%K8EF=)P\A`:G`S<FS0:8#?5CZ>K%(/&;S&(PC2`"*[1IC)<."*S$0FI`
+M!0`$`!L="009VN6*+(_@`$4F?`5%-D?P3F199K>=NF]/[S&OTZ6_F*J28:1`
+M]1@C>TC*Y('YPH@75Y*D\$GYZ&[S&(04)`!E%5R82'G@R,)H9:0`$`!0`;E`
+M$4FMJ=RBQ/)`!EYG@UD'VC$<ZEZ.KOW86/^Q/N\T/]3;L/;@`(04+0%K8%,>
+M'8^I-O*RSMU#&U7,G!!^/!(H,%_2!"*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E
+M9R@[GFNI5P0DA.UY[:T_?OU;)C[3_4_T,QPB`V/!&VP&JTUNV-7+LWH^53^?
+M[;_VO%)K(?N`$4F/GT8V`209Q,OXJ1`$`!0`$PI`$4&O.`!B>!(HLHW(K^5<
+ME4G0I4K;G&EY*7Y*ER5NR9L/;@`(PC6@-MI-)/WS]<&7T/6\\+)Z:WQ8?V`!
+MB,!(HL(3%3\8$4F)B-3%"@`(`"8;$@@RL-M26(^1!(H,_(NFT0O&'/$_[Z_]
+M0\WYWRE._VND?0`$(F)0NS=ND#=H#[ZFF83KH4HM?D8V`P5'P)`!EIX6.!EI
+MX&`3/"@`(`"HE"009:9;CBVD%@@R,9P]#37'22*E?XG_%7C,/$_]#`S0&0(0
+M_[7_D>U[>[:MVV7M&RKO[]&0LN91&[%@@RB]VY3N3"*SGP(#""@`(`"$@)`!
+ME%@UP9Y&K$@@RB5L99NIM7H<(M<*?C1]<FS<&)=I+=&[S&(`"X="LA-L!I$E
+MH$&7\/6\0<\QO\O-VG-0@'6`"*[A%QDWG@R,9P9Z0`$`!0`;A`$4FMH-RBP/
+M+`!EYG!V//\#*+95F]2_67S2?<\NAIW]I/^Y9DA'!LO"DW\F'Y`'X>?C7^%-
+MKR28;[0VW%+KLXL`$46<FPXV`009Q-_XN1`$`!0@`3!(HL`S^.KZ8F`$46,S
+M+KT5?@0>*IA?]:,*I=O[=+Y/_YW8?V`!0@8F`#>P#2Z>W[AK;J%UI*2[/X]"
+M-+F-*<U!*"009*N3309*N!PTC`(`"@`:I`$4F6VVHH-9!(H,3&<?XT-Z<G;)
+M\YN47C8[;7[D1-Z1[#'=&*$(P3@MMMM)._"QX^_\M5HP2:.]UN_N\[(@;"00
+M9NQAYO#!E9^FS,B`(`"@`ZO`$4F^W#9%X_%@@R\_&[/FAC$<&DZ.KU;,T;<C
+M;4*6Q*FQ^L!"@`Q.!J<EKDL\E?OG[??<+KI4F-OG8W`Q=9[%@@R4<+F@R4<#
+M@I'!0`$`!T2!(H,MLM11;R"009F,X^HI;<.>6*-A9O$7C6K>]77^B),!?T(S
+MP@`!V"$>X34:9+?=7(4F7Z%D/^2G/P&$6]1I`$4642CY<""*S<<F9!!0`$`!
+ML7"009VK^)K&_C`$4F_Q5_YH>H\E1I^S<=&3ASOM^>A7X%,VG-0`$(V+P?\'
+M_ADQ,F1C!8ZOVK(!OK?W8?V`!NO`$4V]E01_.!EI(X9:1`$`!0`M6`"*3K;?
+M4\FD`$4F)!M/<:&1NRE,EYM,7C(O;R\APR0A`_G`=KK=5&ZP&FK]:3#KNTJ]
+ML/L!!\0`"*S#2,W#009FKW,;(`"@`(@]0`"*S>T'95X?%@@R\O^ZK']=7@L*
+M-YK^6CAEG-9&4P&(@/3`GO+-+1)*AQXMB*%F\DG\*&[S&(@3!(H,%_Z`"*3Q
+M-`F>$`!0`$0+%@@RTRV&%M)+`!E9R@''GNBLC#8,"=JC=4&^(&AQ^L!"@`^.
+M!J:5KBLTE>OWYF]K%U2JZ6VMO;P9DL%"009*N-209*N!PTC`(`"@`:I`$4F6
+MVVHH-9!(H,3&\XPT]SAE'I-A?O'@_.'F=MK=)A$2(QA1D;%!0@H2@9.S9(-L
+MAOJK3GFGX)DED[,()\&W)JN<.>`H`$4FB;Z$4FB;`,](`"@`(@6*`!EIEM-*
+M:36`"*SD!/6.=7Z)3L\*K^7-N[^WO^)?0/[IQ^L!"@`^6!NQ-NAD]LG=Y,GY
+M,N&X1VBJ+E<+\L*SWJL>/:$4FB[?$4FB;`,](`"@`(@6*`!EIEM-*:36`"*S
+MD!/6.=+J(A(]92SWXN/]I/MDA,D!C]9#$`!\]",FQ,:I]MO#N&X7H8A)CYF\
+M<*SWKL^.B$4FB[=$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!/6,=_>.3C4]
+MY_3&WY$GX7*MH%MT8?V`!0`_C`.?WD%Q`I'?SKB4LM>0_SDQHJ="009*NE10
+M9*N!PTC`(`"@`:I`$4F6VVHH-9!(H,3&\8QT-B<E+9*S[>/4QK<EKDQ#8\8Q
+M0QM@`(0,4@!-H!*]H'OOK[J\O<)D!_GG-&."<YV5!(H,%W9)H,%W`8Z1`$`!
+M0`M4`"*3+;;4TFL`$4F)#>,<ZV81RM\_FT2-NKUNVU*EJ4ER8?V`!0`_K`'_
+MX'7R6VRFQD\Y-KR21WVA,VG-"<%@@R4<OG@R4<#@I'!0`$`!T2!(H,MLM11;
+MR"009F,XQ@I[2IUQ#P_O[!/`_[1W[N,@!.P8P(PEB`(@O0`G?Y9TK>W;7#5Y
+M+MCW597@W59^"7U]Q@@R4<'D@R4<#@I'!0`$`!T2!(H,MLM11;R"009F,XQ@
+MI;R/3^E1.M%XZ.29*3ALO]M?W>>)%#&*N4$`!B#"<LC=,7?#8>_A8<MHJRSO
+ME#<_=YW#0%@@R4<CG@R4<#@I'!0`$`!T2!(H,MLM11;R"009F,X>YTMU"G3I
+M53>Y&7]LG]LEZ6WZ:L/;@`(@Y*P@'\@DNW]>8,I_28!+Q_O_7C]9C`/!(H,%
+MWS)H,%W`8Z1`$`!0`M4`"*3+;;4TFL`$4F)#N7,=._(7VD]=.YDGZ4NNZVVF
+MV(C9LCU+N3N$$`!\7"<Z3?:)39*3&#_'UR:*E=S[Q8?V(P3`"*3Q]<"*3Q-`
+MF>$`!0`$0+%@@RTRV&%M)+`!E9R@[%3W$R?^DQ-C%ZZ*C7\BG<DC<$)K9-K>
+MQ=RE@`(@_4@Q-NQ*MMMMS8*^NR40)5G[&&[S&!6"009*N?309*N!PTC`(`"@
+M`:I`$4F6VVHH-9!(H,3&\H9ZV08Y5:?X+VXJXC<I!%L!"H<!N^UON$68%QUS
+M+0G%S[VT:+-8[[2YU%%@:$@@R4C[&S*!E90!;@`(`"@`(@7+`!EYU4Q%&`+`
+M!E9=:^_>.3C4]Y_3&%4WZ:7E/^3^$C]9#$`!4O`S9.S1J7]JG1A,WZ72)[[[
+M,&[S&!."009*N7309*N!PTC`(`"@`:I`$4F6VVHH-9!(H,3&\H8Z^WX'DTOT
+M]4RB6QWYZ*"-T0DUNVU)I)-I)*N#.,"@`J2@@"*(WFZM6@\XV^L3@A`$4FB[
+MS$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!/*FN96H0EA,EY9<VUNVU*EJ4E
+MR8?V`!0`KC`;<C;4>^G_Y-*HQTBJ)OP6VOQ^L1@A`$4FB[S$4FB;`,](`"@`
+M(@6*`!EIEM-*:36`"*SD!/2FN?*L\(M-\E8<FQ.VQ(MI-MU8?V`!0`KG`]M/
+M]1Z3?[K1AMZR60)UGE'L_&@$`L!!EIXF,!EIX&`3/"@`(`"HE"009:9;CBVD
+M%@@R,9P?HI[(!G>INSZ[-.Z;]FOI\IC?\&[S&(`"8-%X\G_\2HA&J<FS<OG/
+M9=L1U4:V.WCUL8IJ\+"009^%6]^!E@R\>KX*1`$`!0`$X^"009W7"^=$(J%@
+M@RB:;\WGY2I-QR[=Y@D-MEM[:J*0!*@LR5N2)]I/]^[IFQ'!0`?@`S;>S5J3
+M=JKQ(-QF61I0;_(&[S&V;!(H,%W?)H,%W`8Z1`$`!0`M4`"*3+;;4TFL`$4F
+M)#>$FNAES<*?U\7NQ1^I?ZG<[Y>DQ)8#$`!LL"TVVT&9<?ZGZJ^"./Y2^\,D
+M8)97Z66VZE"SW)`!EY[L,6-2$46LB-N)$`!0`$(`7`"*+`_%`L\]*!(H,OB)
+M?^%-#'/\^_H(\P[?&SXKE&T@&ZSG'&0$`!\O"<DC<$)G."]^^_TY&7+I)[8W
+MW?7^=;L`$4FB;N$4FB;`,](`"@`(@6*`!EIEM-*:36`"*SD!WQTMRBF?Y]FX
+M",FX/:(#1>[WY=,VG-0`$0O$8Z3?Z2C:4C,*Z/O956*ZV.DQ^LA]4`"*3Q]5
+M"*3Q-`F>$`!0`$0+%@@RTRV&%M)+`!E9N@OQBD;Y_-IE:,I=H]M7&YH&EQ^L
+M!"@`ZI`MKMM5&[X&GKB/))))R\+5^DG\D71/7,4U>E`$4F7QD_[B(H,_GM,R
+M(`"@`(@]5`"*S^V;9EY[$@@R\=6&=CT.+8VDF-U5:<9UIVU6F\4FBDTDF4CC
+MQ&(`"HG"\[_^O+._"YXB7\BN6`-MV56ZTAX=5F>V-]NJF@R\.G\;7%!EYWHE
+M!&!0`$`!LQ"009VXF++-?F`$4F/CR'Y`=H\G1I^S8=&731*21D%L@%(9)+9Q
+MX8L!"@`ZM`+=I+5J:5KJQB8@MH62%W"/OR,`QFM!!EIX&*!EIX&`3/"@`(`"
+MHE"009:9;CBVD%@@R\_@?\\\D2MFS&,FHDFTD(_T/]SRS\,/CQQ8#$`!L'",
+MP!,`Y]_@/P8Q,U&7.)D=<<C]9#[C`$4FB[E$4FB;`,](`"@`(@6*`!EIEM-*
+M:36`"*S_"^)SQ3(5;!_L;3R&VP&D7X%>!W.&[@`(@]0@[<G[(-H^U7FW\GOK
+M%4&S0&D)7H,)I]47U>L`958(`!E90A:V@@R4C[,K(`"@`(@>+`!EIW]/J>S1
+M`"*S_Y\IR>JEJNP-ZV$\M?[W*EMLEUMCQ.(`"8O$8O[=O2^S?^-64-H:50>W
+MC?4C]9#[A`$4FB[C$4FB;`,](`"@`(@6*`!EIEM-*:36`"*S_`>D%2VB7\B=
+M[Y7D_9F941`$P*(PB6TBD:4C:84*O;3KMT@MO+C]9#]7`"*3Q]0"*3Q-`F>$
+M`!0`$0+%@@RTRV&%M)+`!EY[!_$Y*M2-FW/ZV`/?'?,LJ9-KI;'C=0`$P>+P
+MP'^PDNTEN:L('6+KA4Z-O7C]9#]6`"*3Q]/"*3Q-`F>$`!0`$0+%@@RTRV&%
+MM)+`!EY;!_(!G>INSZ[=;0GW\FG4K:5+W.&[@`(0@A`MKMM5&[X&GQB-\F4!
+MI@_*?,,-`1CW@@R4<SC@R4<#@I'!0`$`!T2!(H,MLM11;R"009^.PW[SD%I1
+M3;UN-@+<A+4J>UKN;'C=0`$(P1@+=I+)-LA-06Q*6IQB>>UK$2VV_9-VG-T3
+M!(H,%WW(H,%W`8Z1`$`!0`M4`"*3+;;4TFL`$4FO!\M4X<*OQD7N;#VR7^RE
+M*6Q*ZVQ8'$`!"\$8?[;?2Q*VS*7Y*W[;^R0S7PR0S62EG\D7)P##;T*F@R4<
+MSD@R4<#@I'!0`$`!T2!(H,MLM11;R"009Q=P771SGTY)N0W&HUNVU*EJ4ERM
+MCQ.(`"$X*PZ7_Z=[/3H*EM4R[>[+()[2W*P%%-?E309*N!209*N!PTC`(`"@
+M`:I`$4F6VVHH-9!(HLX&X/\?1ILEML*S9.S5"+LPB;#,W-"@`V.!FW\FK4GZ
+M47CUUK5C**=ZD'32PM_7CCQ&ZC`/\?^OS*O]MO]RH&UHTG%QCH2#ZN.^Y1<>
+ME?*"*3YM`*`$`!0`$0#%@@RTPF&ELI+`!E%[(_F)]QDI\TY4&_,7DQ`4Q*6!
+M'_%D&MD[<G;CCQ&(`"@`14@).QO4>]7O5&'J5UKJ2;V_!,VG-T'!(H,%WK(H
+M,%W`8Z1`$`!0`M4`"*3+;;4TFL`$46,'\3E]4+C[J)26VJ7GQ-WR6T"YC^X/
+M623:2CQQ8#$`!0@(3@1,\A+=N+=QX4M]5KA\Z[>O&[S&ZA`$4FB[3$4FB;`,
+M](`"@`(@6*`!EIEM-*:36`"*+F!^O6HL+OQT7M<G[<'C;LW]J72?Z;?-VG-0
+M`$`!B.!&X`&@\^?P'8<9=XUJIT\=M'C]9#KO`$4FB[1$4FB;`,](`"@`(@6*
+M`!EIEM-*:36`"*S[!?YA%B\^A/?WNA),AOPM/&5N=2V!!0`$X1(0OZ9/E^_A
+M?HQ5089&4H%;009*N-109*N!PTC`(`"@`:I`$4F6VVHH-9!(HLH'\+DAD*?5
+MRSD,IYN4C+.I)-)R\G_"DR5NR9<,V`!0`$(F*0/Z>WE!-X!;<;\QPT@"+_&$
+M4FB;1$4FB;`,](`"@`(@6*`!EIEM-*:36`"*[1#^.*8VEW?U[4.YI.EQ%6OZ
+M679`#<@\0[W0$V`!0@XB`/<89O1]KF\&'^@2"^;^VP,NXJ_^>)H,_MP1SX30
+M91#0<:$`!0`$`!B$!(HL(!%.$"\0"009/$(_WN_3"BGLPG)_R'.YYYV%T_^U
+M/I[]H'2\C?\=[XL#"@`(0<1@'^CA9CJ9%EWZ/_=)I7^VQEAE[U/*`!EY'QU;
+M&:"*S;4BK!!0`$`!0`W%@@R<W#V#!B,!(H,/5YPY+#R7>.1^FO;]N=RY-OY)
+MUJ6URMCQ.(`"@`^*!&@CG79?@CG;9W_GJ6N2+=(^_EDV3=U[?(^=+D`$4FB;
+M&$4FB;`,](`"@`(@6*`!EIEM-*:36`"*[!@?W@"2661ROTS'Z!V?3:<CE>ZX
+M;VR<G[<_@+FM0`$`!\#",\A/,I+=IK&C<A>F0D>GW4)9]`.2OG?L4"009*N=
+M009*N!PTC`(`"@`:I`$4F6VVHH-9!(HL[!^^#YID7]K7C'Z_IC;<R;]_^?><
+M<.`"@`(@_2@O\+G@TJ6]&N-\3J)E7*PO>,W.&[H6!(H,UZO009*N!PTC`(`"
+M@`:I`$4F6VVHH-9!"T#*[JI.AR2S:NEA,%W?6D5S:4#7?$H"+LP,Y."3'"@`
+M(@(S=NS5JKCOX0BX/#OEU0*UFW;$/$;K0!(H,%BOSIF@R4<#@I'!0`$`!T2!
+M(H,MLM11;R"$('4V/%6>DV&^2\0\1/Z1YX?_[V[QQY`(`"@`FI`K=MK5J4EJ
+MD<S;>3CIM[-MV2]V^N,VG-4G`$4FZLWU,309*N!PTC`(`"@`:I`$4F6VVHH-
+M9!"$#*[@Y/32#FQ:]0Z&WH&)O][\.2!*0!\X<<`$`!0`5(P>VS>D.UI.*?[W
+MN*CI_5K>%E6>KS*IYT\0^W`%%L!!EI`TCX420914#V&!0`$`!0`O3`"*S[<B
+MK*P6@`I@R^CLF*9Y)/CRHG^"]HI/]I/=Y5?U7UCCS!0`$`!4M`7\B74>_>T#
+MY3'_X-*EL^T91&0)SKD_=^;&'C-,7!(H,SU;/F-"*S#2X`(`"@`(`"$M"009
+M1+1<!(@$($4V%3?2DO+3Y0&PD=_Y0FSV??[3?<]PZ/=I+=\J!$`!0`+M`#]3
+M^$I;O];[6-.H64+I";9WN=,VQ<$@@R,'GCR9A@RB2:X$(`"@`(`"$E"0091)
+M-<"$P0`[<097*M)6^^G.'2OGT\-6OW?C6VB6(MM=M3*21*R]/$_."@`(@E7@
+M%L@%(UJ6URMZLYUI*RK=M3+I]4\1QT-8\S[009^9@CNAG@RB.AX\(`"@`(`"
+MXI`$4FGFP10@'6`[8097(#)5^^,E-IO12`95NR52Z0'ZH4A*4A'F"V'!0`$0
+M+$8W[>WN^H8NP%M(CZ-UI*5R'7CB+%9;'VX8LA_5`"*S_Z;T.Z$46T2$7`"@
+M`(`"@`>(`!EY!)<`$P#!L3!E=JLG:9]I\ID/:*>^1L\Y>NB)=MK=3J7]JG'&
+MP!0`$`!T-!N]MOM,D!/8I7]NWN5Z=MQU2JYQ/HDT+?;W..[X[%@@R\]F&C&1
+M"*+&Q%7,"@`(`"@`N$@@RX%"(0T+@=(HL]&:6DU\W)6FPL7B'+8G?T*[:7[J
+MK'4_!%40><>.`"@`(@.+PB7\B=\GOU0Y:7[Z&+C"$2^D.7DG6*XO>4CCQ&^>
+M!(H,?OIQH1D@RB1<Q%C`(`"@`(@+!(H,>A`"$]"HK!E=E4G09;Y,[RR.Z%D5
+MNF?PC%:9*SK(MNUMVQ[@LZ+$0F'\P!0`$P&)PQ/^QE!/H!)C_S^,W65=VQ[N
+MLJ=JC(IZ\WPMCS.^&!(H,?CCQZ1A@RBUTQ-B`(`"@`!P"009!P-?6Z>M`Z60
+M9[+T,+;,H4(C<:+(27C-H^U7::S:F4Y*7Y(]\<0$`!0`[J`?U7-5I)-II>L\
+M&;+JJ4\M<`/..'(N)`!E%W\+.?W$46<F0&`$`!0`$(`4`"*+`LIS2.&+@.$4
+MV)R5:DMGR,(+>['6V\VV1DN&[FC/>EUS1(9%K8%+2//'$!0`$(00@#=H#)._
+MW_YS^\/WCE[H;1UD7<+[WCCS!B="009Q.W\9W%!EYSHD!"!0`$`!"@$@@R"@
+M:VL4CU"85#*[$Y*MRN29ZEU=LS%I?T*=N@=^`ZOY-KY25K6UD,GY,'K-@;$!
+M0`$PN)PLG]LEW\-?3YB7\BNMT>OF6;I\_^AYCCI;J$[VA@RB=NYSN+"*SG1)
+M#$"@`(`"$`)`!E%`UL9I&K%PJ$4V?GPX+'.W94V]CE*9`3VSOU*CX"LK=I+N
+M"'KTENT1\PL-"@`(`"$!!.[9/K,VQ,&I?]O_1XHW;S/NEU4*]ON/)^_]_ZQY
+MX`>G`$4FWYD?[J(H,_&M,P(`"@`(@-6`"*S&W<9IYS$0E!E][Y,-RA3=ZD=<
+MY[(A/WE^(73-WYS=LJ4%I,EI,R3\$/QC\:YD(`"@`(P#$XG^I?2&^P&F,[Y,
+MG'<P_;+>^EY!)>]!(H,OF*_S%209^'7941`$`!0`[M`$4F]N_RJSW(@9%4VU
+M3QC+G*SI1^MDD:9O7Y.R7.[E$M+`GAC5NR7>QY[<L,EI,%M7/7`"@`(`"$U"
+M,[9/+I']H'RA.TA=[B*7I>1IN9/ERSNU#YVQ9G'M`$4VCV'_^9)H,_.Q,!(`
+M"@`(@-4`"*S&V49)YS%P?$4VYS4RDS]$I6^C$E<Y8W4D]=RS)?[ZV@75[._8
+M56*'!C5\B7<)MI-M>U]P%A`(`"@`>G`7[:73FTD"7:7[:O'W@S`SJ=V3E\<;
+M]@><..@G"009>:BI>$"*S4YF)#!0`$`!L)"009VD&)+#_J`QT@RN=BBO<M4D
+M0YJI(QR?EDD*7ZQ2L<^[F`Y/NQ_(_VYODLZO_GE;?[;[UU<3:<CER4VR(%NP
+M%1*0!*@7??<A(`"@`(0L7@3?Z3+3>R32Z>W[A'#21+<!D&5XL+%;?'22\5_;
+M/./'X>"009*^5"$4FB;`,](`"@`(@6*`!EIEM-*:36@(&46U*W++AFQ4+W^N
+MW5N]_<7YFWY?DK?[_6NRUOE<A_ZJR^/T1ES=^S'GJP.UQ.*%]9+J4H"58)D0
+M").-6<S(`"@`(0<3@C?\C+3=*31Z9OZE'#4B24BDWMA52>^S_[2Z_M+[QY#T
+M/`!EIX7!009*N!PTC`(`"@`:I`$4F6VVHH-9!B809^RI^E?Y2+/3H/C$<P!+
+MY)OY5R3>RCDELD%?Y4P8A`(`"@`^(!<&8V,^ZO6>ONW](=$;5]JJ4J$>+)D=
+M<\(]\!B'D@R4<7G@R4<#@I'!0`$`!T2!(H,MLM11;R"$;#*+;9+K2HA&J\T9
+MYIE,GY,+/5F?*'_>6<MMS`Q2<B3L)O28Z0`$`!0@XJ`G]LG5FKCO=,_H/^CD
+MC=,/#%SY'+S:5H<*%Y<\N,C@RBKO:+.>_$46<$0N=$`!0`$(@4`"*+@LMSB.
+M6(0[;?[EUMNU)[<G[TU=WP&T`IB5JBBS/V-)-I)UQO2FDLDE,)%I(%2*39*E
+M4EJ4YZ<QBIB;!!0`$`!T`!^[_^OE%MH%)3?:33FW\G?D6Q-H:50>IT^82^/^
+MO)I\\.^F;)`['"*3Q-<"*3Q-`F>$(&(PEO\EE+=I+)._]K<EKXZ77_Z73N^U
+MON<K;=+7_ZO=\\>Y._S=D[^OW5"*H@DX'_X+)XQ2@\X/^C[ZOXAS_KPG$'/@
+MD=^7*)Y)/YN^+FX\O4BS?E@$D@80UPEB`!V"009!V]?6]Q,!BX[LLA.T/1Z2
+M7Z:,;`XJ1`$`!0`;I`;:3;26X"6@,P!-HH<]U\Z4%I8)/()X3<")5G[&1YU9
+MG.!!EIXN)!EIX&`3/"$!!<^V1^W_]?__^U)D?_$W;[C=\C);<C;*&]-]5$&6
+MO>S0#-$)X\&LK/:+9.+9^>_^_]1=YI?ZGV5P;>]@Q%B`V<!(H,;>#FEG/5`"
+M*SGR)#&"@`(@M3@+<A+(?SW\-R"<\.,;V.^X9&5_4_J6>I8I+)2>OP?(/U1N
+M04=9:_Q)H,%W")H,%W`8Z#(%PY[^K#<@#<O?M_]+[9/[16S:7K<R3>2+K'Q+
+M>Q3J25JL$:(A*!GO@E<G[\XZAG<:23:LLU,%&"X/%@@R\GZR8;W$@@RL;=46
+M/(`"@`^/!VW^VG\MK<ER\7P\EULFU^(GHNVD:)Y+>W4RVI.M\$GYZ/RK5G.)
+M!EIXN%!EIX&`3?`A`GZ4G2VQ.VA\K;?[RFW\FEY,WY&G6W!GG<)/]3E!)E))
+MQ2R2TC+)VQ'MR$F@X)/>\"2200B$?'_*(YNNFC_UQ6WY?%YVW]NRM_G_5NQ?
+M_/R5OU?+7YZW4.S?>19_'\(R5NZ5C3U3?Z=OEP*:1E"6P"RWZ8Q))YFU)!(H
+M,=J;1MJ:!(H,5W!8^1`$`!T3!VNC_^3K=-K16ZR6JLJ5MZH=1X,XL<%_;+9Y
+MBG7RXQND$DC_.0ZX/$4FB[:$4FB;`,]V6!6Q*6ALI-N19=K?=RJ7]WYUK3GA
+M@5@\D#)+I*IR3^XW52S_<;)EWZ:2ROZUED^7W42ZEOM/_/P_F)]QDKFR$*7-
+MY)1N<B2J<I'+1RY^GX+GZJW2.RI/GL^?<3>=][\"_@W_]=%<6A*4ADLEML%C
+MN7N8$07$@@RTE.%UI50`"*S*T%H&0`$`!T;!<^.-['_Q-(KY[6C\5.^B`(Z^
+MQYSHY:4N2)Y.M)7R<0W62_UND\DG]R2RNXMBN;UT/_-3:"DSGA4(G-%I6.90
+M)2Z]D\\+Y`G?YX,J1-*3OV\'3HC`,MV18209^CV.C9@H`[=O[5VP&^!Y[<$*
+MV7/C9$M$DDDD$IJO2)D<GFDYX/X^62&NZEDT>F+[*(LH]F-Y+XO38\ESGQD+
+MG-5I6.5\3B<DK^WR&WUAD=MW]Y55R@=\PYL$ELDRS]</'?A!X5BQ%I#"009Z
+M07B:TJ(`!E95Z$4'(`"@`V'!6UJ6ELQ?^GEU_]K76Y*_6O>AE]LE5IHAD')S
+MI.92Z>,1>B[>+)5W\Z2ROFSW8"WPQONM$O_QW^.1[&)WQ;,A4D(Y*.>C)\7.
+M>C)<A$XX-FP=BG<RK<#YKF_R]J:G@R\*F\-7$!EY;<D1)P4@MNUM*K=MK16R
+M262T^YGWI0O=3JMDSX?+)+7PY;%X+J]H=QTG$YDI_)EC^8)3VU9OJ,[E^H_'
+M0ER4F"YM>SW2*39+K42'!GEH$E(MW`6`!N"009!N]>6YQ<!(HL8N9<'(`"@`
+M(@W+PI/]IE=NS=:\HN96S>V>_-')79.S1VE<DE,)I(I.>4WD8'/J;20"D$Y\
+M1=3\C7$>4W(N>8W\O.R4S9N:WVQ&WZ_>4W<-'/J;^KK?#YTG]/E]=P#+W\FW
+M,2FE8VA(HL8F7QIKF@RB3\Q-'`*@S'\^.?X2.WY-7Y[_^?X1*@S@Q".HK[XA
+M+Y?(I^LVG'ND1UB^6).!RQS1ZD#FH4+],</?["'Q[SY;%ZNVEN(5HB54*5I*
+M5$/%;C`:A`$4F6TFH(M("0096D&!E!"@`(0`B`W^VW6.X!/HCO\TVOL?'?YI
+MMW]L7Y'<\I_Y('YH66!2:23B4Q*41)D0"1R;PY5R;>#66^R6FTS>U+7U,!E9
+MBM."*S$QFI2;%X\G_\R*6QW(S;NS3FGCORBCJ?:8UK@4LTF()/_Y?(9ZHZ_[
+M8LH:=ZM'_2I-QRASR3);_V/F,VO>A1YM%LC_!!MJ5M2J<EKBDO\EOH\ZX$(@
+M52`"*S*U-H6LZ"0096].$U'"@`(0@A`._[U][_^O[X7GPUO?R?_DR).ACM/Y
+MO+;:3;2NR5B;?)G%=*Z\9X<>SCC/VG9.SW[79)+N^]LXXW?JGZI\XV_X/ZCD
+MWY=?77'G@R\@'_W!(H,_GM,RZO`;TQ#C_%X(8L!/DA$E+F64WJ(%+9B$\O="
+M)EG/N_6J-*G(-_$_CCWJR'(?."-+>I4^XI.OH<UTX&U(INUK>."-KRRC]8.>
+MH!P/(@%5`"*SBV8HLLD"0096RV"%%"@`(`"\0"\7_U?)7^R76<^[._U5OZ5=
+M]K;<C;XXC/Y-D;?K;+_]=^;Y?NS_(_[=_7)H@"2B?\BOD@'+!BS/Q,),A)42
+M<B3BDTDF47_*Y)/Y2*39*=]K4GZ4+Q+>Q[AFQ']N$4VCV'_V9)H,_&M,P:J`
+MWZ6W26TB6D,='?3JL@%&YO+H>UJ71IDI)!2(']WDD?!"'+FVJOKC_!*[-TL(
+M_BD,9D3;!1ZM[\_B*OS;_V2-K5MDG^I?Z(]:X@(@*%@@R4I^,WZF`$4FNUQH
+M>1`$`!0`K@`$4FBZ"$4FB@GIUR)P9.S9DY,G9+#:0#6.Y)/I'UWS7TB(5_9R
+MJ4XS>")]GXO\X\<@8G`W(9/FLC\D-9M_Y=D9NX5$I#R[YXM;<#:8#%GO5EY'
+M$PJ(`!E95Z$4'Z@`$4F.TEH&1`$`!0`KF`$4FBZ($4FB@GIUR(PQ.VQDO^KG
+MNTC>\^1:-UZZ7-YE>L;(Y?G_6D>>.HO3@3FCG0V8*SD,RYN2Y*.>;._P_\FM
+MNU23;6SD7X%>A'^4L/"8Z"009F.Y,A:L`$4F&W\HT1`$`!0`E)`!EI(Z)H,%
+M!/3KR%XH']HR4GR4D>WG^X1MD\DE,IKUM<RS?N3(ICW]8>XC_^`._VS<SY/G
+MR2.VED5LFOWCIKY."+KEO^K+ELDETCSQ!0`S2`"*SLDFYQ.(`!E9'ZBL&0`$
+M`!0`S6`"*SL%__F/"*31PSTJ,!.UI.E,Y)-)I'OOGO#R<^QKLA%(S2QV[AD$
+M=M[HL:D)^!"LK"D59E7-!R7M@E_@#^?;U*'AE]&.>7F5LB5,/.''`!\W"009
+M^;A9\M3"009VIN)K%$`!0`$PL$@@R,+I?HYA@R>(087;K`._&+)\PGHTA.T1
+M/6CE_E+A4[LF2I8;]@><..@U0@#GO,(K\NI4^B9M8/*H.UQ.*OY;]62P!'L'
+MGC#@`^+!(H,_EL,NV1!(H,[87EU$"@`(`"XO%@@R\W"'%C/!E%%PPAM5",S9
+M.#Y]>OW3.VQ.N;K+G!D5WG.%21WVA<[XLCU5@CFWT)K(H4+?>D$8V@&T`E6U
+MJW02;:3KU=!0E9;$@@RL-M26(F@`$4F)@,3!"@`(`"8[$@@R44+E@R4$\,MF
+MB`_X/^CRP&Z0EY.OYYQ\-NF75YYWZ!\XX<`]0@#EO,*+^V)5FZ\7F'%\7]53
+M5:4C:L''G#@`^2!(H,?IF,6V=!(H,[>'FU'"@`(`"X/$@@R\'JZ%C)!EY%(Q
+MEH="<FS<&9LC9,2__P/TC:_3:9-E2OM]*Q[?NK'GC#H?"X\9863_JOUC"O>U
+MMN27[6WDG[Y>./.''`!\%"009^"%9,"4$@@R"4ZTL.1`$`!0`?I`$4FO4S8P
+M8109Q`LX2U"!FULFIC/^=M2NR5NJ;U;W;6MER?B#)I\\WTMCS.V#!^APRKTA
+MP]\Y7V`'P`DVVNV)I(%IP>L09589$@@RL,M"*$-0`"*3#:24B(`"@`(@E3`"
+M*31M$"*31PSTZS%X@'\@BS_@DO8"3PCQ>LMHJ2QW"?,+]`&;V!N:J2H\-9/W
+MR`GL[?4;+0!*@\1.>M1%J0%L9K86.J4`"*3EZS<K;"009Z6'CZ%!0`$`!L""
+M009*J+009*">F6?J`39*31:6S:F'C)/'R\@D`B#<D@3O4W9]]]]><![CDATA[>L6_@W_]ENT
+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
+M%AB`$@`$@`$@`$@`$@`$@`$@`$(:!446TB;>$@`$@`$@`$@`$@`$@`$@`$@`
+MI4`%EERUB01`"0`"0`"0`"0`"0`"0`"0`"$M`**+:Q-/"0`"0`"0`"0`"0`"
+M0`"0`"0@4*@BR2Y:1H(`!(`!(`!(`!(`!(`!(`!(`!B6`%E%MXF'!(`!(`!(
+M`!(`!(`!(`!(`!(0*%019I<M(4$@`$@`$@`$@`$@`$@`$@`$@`1+@BRB6<SC
+M`$@`$@`$@`$@`$@`$@`$@`$(E"HHL4N6$*"0`"0`"0`"0`"0`"0`"0`"0@H%
+M0191+NY1`"0`"0`"0`"0`"0`"0`"0`"D2!446*7+"%!(`!(`!(`!(`!(`!(`
+M!(`!(0T"HHLH%W\(`!(`!(`!(`!(`!(`!(`!(`!2I`**+EK%AB`$@`$@`$@`
+M$@`$@`$@`$@`$(:!446TB;>$@`$@`$@`$@`$@`$@`$@`$@`I4`%EERUB01`"
+M0`"0`"0`"0`"0`"0`"0`"$M`**+:Q-/"0`"0`"0`"0`"0`"0`"0`"0@4*@BR
+M2Y:1H(`!(`!(`!(`!(`!(`!(`!(`!B6`%E%MXF'!(`!(`!(`!(`!(`!(`!(`
+M!(0*%019I<M(4$@`$@`$@`$@`$@`$@`$@`$@`1+@BRB6<SC`$@`$@`$@`$@`
+M$@`$@`$@`$(E"HHL4N6$*"0`"0`"0`"0`"0`"0`"0`"0@H%0191+NY1`"0`"
+M0`"0`"0`"0`"0`"0`"D2!446*7+"%!(`!(`!(`!(`!(`!(`!(`!(0T"HHLH%
+MW\(`!(`!(`!(`!(`!(`!(`!(`!2I`**+EK%AB`$@`$@`$@`$@`$@`$@`$@`$
+M(:!446TB;>$@`$@`$@`$@`$@`$@`$@`$@`I4`%EERUB01`"0`"0`"0`"0`"0
+M`"0`"0`"$M`**+:Q-/"0`"0`"0`"0`"0`"0`"0`"0@4*@BR2Y:1H(`!(`!(`
+M!(`!(`!(`!(`!(`!B6`%E%MXF'!(`!(`!(`!(`!(`!(`!(`!(0*%019I<M(4
+M$@`$@`$@`$@`$@`$@`$@`$@`1+@BRB6<SC`$@`$@`$@`$@`$@`$@`$@`$(E"
+MHHL4N6$*"0`"0`"0`"0`"0`"0`"0`"0@H%0191+NY1`"0`"0`"0`"0`"0`"0
+M`"0`"D2!446*7+"%!(`!(`!(`!(`!(`!(`!(`!(0T"HHLH%W\(`!(`!(`!(`
+M!(`!(`!(`!(`!2I`**+EK%AB`$@`$@`$@`$@`$@`$@`$@`$(:!446TB;>$@`
+M$@`$@`$@`$@`$@`$@`$@`I4`%EERUB01`"0`"0`"0`"0`"0`"0`"0`"$M`**
+M+:Q-/"0`"0`"0`"0`"0`"0`"0`"0@4*@BR2Y:1H(`!(`!(`!(`!(`!(`!(`!
+M(`!B6`%E%MXF'!(`!(`!(`!(`!(`!(`!(`!(0*%019I<M(4$@`$@`$@`$@`$
+M@`$@`$@`$@`1+@BRB6<SC`$@`$@`$@`$@`$@`$@`$@`$(E"\_U6G"+G\JGV1
+,`````D41.1DK"!F@
+]]>
+			</file>
+			<file name="readme.txt" type="text">
+writesource - this program should write its own source to the directory passed.
+
+
+			</file>
+		</directory>
+		<file name="source.c" type="text">
+//
+//  source.c
+//  testbabyxfilesystem
+//
+//  Created by Malcolm McLean on 01/06/2024.
+//
+char source[] = &quot;placeholder&quot;;
+
+		</file>
+		<file name="bbx_write_source.h" type="text">
+//
+//  bbx_write_source_flat.h
+//  testbabyxfilesystem
+//
+//  Created by Malcolm McLean on 31/05/2024.
+//
+
+#ifndef bbx_write_source_h
+#define bbx_write_source_h
+
+int bbx_write_source(const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name);
+
+#endif /* bbx_write_source_h */
+
+		</file>
+		<file name="xmlparser2.h" type="text">
+#ifndef xmlparser_h
+#define xmlparser_h
+
+#include &lt;stdio.h&gt;
+
+typedef struct xmlattribute
+{
+  char *name;                /* attribute name */
+  char *value;               /* attribute value (without quotes) */
+  struct xmlattribute *next; /* next pointer in linked list */
+} XMLATTRIBUTE;
+
+typedef struct xmlnode
+{
+  char *tag;                 /* tag to identify data type */
+  XMLATTRIBUTE *attributes;  /* attributes */
+  char *data;                /* data as ascii */
+  int position;              /* position of the node within parent&apos;s data string */
+  int lineno;                /* line number of node in document */
+  struct xmlnode *next;      /* sibling node */
+  struct xmlnode *child;     /* first child node */
+} XMLNODE;
+
+typedef struct
+{
+  XMLNODE *root;             /* the root node */
+} XMLDOC;
+
+
+XMLDOC *loadxmldoc(const char *fname, char *errormessage, int Nerr);
+XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr);
+XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
+void killxmldoc(XMLDOC *doc);
+void killxmlnode(XMLNODE *node);
+
+XMLNODE *xml_getroot(XMLDOC *doc);
+const char *xml_gettag(XMLNODE *node);
+const char *xml_getdata(XMLNODE *node);
+const char *xml_getattribute(XMLNODE *node, const char *attr);
+int xml_Nchildren(XMLNODE *node);
+int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
+XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
+XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
+char *xml_getnesteddata(XMLNODE *node);
+
+int xml_getlineno(XMLNODE *node);
+XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...);
+
+#endif
+
+		</file>
+	</directory>
+</FileSystem>

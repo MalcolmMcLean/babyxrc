@@ -9,15 +9,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "bbx_write_source.h"
 #include "asciitostring.h"
 #include "xmlparser2.h"
 
 /*
-   Does a string consist entirely of white space? (also treat nulls as white)
+   Does a string cnsist entirely of white space? (also treat nulls as white)
  */
 static int strwhitespace(const char *str)
 {
@@ -31,25 +29,6 @@ static int strwhitespace(const char *str)
     }
     
     return 1;
-}
-
-/*
-    Concatenate two strings, returning an allocated result.
- */
-static char *mystrconcat(const char *prefix, const char *suffix)
-{
-    int lena, lenb;
-    char *answer;
-    
-    lena = (int) strlen(prefix);
-    lenb = (int) strlen(suffix);
-    answer = malloc(lena + lenb + 1);
-    if (answer)
-    {
-        strcpy(answer, prefix);
-        strcpy(answer + lena, suffix);
-    }
-    return  answer;
 }
 
 /*
@@ -180,16 +159,6 @@ error_exit:
     return 0;
 }
 
-int makedirectory(const char *path)
-{
-    int status;
-
-    //status = mkdir("/home/cnd/mod1", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    status = mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    
-    return status;
-}
-
 
 static FILE *file_fopen(XMLNODE *node)
 {
@@ -241,30 +210,40 @@ error_exit:
     return 0;
 }
 
-
-
-int bbx_write_source_r(XMLNODE *node, const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name)
+int bbx_write_source_flat (const char *source_xml, char *path, const char *source_xml_file, const char *source_xml_name)
 {
-    char *pathslash = 0;
-    char *filename = 0;
+    XMLDOC *doc = 0;
+    char error[1024];
+    char buff[1024];
+    XMLNODE *root;
+    XMLNODE *node;
     const char *name;
-    FILE *fpout = 0;
-    FILE *fpin = 0;
+    FILE *fpout;
+    FILE *fpin;
     int ch;
-    int err = 0;
     
-    pathslash = mystrconcat(path, "/");
-    while (node)
+    doc = xmldocfromstring(source_xml, error, 1024);
+    if (!doc)
+    {
+        fprintf(stderr, "%s\n", error);
+        return -1;
+    }
+    root = xml_getroot(doc);
+    if (strcmp(xml_gettag(root), "FileSystem"))
+        return -1;
+    
+    if (!root->child)
+        return -1;
+    if (strcmp(xml_gettag(root->child), "directory"))
+        return -1;
+
+    for (node = root->child->child; node != NULL; node = node->next)
     {
         if (!strcmp(xml_gettag(node), "file"))
         {
             name = xml_getattribute(node, "name");
-            if (!name)
-                goto skip_node;
-            filename = mystrconcat(pathslash, name);
-            if (!filename)
-                goto out_of_memory;
-            fpout = fopen(filename, "w");
+            snprintf(buff, 1024, "%s%s", path, name);
+            fpout = fopen(buff, "w");
             if (!fpout)
                 break;
             fpin = file_fopen(node);
@@ -281,74 +260,21 @@ int bbx_write_source_r(XMLNODE *node, const char *source_xml, const char *path, 
             else
             {
                while ((ch = fgetc(fpin)) != EOF)
-                   err |= (fputc(ch, fpout) == EOF) ? -1 : 0;
+                   fputc(ch, fpout);
             }
             fclose(fpout);
             fclose(fpin);
             fpout = 0;
             fpin = 0;
-            free(filename);
-            filename = 0;
         }
-        else if (!strcmp(xml_gettag(node), "directory"))
-        {
-            name = xml_getattribute(node, "name");
-            if (!name)
-                goto skip_node;
-            filename = mystrconcat(pathslash, name);
-            if (!filename)
-                goto out_of_memory;
-            makedirectory(filename);
-            err |= bbx_write_source_r(node->child, source_xml, filename, source_xml_file, source_xml_name);
-            free (filename);
-            filename = 0;
-        }
-        
-    skip_node:
-        node = node->next;
     }
-    
-    free (pathslash);
     if (fpin || fpout)
     {
         fclose(fpin);
         fclose(fpout);
-        err = -2;
-    }
-    
-    return err;
-    
-out_of_memory:
-    free (pathslash);
-    fclose(fpin);
-    fclose(fpout);
-        
-    return -1;
-}
-
-int bbx_write_source(const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name)
-{
-    XMLDOC *doc = 0;
-    char error[1024];
-    XMLNODE *root;
-    int answer = 0;
-    
-    doc = xmldocfromstring(source_xml, error, 1024);
-    if (!doc)
-    {
-        fprintf(stderr, "%s\n", error);
-        return -1;
-    }
-    root = xml_getroot(doc);
-    if (strcmp(xml_gettag(root), "FileSystem"))
-    {
-        killxmldoc(doc);
         return -1;
     }
     
-    answer = bbx_write_source_r(root->child, source_xml, path, source_xml_file, source_xml_name);
+    return 0;
     
-    killxmldoc(doc);
-    
-    return  answer;
 }
