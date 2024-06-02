@@ -8,8 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <limits.h>
 
-#include "asciitostring.h"
+#include "bbx_write_source_archive.h"
 #include "xmlparser2.h"
 
 /*
@@ -49,82 +50,82 @@ static char *mystrconcat(const char *prefix, const char *suffix)
 }
 
 /*
-   Escape a string to write as XML
- */
-static char *xml_escape(const char *data)
+  load a text file into memory
+
+*/
+static char *fslurp(FILE *fp)
 {
-    int i;
-    int size = 0;
-    char *answer;
-    char *ptr;
-    
-    for (i = 0; data[i]; i++)
+  char *answer;
+  char *temp;
+  int buffsize = 1024;
+  int i = 0;
+  int ch;
+
+  answer = malloc(1024);
+  if(!answer)
+    return 0;
+  while( (ch = fgetc(fp)) != EOF )
+  {
+    if(i == buffsize-2)
     {
-        switch(data[i]) {
-            case '&':  size += 5; break;
-            case '\"': size += 6; break;
-            case '\'': size += 6; break;
-            case '<':  size += 4; break;
-            case '>':  size += 4; break;
-            default:   size += 1; break;
-        }
+      if(buffsize > INT_MAX - 100 - buffsize/10)
+      {
+    free(answer);
+        return 0;
+      }
+      buffsize = buffsize + 100 * buffsize/10;
+      temp = realloc(answer, buffsize);
+      if(temp == 0)
+      {
+        free(answer);
+        return 0;
+      }
+      answer = temp;
     }
-    answer = malloc(size+1);
+    answer[i++] = (char) ch;
+  }
+  answer[i++] = 0;
+
+  temp = realloc(answer, i);
+  if(temp)
+    return temp;
+  else
+    return answer;
+}
+
+static unsigned char *fslurpb(FILE *fp, int *len)
+
+{
+    unsigned char *answer = 0;
+    unsigned char *temp;
+    int capacity = 1024;
+    int N = 0;
+    int ch;
+
+    answer = malloc(capacity);
     if (!answer)
         goto out_of_memory;
-    
-    ptr = answer;
-    for (i = 0; data[i]; i++) {
-        switch(data[i]) {
-            case '&':  strcpy(ptr, "&amp;"); ptr += 5;     break;
-            case '\"': strcpy(ptr, "&quot;"); ptr += 6;    break;
-            case '\'': strcpy(ptr, "&apos;"); ptr += 6;     break;
-            case '<':  strcpy(ptr, "&lt;"); ptr += 4;      break;
-            case '>':  strcpy(ptr, "&gt;"); ptr += 4;      break;
-            default:   *ptr++ = data[i]; break;
+    while ( (ch = fgetc(fp)) != EOF)
+    {
+        answer[N++] = ch;
+        if (N >= capacity - 4)
+        {
+            temp = realloc(answer, capacity + capacity / 2);
+            if (!temp)
+                goto out_of_memory;
+            answer = temp;
+            capacity = capacity + capacity / 2;
         }
     }
-    *ptr++ = 0;
+    *len = N;
     
     return answer;
-out_of_memory:
-    return 0;
-}
-
-static int xml_writecdata(FILE *fp, const char *data)
-{
-    int i;
-    int err;
     
-    err = fprintf(fp, "<![CDATA[");
-    if (err < 0)
-        return -1;
-    for (i = 0; data[i]; i++)
-    {
-        err = fputc(data[i], fp);
-        if (err == EOF)
-            return -1;
-        if (data[i] == ']' && data[i+1] == ']' && data[i+2] == '>')
-        {
-            i++;
-            err = fputc(data[i], fp);
-            if (err == EOF)
-                return -1;
-            err = fprintf(fp, "]]>");
-            if (err < 0)
-                return  -1;
-            err = fprintf(fp, "<![CDATA[");
-            if (err < 0)
-                return -1;
-        }
-    }
-    err = fprintf(fp, "]]>");
-    if (err < 0)
-        return -1;
+out_of_memory:
+    *len = -1;
+    free(answer);
     return 0;
 }
-
-
 
 /*
  The functions
@@ -257,7 +258,7 @@ error_exit:
 /*
     encode binary to text using uuencoding.
  */
-char *uuencodestr(const unsigned char *binary, int N)
+static char *uuencodestr(const unsigned char *binary, int N)
 {
     char acTable[64];
     int i;
@@ -309,6 +310,274 @@ char *uuencodestr(const unsigned char *binary, int N)
 out_of_memory:
     return 0;
 }
+
+
+
+/*
+  test if a character is escaped in C
+  Params: ch - the character to test
+  Returns: 1 if escaped in C strings, else 0
+*/
+static int c_escaped(int ch)
+{
+  char *escapes = "\a\b\f\n\r\t\v\?\'\"\\";
+
+  if(ch == 0)
+    return 1;
+  return strchr(escapes, ch) ? 1 : 0;
+
+}
+
+/*
+  get the C escape character to represent ch
+  Params: ch - an escaped character
+  Returns: character that stands in for it in C escape sequence,
+    0 if ch is not an escaped character
+*/
+static char c_escapechar(int ch)
+{
+  char *escapes = "\a\b\f\n\r\t\v\?\'\"\\";
+  char *characters = "abfnrtv?\'\"\\";
+  char *ptr;
+
+  if(ch == 0)
+    return '0';
+  ptr = strchr(escapes, ch);
+  if(ptr)
+    return characters[ptr - escapes];
+  else
+    return 0;
+
+}
+
+/*
+  get the number of lines bigger than a certain value
+*/
+static size_t linesbiggerthan(const char *str, size_t maxlen)
+{
+  size_t len = 0;
+  size_t answer = 0;
+
+  while(*str)
+  {
+    if(*str == '\n')
+     len = 0;
+    else
+    {
+      len++;
+      if(len > maxlen)
+      {
+       len = 0;
+       answer++;
+      }
+    }
+     str++;
+   }
+
+  return answer;
+}
+
+/*
+  convert a string to a C language string;
+  Params:
+    str - the string to convert
+  Returns: C version of string, 0 on out of memory
+  Notes: newlines are represented by breaks in the string.
+*/
+char *text_to_cstring(const char *str)
+{
+  size_t len = 0;
+  size_t i;
+  size_t j = 0;
+  size_t linelen = 0;
+  char *answer;
+
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == '\n')
+      len += 5;
+    else if(c_escaped(str[i]))
+      len+=2;
+   else
+     len += 1;
+  }
+  len += linesbiggerthan(str, 100) * 3;
+  len++;
+  len += 2;
+  answer = malloc(len);
+  if(!answer)
+    return 0;
+  answer[j++] = '"';
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == '\n' && str[i+1] != 0)
+    {
+      answer[j++] = '\\';
+      answer[j++] = 'n';
+      answer[j++] = '\"';
+      answer[j++] = '\n';
+      answer[j++] = '\"';
+      linelen = 0;
+    }
+    else if(c_escaped(str[i]))
+    {
+      answer[j++] = '\\';
+      answer[j++] = c_escapechar(str[i]);
+      linelen++;
+    }
+    else
+    {
+      answer[j++] = str[i];
+      linelen++;
+    }
+    if(linelen == 100 && str[i+1] != '\n')
+    {
+      answer[j++] = '\"';
+      answer[j++] = '\n';
+      answer[j++] = '\"';
+      linelen = 0;
+    }
+  }
+  answer[j++] = '\"';
+  answer[j++] = 0;
+
+  return answer;
+
+}
+
+/*
+   Escape a string to write as XML
+ */
+static char *xml_escape(const char *data)
+{
+    int i;
+    int size = 0;
+    char *answer;
+    char *ptr;
+    
+    for (i = 0; data[i]; i++)
+    {
+        switch(data[i]) {
+            case '&':  size += 5; break;
+            case '\"': size += 6; break;
+            case '\'': size += 6; break;
+            case '<':  size += 4; break;
+            case '>':  size += 4; break;
+            default:   size += 1; break;
+        }
+    }
+    answer = malloc(size+1);
+    if (!answer)
+        goto out_of_memory;
+    
+    ptr = answer;
+    for (i = 0; data[i]; i++) {
+        switch(data[i]) {
+            case '&':  strcpy(ptr, "&amp;"); ptr += 5;     break;
+            case '\"': strcpy(ptr, "&quot;"); ptr += 6;    break;
+            case '\'': strcpy(ptr, "&apos;"); ptr += 6;     break;
+            case '<':  strcpy(ptr, "&lt;"); ptr += 4;      break;
+            case '>':  strcpy(ptr, "&gt;"); ptr += 4;      break;
+            default:   *ptr++ = data[i]; break;
+        }
+    }
+    *ptr++ = 0;
+    
+    return answer;
+out_of_memory:
+    return 0;
+}
+
+/*
+   Take plain text from fpin and write as xml to fpout
+ */
+static int xml_escapefilter(FILE *fpout, FILE *fpin)
+{
+    char *text = 0;
+    char *xmltext = 0;
+    int i;
+
+    text = fslurp(fpin);
+    if (!text)
+        goto out_of_memory;
+    
+    xmltext = xml_escape(text);
+    if (!xmltext)
+        goto out_of_memory;
+    for (i = 0; xmltext[i];i++)
+        fputc(xmltext[i], fpout);
+    
+    free(text);
+    free(xmltext);
+    
+    return 0;
+    
+out_of_memory:
+    free(text);
+    free(xmltext);
+    
+    return -1;
+}
+static int xml_writecdata(FILE *fp, const char *data)
+{
+    int i;
+    int err;
+    
+    err = fprintf(fp, "<![CDATA[");
+    if (err < 0)
+        return -1;
+    for (i = 0; data[i]; i++)
+    {
+        err = fputc(data[i], fp);
+        if (err == EOF)
+            return -1;
+        if (data[i] == ']' && data[i+1] == ']' && data[i+2] == '>')
+        {
+            i++;
+            err = fputc(data[i], fp);
+            if (err == EOF)
+                return -1;
+            err = fprintf(fp, "]]>");
+            if (err < 0)
+                return  -1;
+            err = fprintf(fp, "<![CDATA[");
+            if (err < 0)
+                return -1;
+        }
+    }
+    err = fprintf(fp, "]]>");
+    if (err < 0)
+        return -1;
+    return 0;
+}
+
+
+static int xml_uuencode_filter(FILE *fpout, FILE *fpin)
+{
+    int N;
+    unsigned char *binary = 0;
+    char *uucode = 0;
+    char *badclose;
+    int i;
+    
+    binary = fslurpb(fpin, &N);
+    if (!binary)
+        goto out_of_memory;
+    uucode = uuencodestr(binary,N);
+    if (!uucode)
+        goto out_of_memory;
+    xml_writecdata(fpout, uucode);
+    free(binary);
+    free(uucode);
+    
+    return 0;
+    
+out_of_memory:
+    free(binary);
+    free(uucode);
+    return -1;
+}
+
 
 
 static FILE *file_fopen(XMLNODE *node)
@@ -378,258 +647,15 @@ error_exit:
     return 0;
 }
 
-/*
-int writetextfile(FILE *fpout, const char *fname)
-{
-    FILE *fp = 0;
-    char *text = 0;
-    char *xmltext = 0;
-    int i;
-
-    fp = fopen(fname, "r");
-    text = fslurp(fp);
-    if (!text)
-        goto out_of_memory;
-    fclose(fp);
-    fp = 0;
-    
-    xmltext = xml_escape(text);
-    if (!xmltext)
-        goto out_of_memory;
-    for (i=0; xmltext[i];i++)
-        fputc(xmltext[i], fpout);
-    
-    free(text);
-    free(xmltext);
-    
-    return 0;
-    
-out_of_memory:
-    fclose(fp);
-    free(text);
-    free(xmltext);
-    
-    return 0;
-}
-
-int writebinaryfile(FILE *fpout, const char *fname)
-{
- int N;
-     unsigned char *binary = 0;
-    char *uucode = 0;
-    char *badclose;
-    int i;
-    
-    binary = slurpb(fname, &N);
-    if (!binary)
-        goto out_of_memory;
-    uucode = uuencodestr(binary,N);
-    if (!uucode)
-        goto out_of_memory;
-    xml_writecdata(fpout, uucode);
-    free(binary);
-    free(uucode);
-    
-    return 0;
-out_of_memory:
-    free(binary);
-    free(uucode);
-    return -1;
-}
-
-void processregularfile(const char *path, int depth)
-{
-    int error;
-    char *filename = 0;
-    char *xmlfilename = 0;
-    int i;
-    
-    filename = getfilename(path);
-    if (!filename)
-        goto out_of_memory;
-    xmlfilename = xml_escape(filename);
-    if (!xmlfilename)
-        goto out_of_memory;
-    
-    
-    if (!is_binary(path))
-    {
-        for (i = 0; i <depth; i++)
-            printf("\t");
-        printf("<file name=\"%s\" type=\"text\">\n", xmlfilename);
-        writetextfile(stdout, path);
-        printf("\n");
-        for (i= 0; i <depth;i++)
-            printf("\t");
-        printf("</file>\n");
-    }
-    else
-    {
-        for (i = 0; i <depth; i++)
-            printf("\t");
-        printf("<file name=\"%s\" type=\"binary\">\n", xmlfilename);
-        writebinaryfile(stdout, path);
-        printf("\n");
-        for (i= 0; i <depth;i++)
-            printf("\t");
-        printf("</file>\n");
-    }
-    free(filename);
-    free(xmlfilename);
-    return;
-    
-out_of_memory:
-    free(filename);
-    free(xmlfilename);
-}
-
-void processdirectory_r(const char *path, int depth)
-{
-    DIR *dirp;
-    struct dirent *dp;
-    char *pathslash;
-    char *filepath;
-    char *xmlfilename;
-    int i;
-
-    pathslash = mystrconcat(path, "/");
-    if (!pathslash)
-        goto out_of_memory;
-    
-    if ((dirp = opendir(path)) == NULL) {
-        perror("couldn't open directory");
-        return;
-    }
 
 
-    do {
-        errno = 0;
-        if ((dp = readdir(dirp)) != NULL) {
-          filepath = mystrconcat(pathslash, dp->d_name);
-          if (is_directory(filepath) && dp->d_name[0] != '.')
-          {
-              xmlfilename = xml_escape(dp->d_name);
-              if (!xmlfilename)
-                  goto out_of_memory;
-              for (i = 0; i < depth; i++)
-                      printf("\t");
-              printf("<directory name=\"%s\">\n", xmlfilename);
-              processdirectory_r(filepath, depth +1);
-              for (i = 0; i < depth; i++)
-                      printf("\t");
-              printf("</directory>\n");
-              free(xmlfilename);
-              xmlfilename = 0;
-          }
-          else if (dp->d_name[0] != '.' && is_regular_file(filepath))
-                processregularfile(filepath, depth);
-          free(filepath);
-        }
-    } while (dp != NULL);
-
-    if (errno != 0)
-        perror("error reading directory");
-
-    free(pathslash);
-    closedir(dirp);
-    return;
-out_of_memory:
-    free(pathslash);
-    closedir(dirp);
-}
- 
- */
-static unsigned char *fslurpb(FILE *fp, int *len)
-
-{
-    unsigned char *answer = 0;
-    unsigned char *temp;
-    int capacity = 1024;
-    int N = 0;
-    int ch;
-
-    answer = malloc(capacity);
-    if (!answer)
-        goto out_of_memory;
-    while ( (ch = fgetc(fp)) != EOF)
-    {
-        answer[N++] = ch;
-        if (N >= capacity - 4)
-        {
-            temp = realloc(answer, capacity + capacity / 2);
-            if (!temp)
-                goto out_of_memory;
-            answer = temp;
-            capacity = capacity + capacity / 2;
-        }
-    }
-    *len = N;
-    
-    return answer;
-    
-out_of_memory:
-    *len = -1;
-    free(answer);
-    return 0;
-}
-
-int writetextfile(FILE *fpout, FILE *fpin)
-{
-    char *text = 0;
-    char *xmltext = 0;
-    int i;
-
-    text = fslurp(fpin);
-    if (!text)
-        goto out_of_memory;
-    
-    xmltext = xml_escape(text);
-    if (!xmltext)
-        goto out_of_memory;
-    for (i= 0; xmltext[i];i++)
-        fputc(xmltext[i], fpout);
-    
-    free(text);
-    free(xmltext);
-    
-    return 0;
-    
-out_of_memory:
-    free(text);
-    free(xmltext);
-    
-    return 0;
-}
-int writebinaryfile(FILE *fpout, FILE *fpin)
-{
-    int N;
-    unsigned char *binary = 0;
-    char *uucode = 0;
-    char *badclose;
-    int i;
-    
-    binary = fslurpb(fpin, &N);
-    if (!binary)
-        goto out_of_memory;
-    uucode = uuencodestr(binary,N);
-    if (!uucode)
-        goto out_of_memory;
-    xml_writecdata(fpout, uucode);
-    free(binary);
-    free(uucode);
-    
-    return 0;
-out_of_memory:
-    free(binary);
-    free(uucode);
-    return -1;
-}
-
-
-int writefile(FILE *fp, XMLNODE *node)
+static int writefile(FILE *fp, XMLNODE *node)
 {
     FILE *fpin;
-    const char *type;
+    const char *type = 0;
+    
+    if (strcmp(xml_gettag(node), "file"))
+        return -1;
     
     type = xml_getattribute(node, "type");
     if (!type)
@@ -641,18 +667,20 @@ int writefile(FILE *fp, XMLNODE *node)
     
     if (!strcmp(type, "binary"))
     {
-        writebinaryfile(fp, fpin);
+        xml_uuencode_filter(fp, fpin);
     }
     else if (!strcmp(type, "text"))
     {
-        writetextfile(fp, fpin);
+        xml_escapefilter(fp, fpin);
     }
+    else
+        return -1;
     
     fclose(fpin);
     return 0;
 }
 
-int processregularfile(FILE *fp, XMLNODE *node, int depth)
+static int processregularfile(FILE *fp, XMLNODE *node, int depth)
 {
     int error;
     const char *filename = 0;
@@ -690,7 +718,7 @@ out_of_memory:
     return -1;
 }
 
-int processsourcefile(FILE *fp, XMLNODE *node, int depth, const char *source, const char *source_xml_name)
+static int processsourcefile(FILE *fp, XMLNODE *node, int depth, const char *source, const char *source_xml_name)
 {
     int error;
     const char *filename = 0;
@@ -716,13 +744,9 @@ int processsourcefile(FILE *fp, XMLNODE *node, int depth, const char *source, co
     for (i = 0; i <depth; i++)
         fprintf(fp, "\t");
     fprintf(fp, "<file name=\"%s\" type=\"%s\">\n", xmlfilename, type);
-    escaped = texttostring(source);
+    escaped = text_to_cstring(source);
     if (!escaped)
         goto out_of_memory;
-    
-    //
-    //fprintf(fpout, "char %s[] = %s;\n", source_xml_name, escaped);
-    //
     
     fprintf(fp, "char %s[] = ", source_xml_name);
     xmltext = xml_escape(escaped);
@@ -749,16 +773,13 @@ out_of_memory:
 }
 
 
-int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const char *source_xml, const char *source_xml_file, const char *source_xml_name)
+static int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const char *source_xml, const char *source_xml_file, const char *source_xml_name)
 {
     const char *name = 0;
-    FILE *fpout = 0;
-    FILE *fpin = 0;
     int ch;
     int err = 0;
     int i;
-    char *xmlfilename = 0;
-    
+    char *xmlname = 0;
     
     while (node)
     {
@@ -769,24 +790,12 @@ int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const char *s
                 goto skip_node;
             if (!strcmp(name, source_xml_file))
             {
-                /*
-                char *escaped = texttostring(source_xml);
-                if (!escaped)
-                    break;
-                fprintf(fpout, "char %s[] = %s;\n", source_xml_name, escaped);
-                free(escaped);
-                 */
-                
                 processsourcefile(fp, node, depth, source_xml, source_xml_name);
             }
             else
             {
                 processregularfile(fp, node, depth);
             }
-            fclose(fpout);
-            fclose(fpin);
-            fpout = 0;
-            fpin = 0;
         }
         else if (!strcmp(xml_gettag(node), "directory"))
         {
@@ -794,37 +803,27 @@ int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const char *s
             if (!name)
                 goto skip_node;
         
-            xmlfilename = xml_escape(name);
-            if (!xmlfilename)
+            xmlname = xml_escape(name);
+            if (!xmlname)
                 goto out_of_memory;
             for (i = 0; i < depth; i++)
                     printf("\t");
-            printf("<directory name=\"%s\">\n", xmlfilename);
+            printf("<directory name=\"%s\">\n", xmlname);
             err |= bbx_write_source_archive_r(fp, node->child, depth + 1, source_xml, source_xml_file, source_xml_name);
             for (i = 0; i < depth; i++)
                     printf("\t");
             printf("</directory>\n");
-            free(xmlfilename);
-            xmlfilename = 0;
+            free(xmlname);
+            xmlname = 0;
         }
         
     skip_node:
         node = node->next;
     }
     
-    if (fpin || fpout)
-    {
-        fclose(fpin);
-        fclose(fpout);
-        err = -2;
-    }
-    
     return err;
     
 out_of_memory:
-    fclose(fpin);
-    fclose(fpout);
-        
     return -1;
 }
 
@@ -856,7 +855,7 @@ int bbx_write_source_archive_root(FILE *fp, XMLNODE *node, int depth, const char
     return err;
 }
 
-int bbx_write_source_archive(FILE *fp, const char *source_xml, const char *path, const char *source_xml_file, const char *source_xml_name)
+int bbx_write_source_archive(FILE *fp, const char *source_xml, const char *source_xml_file, const char *source_xml_name)
 {
     XMLDOC *doc = 0;
     char error[1024];

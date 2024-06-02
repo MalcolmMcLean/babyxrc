@@ -75,6 +75,14 @@ add_executable("babyxfs_ls"
     "babyxfs_src/babyxfs_ls.c")
 target_link_libraries( "babyxfs_ls" ${libs} )
 
+add_executable("babyxfs_test"
+    "babyxfs_src/xmlparser2.c"
+    "babyxfs_src/xmlparser2.h"
+    "babyxfs_src/bbx_write_source_archive.c"
+    "babyxfs_src/bbx_write_source_archive.h"
+    "babyxfs_src/babyxfs_test.c")
+target_link_libraries( "babyxfs_test" ${libs} )
+
 add_executable("babyxfs_dirtoxml"
     "babyxfs_src/babyxfs_dirtoxml.c")
 target_link_libraries( "babyxfs_dirtoxml" ${libs} )

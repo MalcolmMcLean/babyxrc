@@ -1,6 +1,6 @@
 //
-//  babyxlsxml.c
-//  directorytoxml
+//  babyxfs_test.c
+//  babyxfs
 //
 //  Created by Malcolm McLean on 28/05/2024.
 //
@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+
+#include "bbx_write_source_archive.h"
 
 /*
     This program is designed to show off the capabilities of the XML Parser.
@@ -269,13 +271,9 @@ char **xml_listdirectory(XMLDOC *doc, const char *glob)
 
 void usage()
 {
-    fprintf(stderr, "babyxfs_ls: ls command for FileSystem XML files\n");
-    fprintf(stderr, "Usage: babyxfs_ls <filesystem.xml> <pathtofile>\n");
+    fprintf(stderr, "babyxfs_test: test code for the Baby X FileSystem project\n");
+    fprintf(stderr, "Usage: - code intended for development purposes only\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "For example, listdirectory poemfiles.xml /poems/Blake/*\n");
-    fprintf(stderr, "The XML files poemfiles.xml is FileSystem file which\n");
-    fprintf(stderr, "contains poems. The command will list all the poems \n");
-    fprintf(stderr, "by Blake\n");
     fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "By Malcolm McLean\n");
@@ -289,10 +287,12 @@ int main(int argc, char **argv)
 {
     XMLDOC *doc = 0;
     char error[1024];
+    int err;
+    
     char **list;
     int i;
     
-    if (argc != 3)
+    if (argc != 2)
         usage();
     
     doc = loadxmldoc(argv[1], error, 1024);
@@ -301,6 +301,13 @@ int main(int argc, char **argv)
         fprintf(stderr, "%s\n", error);
         return -1;
     }
+    
+    err = bbx_write_source_archive_root(stdout, xml_getroot(doc), 0, "placholdrr", "..", "catastrope");
+    
+    killxmldoc(doc);
+    return 0;
+    
+    
     
     list = xml_listdirectory(doc, argv[2]);
     if (list)
