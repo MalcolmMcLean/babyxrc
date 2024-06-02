@@ -56,6 +56,11 @@ add_executable("testbabyxfilesystem"
     "babyxfs_src/testbabyxfilesystem.c")
 target_link_libraries( "testbabyxfilesystem" ${libs} )
 
+add_executable("babyxfs_escapexml"
+    "babyxfs_src/babyxfs_escapexml.c")
+target_link_libraries( "babyxfs_escapexml" ${libs} )
+
+
 add_executable("babyxfs_extract"
     "babyxfs_src/xmlparser2.c"
     "babyxfs_src/xmlparser2.h"
