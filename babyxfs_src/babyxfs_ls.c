@@ -272,7 +272,7 @@ void usage()
     fprintf(stderr, "babyxfs_ls: ls command for FileSystem XML files\n");
     fprintf(stderr, "Usage: babyxfs_ls <filesystem.xml> <pathtofile>\n");
     fprintf(stderr, "\n");
-    fprintf(stderr, "For example, listdirectory poemfiles.xml /poems/Blake/*\n");
+    fprintf(stderr, "For example, babyxfs_ls poemfiles.xml /poems/Blake/*\n");
     fprintf(stderr, "The XML files poemfiles.xml is FileSystem file which\n");
     fprintf(stderr, "contains poems. The command will list all the poems \n");
     fprintf(stderr, "by Blake\n");

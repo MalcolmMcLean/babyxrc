@@ -807,12 +807,12 @@ static int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const 
             if (!xmlname)
                 goto out_of_memory;
             for (i = 0; i < depth; i++)
-                    printf("\t");
-            printf("<directory name=\"%s\">\n", xmlname);
+                    fprintf(fp, "\t");
+            fprintf(fp, "<directory name=\"%s\">\n", xmlname);
             err |= bbx_write_source_archive_r(fp, node->child, depth + 1, source_xml, source_xml_file, source_xml_name);
             for (i = 0; i < depth; i++)
-                    printf("\t");
-            printf("</directory>\n");
+                    fprintf(fp, "\t");
+            fprintf(fp, "</directory>\n");
             free(xmlname);
             xmlname = 0;
         }
