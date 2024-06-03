@@ -19,6 +19,8 @@ babyxfs_dirtoxml.c - babyxfs_dirtoxml main file.
 babyxfs_xmltodir.c - babyxfs_xmltodir main file.
 babyxfs_ls.c - babyxfs_ls main file.
 babyxfs_extract.c - babyxfs_extract main file.
+babyxfs_rm.c - babxfs_rm main file
+babyxfs_cp.c - babxfs_cp main file
 babyxfs_escapexml - babyxfs_escapexml main file
 testbabyxfilesystem.c - testbabyxfilesystem main file. 
 
@@ -40,7 +42,15 @@ Lists the files is a FileSystem xml file using globs (wildcards, eg "*.c").
 
 babyxfs_extract
 
-Extracts a file from a FileSystem xml file.    
+Extracts a file from a FileSystem xml file. 
+
+babyxfs_rm 
+
+Removes a file from a FileSystem archive.
+
+babyxfs_cp
+
+Copies a file from disk to a FileSystem archive.   
 
 babyxfs_escapexml 
 
