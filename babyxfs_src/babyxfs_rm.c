@@ -150,6 +150,7 @@ XMLNODE *findnodebypath(XMLNODE *node, const char *path, int pos)
                    return answer;
                node = node->next;
            }
+           return 0;
        }
        
    nextnode:
