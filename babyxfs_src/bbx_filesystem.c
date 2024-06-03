@@ -31,6 +31,8 @@ static char *bbx_strdup(const char *str)
     return answer;
 }
 static int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N);
+static int babyxfs_rm(XMLNODE *root, const char *path);
+
 static XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos);
 
 static char **listdirectory(XMLNODE *node);
@@ -335,6 +337,23 @@ unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, co
     bbx_filesystem_fclose(bbx_fs, fp);
     
     return answer;
+}
+
+int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path)
+{
+    XMLNODE *root;
+    int err;
+    
+    if (bbx_fs->mode != BBX_FS_STRING)
+    {
+        fprintf(stderr, "Only string BBX_Filesystems support unlinking\n");
+        return -1;
+    }
+
+    root = bbx_fs_getfilesystemroot(xml_getroot(bbx_fs->filesystemdoc));
+    err = babyxfs_rm(root, path);
+    
+    return err;
 }
 
 const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
@@ -751,6 +770,54 @@ error_exit:
         *N = -1;
     return 0;
 }
+/*
+   unlink a node from the document tree
+ 
+   returns 0 on success, -1 on fail
+ */
+static int xml_node_unlink(XMLNODE *root, XMLNODE *target)
+{
+    XMLNODE *sib;
+    XMLNODE *prev;
+    int answer = -1;
+    
+    while (root)
+    {
+        if (root->child)
+        {
+            prev = root->child;
+            sib = prev->next;
+            
+            if (prev == target)
+            {
+                root->child = sib;
+                prev->next = 0;
+                return 0;
+            }
+            
+            while (sib)
+            {
+                if (sib == target)
+                {
+                    prev->next = sib->next;
+                    sib->next = 0;
+                    return 0;
+                }
+            
+                prev = prev->next;
+                sib = sib->next;
+            }
+            answer = xml_node_unlink(root->child, target);
+            if (!answer)
+                return 0;
+        }
+        
+        root = root->next;
+    }
+    
+    return - 1;
+}
+
 
 
 static char *directoryname(const char *path, int pos)
@@ -1257,5 +1324,29 @@ static int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data
       
     }
 
+    return 0;
+}
+
+
+/*
+   remove a file from a node
+ */
+static int babyxfs_rm(XMLNODE *root, const char *path)
+{
+    XMLNODE *node;
+    
+    node = findnodebypath(root, path, 0);
+    if (!node)
+    {
+        fprintf(stderr, "Can't find file\n");
+        return -1;
+    }
+    if (node->child)
+    {
+        fprintf(stderr, "Can't delete a non-empty directory\n");
+        return -1;
+    }
+    xml_node_unlink(root, node);
+    
     return 0;
 }

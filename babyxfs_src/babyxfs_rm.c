@@ -4,13 +4,14 @@
 //
 //  Created by Malcolm McLean on 28/05/2024.
 //
-#include "xmlparser2.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <ctype.h>
 
-#include "bbx_write_source_archive.h"
+#include "bbx_filesystem.h"
 
 /*
     This program is an impementation of the rm command for FileSystem.xml files.
@@ -50,165 +51,86 @@
       It is free for any use.
  */
 
+
 /*
-   unlink a node from the document tree
- 
-   returns 0 on success, -1 on fail
- */
-int xml_node_unlink(XMLNODE *root, XMLNODE *target)
+  load a text file into memory
+
+*/
+static char *fslurp(FILE *fp)
 {
-    XMLNODE *sib;
-    XMLNODE *prev;
-    int answer = -1;
-    
-    while (root)
+  char *answer;
+  char *temp;
+  int buffsize = 1024;
+  int i = 0;
+  int ch;
+
+  answer = malloc(1024);
+  if(!answer)
+    return 0;
+  while( (ch = fgetc(fp)) != EOF )
+  {
+    if(i == buffsize-2)
     {
-        if (root->child)
+      if(buffsize > INT_MAX - 100 - buffsize/10)
+      {
+    free(answer);
+        return 0;
+      }
+      buffsize = buffsize + 100 * buffsize/10;
+      temp = realloc(answer, buffsize);
+      if(temp == 0)
+      {
+        free(answer);
+        return 0;
+      }
+      answer = temp;
+    }
+    answer[i++] = (char) ch;
+  }
+  answer[i++] = 0;
+
+  temp = realloc(answer, i);
+  if(temp)
+    return temp;
+  else
+    return answer;
+}
+
+
+static unsigned char *fslurpb(FILE *fp, int *len)
+
+{
+    unsigned char *answer = 0;
+    unsigned char *temp;
+    int capacity = 1024;
+    int N = 0;
+    int ch;
+
+    answer = malloc(capacity);
+    if (!answer)
+        goto out_of_memory;
+    while ( (ch = fgetc(fp)) != EOF)
+    {
+        answer[N++] = ch;
+        if (N >= capacity - 4)
         {
-            prev = root->child;
-            sib = prev->next;
-            
-            if (prev == target)
-            {
-                root->child = sib;
-                prev->next = 0;
-                return 0;
-            }
-            
-            while (sib)
-            {
-                if (sib == target)
-                {
-                    prev->next = sib->next;
-                    sib->next = 0;
-                    return 0;
-                }
-            
-                prev = prev->next;
-                sib = sib->next;
-            }
-            answer = xml_node_unlink(root->child, target);
-            if (!answer)
-                return 0;
+            temp = realloc(answer, capacity + capacity / 2);
+            if (!temp)
+                goto out_of_memory;
+            answer = temp;
+            capacity = capacity + capacity / 2;
         }
-        
-        root = root->next;
     }
+    *len = N;
     
-    return - 1;
-}
-
-/*
-  Find a node from a path.
- 
-  pos indicates the position along the path to start from.
- */
-XMLNODE *findnodebypath(XMLNODE *node, const char *path, int pos)
-{
-    XMLNODE *answer = 0;
-    const char *name = 0;
-    int i;
+    return answer;
     
-   while (node)
-   {
-      
-       if (!strcmp(xml_gettag(node), "file"))
-       {
-           name = xml_getattribute(node, "name");
-           if (!name)
-               goto nextnode;
-           if (!strcmp(name, path + pos))
-               return node;
-       }
-       else if (!strcmp(xml_gettag(node), "directory"))
-       {
-           name = xml_getattribute(node, "name");
-           if (!name)
-               continue;
-           for (i = 0; name[i] && path[pos+i]; i++)
-           {
-               if (name[i] != path[pos+i])
-               {
-                   goto nextnode;
-               }
-           }
-           
-           if (name[i] == 0 && path[pos + i] == 0)
-               return node;
-           if (name[i] == 0 && path[pos + i] == '/')
-               return findnodebypath(node->child, path, pos + i + 1);
-       }
-       else if (!strcmp(xml_gettag(node), "FileSystem"))
-       {
-           if (path[pos] != '/')
-               return 0;
-           node = node->child;
-           while (node)
-           {
-               answer = findnodebypath(node, path, pos + 1);
-               if (answer)
-                   return answer;
-               node = node->next;
-           }
-           return 0;
-       }
-       
-   nextnode:
-       node = node->next;
-   }
-    
-    return  0;
-}
-
-/*
-  Get the node with the tag "FileSystem"
- */
-XMLNODE *bbx_fs_getfilesystemroot(XMLNODE *root)
-{
-    XMLNODE *answer;
-    
-    answer = root;
-    while (root)
-    {
-        if (!strcmp(xml_gettag(root), "FileSystem"))
-            return root;
-        root = root->next;
-    }
-    
-    root = answer;
-    while (root)
-    {
-        answer = bbx_fs_getfilesystemroot(root->child);
-        if (answer)
-            return answer;
-        root = root->next;
-    }
-    
+out_of_memory:
+    *len = -1;
+    free(answer);
     return 0;
 }
 
-/*
-   remove a file from a node
- */
-int babyxfs_rm(XMLNODE *root, const char *path)
-{
-    XMLNODE *node;
-    
-    node = findnodebypath(root, path, 0);
-    if (!node)
-    {
-        fprintf(stderr, "Can't find file\n");
-        return -1;
-    }
-    if (node->child)
-    {
-        fprintf(stderr, "Can't delete a non-empty directory\n");
-        return -1;
-    }
-    xml_node_unlink(root, node);
-    
-    return 0;
-}
 
 
 void usage()
@@ -225,49 +147,74 @@ void usage()
     exit(EXIT_FAILURE);
 }
 
+int docommand(BBX_FileSystem *fs, int argc, char **argv)
+{
+    int err;
+   
+    err = bbx_filesystem_unlink(fs, argv[1]);
+    if (err)
+        fprintf(stderr, "erorc deleting file\n");
+    
+    return err;
+    
+}
+
+
 int main(int argc, char **argv)
 {
-    XMLDOC *doc = 0;
     char error[1024];
-    int err;
-    XMLNODE *fs_root;
-    FILE *fp;
-    
     char **list;
     int i;
     
-    if (argc != 3)
+    FILE *fp = 0;
+    char *xmlstring = 0;
+    BBX_FileSystem *bbx_fs_xml = 0;
+    int err;
+    
+    if (argc < 2)
         usage();
     
-    doc = loadxmldoc(argv[1], error, 1024);
-    if (!doc)
+    fp = fopen(argv[1], "r");
+    if (!fp)
     {
-        fprintf(stderr, "%s\n", error);
-        return -1;
+        fprintf(stderr, "Can't open xml file\n");
+        exit(EXIT_FAILURE);
     }
+    xmlstring = fslurp(fp);
+    if (!xmlstring)
+    {
+        fprintf(stderr, "Out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    fclose(fp);
+    fp = 0;
     
-    fs_root = bbx_fs_getfilesystemroot(xml_getroot(doc));
-    babyxfs_rm(fs_root, argv[2]);
+    bbx_fs_xml = bbx_filesystem();
+    err = bbx_filesystem_set(bbx_fs_xml, xmlstring, BBX_FS_STRING);
+    if (err)
+    {
+        fprintf(stderr, "Can't set up XML filessystem\n");
+        exit(EXIT_FAILURE);
+    }
+   
+    docommand(bbx_fs_xml, argc -1, argv + 1);
     
     fp = fopen(argv[1], "w");
     if (!fp)
     {
-        fprintf(stderr, "babxfs_rm: can't write target directory\n");
-        goto error_exit;
+        fprintf(stderr, "Can't open xml file to write\n");
+        exit(EXIT_FAILURE);
     }
-    
-    err = bbx_write_source_archive_root(fp, xml_getroot(doc), 0, "placholder", "..", "catastrope");
+    err = bbx_filesystem_dump(bbx_fs_xml, fp);
     if (err)
-        goto error_exit;
-    fclose (fp);
+        fprintf(stderr, "Error writing FileSystem XML file to disk\n");
+    fclose(fp);
     fp = 0;
     
-    killxmldoc(doc);
-    return 0;
+    bbx_filesystem_kill(bbx_fs_xml);
+    free(xmlstring);
     
-error_exit:
-    fclose(fp);
-    killxmldoc(doc);
-    exit(EXIT_FAILURE);
+    return 0;
 }
+
 

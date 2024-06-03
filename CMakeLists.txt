@@ -90,6 +90,8 @@ add_executable("babyxfs_rm"
     "babyxfs_src/xmlparser2.h"
     "babyxfs_src/bbx_write_source_archive.c"
     "babyxfs_src/bbx_write_source_archive.h"
+    "babyxfs_src/bbx_filesystem.c"
+    "babyxfs_src/bbx_filesystem.h"
     "babyxfs_src/babyxfs_rm.c")
 target_link_libraries( "babyxfs_rm" ${libs} )
 
