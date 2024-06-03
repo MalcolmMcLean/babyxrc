@@ -358,6 +358,21 @@ const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
     return answer;
 }
 
+/*
+    Dump the BBX_FileSystem to a stream as FileSystem XML
+ */
+int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp)
+{
+    int err;
+    
+    if (bbx_fs->mode != BBX_FS_STRING)
+    {
+        fprintf(stderr, "Only string BBX_Filesystems may be written out\n");
+        return -1;
+    }
+    err = bbx_write_source_archive_root(fp, xml_getroot(bbx_fs->filesystemdoc), 0, "placholder", "..", "catastrope");
+    return err;
+}
 char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path)
 {
     if (bbx_fs->mode == BBX_FS_STDIO)
