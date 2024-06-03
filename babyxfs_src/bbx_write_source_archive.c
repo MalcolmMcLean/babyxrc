@@ -827,6 +827,68 @@ out_of_memory:
     return -1;
 }
 
+int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned char *data, int N, const char *datatype )
+{
+    FILE *fpin = 0;
+    FILE *fp = 0;
+    const char *type;
+    char *xmltext = 0;
+    int len;
+    
+    if (strcmp(xml_gettag(node), "file"))
+        return -1;
+    type = xml_getattribute(node, "type");
+    if (!type || (!strcmp(type, "binary") && !strcmp(type, "text")))
+        return -1;
+    
+    fpin = tmpfile();
+    fp = tmpfile();
+    fwrite(data, 1, N, fpin);
+    fseek(fpin, 0, SEEK_SET);
+    
+    /*
+    leading = 0;
+    len = node->data ? (int) strlen(node->data) + 0;
+    for (i = 0; data[i]; i++)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (data[i] == '\n')
+        leading = i + 1;
+    
+    trailing = 0;
+    i = len - 1;
+    for (i = len - 1; i > 0; i--)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (i > 0 && data[i] == '\n')
+        trailing = len - i;
+    
+    if (trailing + leading >= len )
+        ;
+     */
+    
+    fprintf(fp, "\n");
+    if (!strcmp(type, "binary"))
+    {
+        xml_uuencode_filter(fp, fpin);
+    }
+    else if (!strcmp(type, "text"))
+    {
+        xml_escapefilter(fp, fpin);
+    }
+    fprintf(fp, "\n\t");
+    
+    fclose(fpin);
+    fseek(fp, 0, SEEK_SET);
+    xmltext = fslurp(fp);
+    fclose(fp);
+    
+    free(node->data);
+    node->data = xmltext;
+    
+    return  0;
+}
+
 int bbx_write_source_archive_root(FILE *fp, XMLNODE *node, int depth, const char *source_xml, const char *source_xml_file, const char *source_xml_name)
 {
     int i;
