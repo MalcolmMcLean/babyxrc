@@ -21,4 +21,6 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
 unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N);
 const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
 
+char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
+
 #endif /* bbx_filesystem_h */

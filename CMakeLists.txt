@@ -66,12 +66,18 @@ add_executable("babyxfs_extract"
     "babyxfs_src/xmlparser2.h"
      "babyxfs_src/bbx_filesystem.c"
     "babyxfs_src/bbx_filesystem.h"
+    "babyxfs_src/bbx_write_source_archive.c"
+    "babyxfs_src/bbx_write_source_archive.h"
     "babyxfs_src/babyxfs_extract.c")
 target_link_libraries( "babyxfs_extract" ${libs} )
 
 add_executable("babyxfs_ls"
     "babyxfs_src/xmlparser2.c"
     "babyxfs_src/xmlparser2.h"
+    "babyxfs_src/bbx_write_source_archive.c"
+    "babyxfs_src/bbx_write_source_archive.h"
+    "babyxfs_src/bbx_filesystem.c"
+    "babyxfs_src/bbx_filesystem.h"
     "babyxfs_src/babyxfs_ls.c")
 target_link_libraries( "babyxfs_ls" ${libs} )
 
