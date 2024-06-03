@@ -491,33 +491,32 @@ out_of_memory:
 /*
    Take plain text from fpin and write as xml to fpout
  */
+
 static int xml_escapefilter(FILE *fpout, FILE *fpin)
 {
-    char *text = 0;
-    char *xmltext = 0;
-    int i;
-
-    text = fslurp(fpin);
-    if (!text)
-        goto out_of_memory;
+    int ch;
     
-    xmltext = xml_escape(text);
-    if (!xmltext)
-        goto out_of_memory;
-    for (i = 0; xmltext[i];i++)
-        fputc(xmltext[i], fpout);
-    
-    free(text);
-    free(xmltext);
-    
+    while ((ch = fgetc(fpin)) != EOF)
+    {
+        if (ch < 32)
+        {
+            if(ch != '\n' && ch != '\r' && ch != '\t')
+                return - 1;
+        }
+        switch(ch) {
+            case '&':  fputs("&amp;", fpout); break;
+            case '\"': fputs("&quot;", fpout); break;
+            case '\'': fputs("&apos;", fpout); break;
+            case '<':  fputs("&lt;", fpout); break;
+            case '>':  fputs("&gt;", fpout); break;
+            default:   fputc(ch, fpout); break;
+        }
+    }
+        
     return 0;
-    
-out_of_memory:
-    free(text);
-    free(xmltext);
-    
-    return -1;
 }
+
+
 static int xml_writecdata(FILE *fp, const char *data)
 {
     int i;

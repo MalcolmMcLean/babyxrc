@@ -379,8 +379,10 @@ XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos)
 int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N)
 {
     XMLNODE *node;
+    XMLATTRIBUTE *attr;
     const char *filename = 0;
     const char *datatype = 0;
+
     int i;
    
     filename = basename(path);
@@ -415,9 +417,32 @@ int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N
         
         if (!strcmp(xml_gettag(node), "file"))
         {
+            if (!xml_getattribute(node, "type"))
+            {
+                XMLATTRIBUTE *typeattr;
+                
+                typeattr = bbx_malloc(sizeof(XMLATTRIBUTE));
+                typeattr->name = bbx_strdup("type");
+                typeattr->value = bbx_strdup(datatype);
+                typeattr->next = 0;
+                
+                typeattr->next = node->attributes;
+                node->attributes = typeattr;
+                
+            }
             if (strcmp(datatype, xml_getattribute(node, "type")))
             {
+                attr = node->attributes;
                 
+                while (attr)
+                {
+                    if (!strcmp(attr->name, "type"))
+                    {
+                        free(attr->value);
+                        attr->value = bbx_strdup(datatype);
+                    }
+                    attr = attr->next;
+                }
             }
             if (!strcmp(datatype, "binary"))
             {
