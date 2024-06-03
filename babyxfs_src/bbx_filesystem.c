@@ -30,7 +30,7 @@ static char *bbx_strdup(const char *str)
     
     return answer;
 }
-int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N);
+static int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N);
 
 static char **listdirectory(XMLNODE *node);
 
@@ -962,7 +962,7 @@ static XMLNODE *bbx_fs_getfilesystemroot(XMLNODE *root)
     return 0;
 }
 
-const char *basename(const char *path)
+static const char *basename(const char *path)
 {
     const char *answer = 0;
     answer = strrchr(path, '/');
@@ -974,7 +974,7 @@ const char *basename(const char *path)
     return answer;
 }
 
-int isbinary(const unsigned char *data, int N)
+static int isbinary(const unsigned char *data, int N)
 {
     int i;
     
@@ -997,7 +997,7 @@ int isbinary(const unsigned char *data, int N)
  
   pos indicates the position along the path to start from.
  */
-XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos)
+static XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos)
 {
     XMLNODE *answer = 0;
     const char *name = 0;
@@ -1081,7 +1081,7 @@ XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos)
 
 /*
  */
-int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N)
+static int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N)
 {
     XMLNODE *node;
     XMLATTRIBUTE *attr;
