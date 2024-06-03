@@ -78,6 +78,8 @@ add_executable("babyxfs_ls"
     "babyxfs_src/bbx_write_source_archive.h"
     "babyxfs_src/bbx_filesystem.c"
     "babyxfs_src/bbx_filesystem.h"
+    "babyxfs_src/bbx_options.c"
+    "babyxfs_src/bbx_options.h"
     "babyxfs_src/babyxfs_ls.c")
 target_link_libraries( "babyxfs_ls" ${libs} )
 

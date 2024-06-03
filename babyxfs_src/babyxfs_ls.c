@@ -4,13 +4,13 @@
 //
 //  Created by Malcolm McLean on 28/05/2024.
 //
-#include "xmlparser2.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
 
+#include "bbx_options.h"
 #include "bbx_filesystem.h"
 
 /*
@@ -191,6 +191,17 @@ char **cat_list(char **lista, char **listb)
     return answer;
 }
 
+int isdirectory(const char *name)
+{
+    char *slash;
+    slash = strrchr(name, '/');
+    if (!slash)
+        return 0;
+    if (strlen(slash) > 1)
+        return 0;
+    return 1;
+}
+
 char *directoryname(const char *path, int pos)
 {
     int i;
@@ -218,88 +229,6 @@ out_of_memory:
 }
 
 
-char **directory_list_r(XMLNODE *node, const char *glob, int pos)
-{
-    char **answer = 0;
-    int N = 0;
-    const char *nodename;
-    char *nameglob = 0;
-    XMLNODE *child;
-    char **sub;
-    int lastdir;
-    char buff[FILENAME_MAX];
-    
-    nameglob = directoryname(glob, pos);
-    lastdir = glob[pos + strlen(nameglob) + 1] == 0 ? 1 : 0;
-    while (node)
-    {
-        if (!strcmp(xml_gettag(node), "directory"))
-        {
-            nodename = xml_getattribute(node, "name");
-            if (nodename && matchwild(nodename, nameglob))
-            {
-                if (lastdir)
-                {
-                    snprintf(buff, FILENAME_MAX, "%s/", nodename);
-                    answer = cat_string(answer, buff);
-                }
-                else
-                {
-                    sub = directory_list_r(node->child, glob, pos + (int) strlen(nameglob) + 1);
-                    answer = cat_list(answer, sub);
-                }
-            }
-        }
-        else if(lastdir && !strcmp(xml_gettag(node), "file"))
-        {
-            nodename = xml_getattribute(node, "name");
-            if (nodename && matchwild(nodename, nameglob))
-            {
-                answer = cat_string(answer, nodename);
-            }
-        }
-        
-        node = node->next;
-    }
-    
-    free(nameglob);
-    return  answer;
-}
-
-char **xml_listdirectory_r(XMLNODE *node, const char *glob)
-{
-    char **answer = 0;
-    while (node)
-    {
-        if (!strcmp(xml_gettag(node), "FileSystem"))
-        {
-            answer = directory_list_r(node->child, glob, 0);
-            if (answer)
-                break;
-        }
-        if (node->child)
-        {
-            answer = xml_listdirectory_r(node->child, glob);
-            if (answer)
-                break;
-        }
-        node = node->next;
-    }
-    
-    return answer;
-}
-
-/*
-   Query an XML document for files under FileSystem tag.
- 
-   You will need to take this function if using the FileSystem to
-     embed files into your own programs.
- 
- */
-char **xml_listdirectory(XMLDOC *doc, const char *glob)
-{
-    return xml_listdirectory_r(xml_getroot(doc), glob);
-}
 
 /*
   load a text file into memory
@@ -349,9 +278,8 @@ char **fs_listdirectory_r(BBX_FileSystem *fs, char *dir, const char *glob, int p
 {
     char **answer = 0;
     int N = 0;
-    char *nodename;
+    char *filename;
     char *nameglob = 0;
-    XMLNODE *child;
     char **sub;
     int nullpos;
     int lastdir;
@@ -368,11 +296,11 @@ char **fs_listdirectory_r(BBX_FileSystem *fs, char *dir, const char *glob, int p
     
     for (i = 0; list[i]; i++)
     {
-        nodename = bbx_strdup(list[i]);
+       filename = bbx_strdup(list[i]);
        if (strrchr(list[i], '/') == list[i] + strlen(list[i]) - 1)
        {
-           nodename[strlen(nodename) - 1] = 0;
-           if (nodename && matchwild(nodename, nameglob))
+           filename[strlen(filename) - 1] = 0;
+           if (filename && matchwild(filename, nameglob))
            {
                if (lastdir)
                {
@@ -381,11 +309,11 @@ char **fs_listdirectory_r(BBX_FileSystem *fs, char *dir, const char *glob, int p
                else
                {
                    if (!strcmp(dir, "/"))
-                       strcat(dir, nodename);
+                       strcat(dir, filename);
                    else
                    {
                        strcat(dir, "/");
-                       strcat(dir, nodename);
+                       strcat(dir, filename);
                    }
                    sub = fs_listdirectory_r(fs, dir, glob, pos + (int) strlen(nameglob) + 1);
                    dir[nullpos] = 0;
@@ -395,43 +323,19 @@ char **fs_listdirectory_r(BBX_FileSystem *fs, char *dir, const char *glob, int p
        }
         else if(lastdir)
         {
-            if (nodename && matchwild(nodename, nameglob))
+            if (filename && matchwild(filename, nameglob))
             {
-                answer = cat_string(answer, nodename);
+                answer = cat_string(answer, filename);
             }
         }
-        free (nodename);
+        free (filename);
        
     }
     
     free(nameglob);
-    return answer;
-    /*
-    while (node)
-    {
-        if (!strcmp(xml_gettag(node), "directory"))
-        {
-            nodename = xml_getattribute(node, "name");
-            if (nodename && matchwild(nodename, nameglob))
-            {
-                
-            }
-        }
-        else if(lastdir && !strcmp(xml_gettag(node), "file"))
-        {
-            nodename = xml_getattribute(node, "name");
-            if (nodename && matchwild(nodename, nameglob))
-            {
-                answer = cat_string(answer, nodename);
-            }
-        }
-        
-        node = node->next;
-    }
     
-    free(nameglob);
-    return  answer;
-     */
+    return answer;
+    
 }
 
 
@@ -442,11 +346,48 @@ char **fs_listdirectory(BBX_FileSystem *fs, const char *glob)
     return fs_listdirectory_r(fs, path, glob, 0);
 }
 
-char **listwild(BBX_FileSystem *fs, const char *glob)
+char **listwild(BBX_FileSystem *fs, const char *glob, int dosize)
 {
+    char **answer;
+    int i;
+    int j;
+    char fullpath[PATH_MAX];
+    char buff[256];
+    FILE *fp = 0;
+    int size;
+    
     if (!strchr(glob, '*') && !strchr(glob, '?'))
     {
-        return bbx_filesystem_list(fs, glob);
+        answer = bbx_filesystem_list(fs, glob);
+        if (dosize)
+        {
+            strcpy(fullpath, glob);
+            for (i = 0; answer[i]; i++)
+            {
+                if (isdirectory(answer[i]))
+                    continue;
+                strcat(fullpath, "/");
+                strcat(fullpath, answer[i]);
+                fprintf(stderr, "%s\n", fullpath);
+                fp = bbx_filesystem_fopen(fs, fullpath, "r");
+                if (fp)
+                {
+                    fseek(fp, 0, SEEK_END);
+                        size = (int) ftell(fp);
+                    bbx_filesystem_fclose(fs, fp);
+                }
+                else
+                    size = -1;
+                snprintf(buff, 256, "%s %d", answer[i], size);
+                free(answer[i]);
+                answer[i] = bbx_strdup(buff);
+                j = strlen(fullpath);
+                while(fullpath[j] != '/')
+                    j--;
+                fullpath[j] = 0;
+            }
+        }
+        return answer;
     }
     else
         return fs_listdirectory(fs, glob);
@@ -455,7 +396,10 @@ char **listwild(BBX_FileSystem *fs, const char *glob)
 void usage()
 {
     fprintf(stderr, "babyxfs_ls: ls command for FileSystem XML files\n");
-    fprintf(stderr, "Usage: babyxfs_ls <filesystem.xml> <pathtofile>\n");
+    fprintf(stderr, "Usage: babyxfs_ls [options] <filesystem.xml> <pathtofile>\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "options:\n");
+    fprintf(stderr, "\t -l long mode\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "For example, babyxfs_ls poemfiles.xml /poems/Blake/*\n");
     fprintf(stderr, "The XML files poemfiles.xml is FileSystem file which\n");
@@ -474,11 +418,21 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
 {
     char **list;
     int i;
+    BBX_Options *bbx_opt;
+    int size = 0;
+    int Nargs;
+    char *path;
+    char errormessage[10224];
     
-    if (argc != 3)
+    bbx_opt = bbx_options(argc, argv, "");
+    size = bbx_options_get(bbx_opt, "-l", 0);
+    Nargs = bbx_options_Nargs(bbx_opt);
+    bbx_options_error(bbx_opt, errormessage, 1024);
+    if (Nargs != 1)
         usage();
-
-    list = listwild(fs, argv[2]);
+    path = bbx_options_arg(bbx_opt, 0);
+     
+    list = listwild(fs, argv[2], size);
     if (!list)
         return -1;
     
@@ -489,6 +443,9 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
         free(list[i]);
     free(list);
     
+    free(path);
+    bbx_options_kill(bbx_opt);
+    
     return 0;
 }
 
@@ -496,7 +453,6 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-    XMLDOC *doc = 0;
     char error[1024];
     char **list;
     int i;
@@ -506,7 +462,7 @@ int main(int argc, char **argv)
     BBX_FileSystem *bbx_fs_xml = 0;
     int err;
     
-    if (argc != 3)
+    if (argc < 2)
         usage();
     
     fp = fopen(argv[1], "r");
@@ -532,39 +488,10 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
    
-    docommand(bbx_fs_xml, argc, argv);
+    docommand(bbx_fs_xml, argc -1, argv + 1);
     
     bbx_filesystem_kill(bbx_fs_xml);
     free(xmlstring);
-    
-    return 0;
-    
-    doc = loadxmldoc(argv[1], error, 1024);
-    if (!doc)
-    {
-        fprintf(stderr, "%s\n", error);
-        return -1;
-    }
-    
-    list = xml_listdirectory(doc, argv[2]);
-    if (list)
-    {
-        for (i = 0; list[i]; i++)
-            printf("%s\n", list[i]);
-    }
-    else
-    {
-        fprintf(stderr, "Can't list %s\n", argv[2]);
-    }
-
-    if (list)
-    {
-        for (i = 0; list[i]; i++)
-            free(list[i]);
-        free(list);
-    }
-    
-    killxmldoc(doc);
     
     return 0;
 }

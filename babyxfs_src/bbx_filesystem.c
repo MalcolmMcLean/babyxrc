@@ -122,7 +122,7 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
       return 0;
   }
 
-  if (mode == NULL || (mode[0] != 'r' || mode[0] != 'w'))
+  if (mode == NULL || (mode[0] != 'r' && mode[0] != 'w'))
   {
       fprintf(stderr, "Baby X files system, fopen only support for reading \"r\"\n");
       fprintf(stderr, "and writing \"w\" mode");
@@ -148,6 +148,8 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
   else if (bbx_fs->mode == BBX_FS_STRING)
   {
       fp = xml_fopen(bbx_fs->filesystemdoc, path, mode);
+      
+      printf("Here path %s %p\n", path, fp);
       
       if (fp)
       {
