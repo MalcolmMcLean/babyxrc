@@ -187,7 +187,7 @@ void usage()
     fprintf(stderr, "Usage: - babyxfs_cp <filesystem.xml> <targetpath> <sourcepath>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Note the source path is currently on the host mchine.\n");
-    fprintf(stder,, "\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "By Malcolm McLean\n");
@@ -221,15 +221,10 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
         fwrite(data, 1, N, fp);
         bbx_filesystem_fclose(fs, fp);
     }
-    
-    fp = bbx_filesystem_fopen(fs, argv[1], "w");
-    if (fp)
+    else
     {
-        char buff[256];
-        while(fgets(buff, 256, fp))
-         fprintf(stderr, "%s\n", buff);
+        fprintf(stderr, "error writing file to XML archive\n");
     }
-    bbx_filesystem_fclose(fs, fp);
     
 }
 
@@ -272,6 +267,18 @@ int main(int argc, char **argv)
     }
    
     docommand(bbx_fs_xml, argc -1, argv + 1);
+    
+    fp = fopen(argv[1], "w");
+    if (!fp)
+    {
+        fprintf(stderr, "Can't open xml file to write\n");
+        exit(EXIT_FAILURE);
+    }
+    err = bbx_filesystem_dump(bbx_fs_xml, fp);
+    if (err)
+        fprintf(stderr, "Error writing FileSystem XML file to disk\n");
+    fclose(fp);
+    fp = 0;
     
     bbx_filesystem_kill(bbx_fs_xml);
     free(xmlstring);
