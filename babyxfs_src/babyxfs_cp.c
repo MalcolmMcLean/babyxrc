@@ -13,7 +13,7 @@
 #include "bbx_write_source_archive.h"
 
 /*
-    This program is an impementation of the rm command for FileSystem.xml files.
+    This program is an impementation of the cp command for FileSystem.xml files.
  
      We generate an XML file which represents a filesystem. Then we query it for files.
      Unfortunately there is no way to traverse a physical computer's filesystem with
@@ -452,26 +452,17 @@ int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N
             {
                 bbx_write_source_archive_write_to_file_node(node, data, N, "text");
             }
-            fprintf(stderr, "%s\n", node->data);
         }
       
     }
-    /*
-    if (node->child)
-    {
-        fprintf(stderr, "Can't delete a non-empty directory\n");
-        return -1;
-    }
-    xml_node_unlink(root, node);
-    */
-    
+
     return 0;
 }
 
 
 void usage()
 {
-    fprintf(stderr, "babyxfs_cp: cooy a a file to a FileSystem XML archive\n");
+    fprintf(stderr, "babyxfs_cp: copy a a file to a FileSystem XML archive\n");
     fprintf(stderr, "Usage: - babyxfs_cp <filesystem.xml> <pathtotargetfile> <pathtosourcefile>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
