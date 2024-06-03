@@ -431,8 +431,8 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
     if (Nargs != 1)
         usage();
     path = bbx_options_arg(bbx_opt, 0);
-     
-    list = listwild(fs, argv[2], size);
+
+    list = listwild(fs, path, size);
     if (!list)
         return -1;
     
