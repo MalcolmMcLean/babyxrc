@@ -8,9 +8,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <ctype.h>
 
+
 #include "bbx_write_source_archive.h"
+#include "bbx_filesystem.h"
+
 
 /*
     This program is an impementation of the cp command for FileSystem.xml files.
@@ -81,6 +85,51 @@ static char *bbx_strdup(const char *str)
     
     return answer;
 }
+
+/*
+  load a text file into memory
+
+*/
+static char *fslurp(FILE *fp)
+{
+  char *answer;
+  char *temp;
+  int buffsize = 1024;
+  int i = 0;
+  int ch;
+
+  answer = malloc(1024);
+  if(!answer)
+    return 0;
+  while( (ch = fgetc(fp)) != EOF )
+  {
+    if(i == buffsize-2)
+    {
+      if(buffsize > INT_MAX - 100 - buffsize/10)
+      {
+    free(answer);
+        return 0;
+      }
+      buffsize = buffsize + 100 * buffsize/10;
+      temp = realloc(answer, buffsize);
+      if(temp == 0)
+      {
+        free(answer);
+        return 0;
+      }
+      answer = temp;
+    }
+    answer[i++] = (char) ch;
+  }
+  answer[i++] = 0;
+
+  temp = realloc(answer, i);
+  if(temp)
+    return temp;
+  else
+    return answer;
+}
+
 
 static unsigned char *fslurpb(FILE *fp, int *len)
 
@@ -474,7 +523,40 @@ void usage()
     exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv)
+int docommand(BBX_FileSystem *fs, int argc, char **argv)
+{
+    FILE *fp;
+    unsigned char *data;
+    int N;
+    
+    fp = fopen(argv[2], "r");
+    data = fslurpb(fp, &N);
+    if (!data)
+    {
+        fprintf(stderr, "Can't read file\n");
+        exit(EXIT_FAILURE);
+    }
+    fclose(fp);
+    fp = 0;
+    
+    fp = bbx_filesystem_fopen(fs, argv[1], "w");
+    if (fp)
+    {
+        fwrite(data, 1, N, fp);
+        bbx_filesystem_fclose(fs, fp);
+    }
+    
+    fp = bbx_filesystem_fopen(fs, argv[1], "w");
+    if (fp)
+    {
+        char buff[256];
+        while(fgets(buff, 256, fp))
+         fprintf(stderr, "%s\n", buff);
+    }
+    bbx_filesystem_fclose(fs, fp);
+    
+}
+int xmain(int argc, char **argv)
 {
     XMLDOC *doc = 0;
     char error[1024];
@@ -536,3 +618,48 @@ error_exit:
     exit(EXIT_FAILURE);
 }
 
+
+int main(int argc, char **argv)
+{
+    char error[1024];
+    char **list;
+    int i;
+    
+    FILE *fp = 0;
+    char *xmlstring = 0;
+    BBX_FileSystem *bbx_fs_xml = 0;
+    int err;
+    
+    if (argc < 2)
+        usage();
+    
+    fp = fopen(argv[1], "r");
+    if (!fp)
+    {
+        fprintf(stderr, "Can't open xml file\n");
+        exit(EXIT_FAILURE);
+    }
+    xmlstring = fslurp(fp);
+    if (!xmlstring)
+    {
+        fprintf(stderr, "Out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    fclose(fp);
+    fp = 0;
+    
+    bbx_fs_xml = bbx_filesystem();
+    err = bbx_filesystem_set(bbx_fs_xml, xmlstring, BBX_FS_STRING);
+    if (err)
+    {
+        fprintf(stderr, "Can't set up XML filessystem\n");
+        exit(EXIT_FAILURE);
+    }
+   
+    docommand(bbx_fs_xml, argc -1, argv + 1);
+    
+    bbx_filesystem_kill(bbx_fs_xml);
+    free(xmlstring);
+    
+    return 0;
+}

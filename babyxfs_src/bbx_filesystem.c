@@ -31,6 +31,7 @@ static char *bbx_strdup(const char *str)
     return answer;
 }
 static int babyxfs_cp(XMLNODE *root, const char *path, const unsigned char *data, int N);
+static XMLNODE *createnodebypath(XMLNODE *node, const char *path, int pos);
 
 static char **listdirectory(XMLNODE *node);
 
@@ -40,6 +41,8 @@ static unsigned char *fslurpb(FILE *fp, int *len);
 static FILE *xml_fopen(XMLDOC *doc, const char *path, const char *mode);
 static XMLNODE *findnodebypath(XMLNODE *node, const char *path, int pos);
 static XMLNODE *bbx_fs_getfilesystemroot(XMLNODE *root);
+
+static const char *basename(const char *path);
 
 BBX_FileSystem *bbx_filesystem(void)
 {
@@ -148,8 +151,86 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
   else if (bbx_fs->mode == BBX_FS_STRING)
   {
       fp = xml_fopen(bbx_fs->filesystemdoc, path, mode);
-      
-      printf("Here path %s %p\n", path, fp);
+      if (fp == 0 && mode[0] == 'w')
+      {
+          XMLNODE *root;
+          XMLNODE *node;
+          XMLATTRIBUTE *attr = 0;
+          const char *filename;
+          const char *datatype;
+          
+          filename = basename(path);
+          datatype = "text"; //isbinary(data, N) ? "binary" : "text";
+          root = bbx_fs_getfilesystemroot(xml_getroot(bbx_fs->filesystemdoc));
+          
+          node = createnodebypath(root, path, 0);
+          
+          if (!strcmp(xml_gettag(node), "newnode"))
+          {
+              XMLATTRIBUTE *nameattr;
+              XMLATTRIBUTE *typeattr;
+              
+              nameattr = bbx_malloc(sizeof(XMLATTRIBUTE));
+              nameattr->name = bbx_strdup("name");
+              nameattr->value = bbx_strdup(filename);
+              nameattr->next = 0;
+              
+              typeattr = bbx_malloc(sizeof(XMLATTRIBUTE));
+              typeattr->name = bbx_strdup("type");
+              typeattr->value = bbx_strdup(datatype);
+              typeattr->next = 0;
+              
+              nameattr->next = typeattr;
+              
+              node->attributes = nameattr;
+              
+              free (node->tag);
+              node->tag = bbx_strdup("file");
+          }
+          
+          if (!strcmp(xml_gettag(node), "file"))
+          {
+              if (!xml_getattribute(node, "type"))
+              {
+                  XMLATTRIBUTE *typeattr;
+                  
+                  typeattr = bbx_malloc(sizeof(XMLATTRIBUTE));
+                  typeattr->name = bbx_strdup("type");
+                  typeattr->value = bbx_strdup(datatype);
+                  typeattr->next = 0;
+                  
+                  typeattr->next = node->attributes;
+                  node->attributes = typeattr;
+                  
+              }
+              if (strcmp(datatype, xml_getattribute(node, "type")))
+              {
+                  attr = node->attributes;
+                  
+                  while (attr)
+                  {
+                      if (!strcmp(attr->name, "type"))
+                      {
+                          free(attr->value);
+                          attr->value = bbx_strdup(datatype);
+                      }
+                      attr = attr->next;
+                  }
+              }
+              /*
+               if (!strcmp(datatype, "binary"))
+               {
+               bbx_write_source_archive_write_to_file_node(node, data, N, "binary");
+               }
+               else if (!strcmp(datatype, "text"))
+               {
+               bbx_write_source_archive_write_to_file_node(node, data, N, "text");
+               }
+               */
+          }
+          //fp = xml_fopen(<#XMLDOC *doc#>, <#const char *path#>, <#const char *mode#>)
+          fp = xml_fopen(bbx_fs->filesystemdoc, path, mode);
+      }
       
       if (fp)
       {
