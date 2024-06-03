@@ -19,6 +19,7 @@ typedef struct bbx_filesystem
     int Nopenfiles;
     char *filepath;
     XMLDOC *filesystemdoc;
+    XMLNODE *fs_root;
 } BBX_FileSystem;
 
 #define bbx_malloc malloc
@@ -46,6 +47,14 @@ static XMLNODE *bbx_fs_getfilesystemroot(XMLNODE *root);
 
 static const char *basename(const char *path);
 
+/*
+   BBX_FileSystem constructor
+ 
+   Note we construct as an empty object, we don't initialise with an XML file.
+   
+This is because there will often be only one file system in the entire program,
+ and so it must be constructable without data.
+ */
 BBX_FileSystem *bbx_filesystem(void)
 {
     BBX_FileSystem *bbx_fs;
@@ -54,19 +63,25 @@ BBX_FileSystem *bbx_filesystem(void)
     bbx_fs = bbx_malloc(sizeof(BBX_FileSystem));
     
     bbx_fs->mode = 0;
+    
     for (i = 0; i < FOPEN_MAX + 1; i++)
     {
         bbx_fs->openfiles[i] = 0;
         bbx_fs->filemodes[i] = 0;
         bbx_fs->paths[i] = 0;
     }
+    
     bbx_fs->Nopenfiles = 0;
     bbx_fs->filepath = 0;;
-    XMLDOC *filesystemdoc = 0;
+    bbx_fs->filesystemdoc = 0;
+    bbx_fs->fs_root = 0;
     
     return bbx_fs;
 }
 
+/*
+   the BBX_FileSystem destructor
+ */
 void bbx_filesystem_kill(BBX_FileSystem *bbx_fs)
 {
     if (bbx_fs)
@@ -80,7 +95,19 @@ void bbx_filesystem_kill(BBX_FileSystem *bbx_fs)
     }
 }
 
-
+/*
+   set the file system to use either a fileSystem XML file or a directory on
+     the host machine as a target.
+   mode is either
+      BBX_FS_STDIO - use C stdio functions
+      or BBX_FS_STRING - use xml, and keep the entire file system in memory.
+ 
+   if mode is BBX_FS_STDIO then pathorxml is the path to the source directory
+     e.g. /users/malcolm/Documents/mydata
+ 
+    if mode is BBX_FS_STRING then pathorxml is the FileSystem XML itself.
+ 
+ */
 int bbx_filesystem_set(BBX_FileSystem *bbx_fs, const char *pathorxml, int mode)
 {
   char error[1024];
@@ -105,6 +132,7 @@ int bbx_filesystem_set(BBX_FileSystem *bbx_fs, const char *pathorxml, int mode)
           fprintf(stderr, "%s\n", error);
           return -1;
       }
+      bbx_fs->fs_root =  bbx_fs_getfilesystemroot(xml_getroot(bbx_fs->filesystemdoc));
       bbx_fs->mode = mode;
   }
   else
@@ -219,18 +247,8 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
                       attr = attr->next;
                   }
               }
-              /*
-               if (!strcmp(datatype, "binary"))
-               {
-               bbx_write_source_archive_write_to_file_node(node, data, N, "binary");
-               }
-               else if (!strcmp(datatype, "text"))
-               {
-               bbx_write_source_archive_write_to_file_node(node, data, N, "text");
-               }
-               */
+          
           }
-          //fp = xml_fopen(<#XMLDOC *doc#>, <#const char *path#>, <#const char *mode#>)
           fp = xml_fopen(bbx_fs->filesystemdoc, path, mode);
       }
       
@@ -278,11 +296,6 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp)
                     
                     fseek(fp, 0, SEEK_SET);
                     data = fslurpb(fp, &N);
-                    
-                    //node = findnodebypath(root, bbx_fs->paths[i], 0);
-                    //if (nide)
-                    //datatype = xml_getattribute(node, "type");
-                    //bbx_write_source_archive_write_to_file_node(node, data, N, datatype);
                     
                     babyxfs_cp(root, bbx_fs->paths[i], data, N);
                     
