@@ -12,6 +12,7 @@
 #include <ctype.h>
 
 #include "bbx_filesystem.h"
+#include "bbx_fs_shell.h"
 
 
 /*
@@ -136,8 +137,8 @@ out_of_memory:
 
 void usage()
 {
-    fprintf(stderr, "babyxfs_rm: remove a file from a FileSystem XML archive\n");
-    fprintf(stderr, "Usage: - babyxfs_rm <filesystem.xml> <pathtofile>\n");
+    fprintf(stderr, "babyxfs_shell: run a shell on a FileSystem XML archive\n");
+    fprintf(stderr, "Usage: - babyxfs_shell <filesystem.xml>\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
     fprintf(stderr, "\n");
@@ -150,13 +151,26 @@ void usage()
 
 int docommand(BBX_FileSystem *fs, int argc, char **argv)
 {
+    BBX_FS_SHELL *shell;
+    char line[1204];
     int err;
     
-    printf("babyxfs_shell Hello\n");
+    printf("Welcome to the babyxfs_shell \n");
+    printf("\n");
+    printf("type help for help\n");
+    printf("type quit to exit the shell\n");
+    printf("\n");
    
-   // err = bbx_filesystem_unlink(fs, argv[1]);
-   // if (err)
-     //   fprintf(stderr, "erorc deleting file\n");
+    shell = bbx_fs_shell(fs, stdout, stderr);
+   
+    while (fgets(line, 1024, stdin))
+    {
+        err = bbx_fs_shell_inputline(shell, line);
+        if (err)
+            break;
+    }
+    
+    bbx_fs_shell_kill(shell);
     
     return err;
     
