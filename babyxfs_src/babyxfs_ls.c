@@ -368,7 +368,6 @@ char **listwild(BBX_FileSystem *fs, const char *glob, int dosize)
                     continue;
                 strcat(fullpath, "/");
                 strcat(fullpath, answer[i]);
-                fprintf(stderr, "%s\n", fullpath);
                 fp = bbx_filesystem_fopen(fs, fullpath, "r");
                 if (fp)
                 {

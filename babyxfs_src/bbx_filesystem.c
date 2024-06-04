@@ -20,6 +20,8 @@ typedef struct bbx_filesystem
     char *filepath;
     XMLDOC *filesystemdoc;
     XMLNODE *fs_root;
+    char **(*readdirectory_host)(const char *path, void *ptr);
+    void *readdirectory_host_ptr;
 } BBX_FileSystem;
 
 #define bbx_malloc malloc
@@ -73,6 +75,8 @@ BBX_FileSystem *bbx_filesystem(void)
     
     bbx_fs->Nopenfiles = 0;
     bbx_fs->filepath = 0;;
+    bbx_fs->readdirectory_host = 0;
+    bbx_fs->readdirectory_host_ptr = 0;
     bbx_fs->filesystemdoc = 0;
     bbx_fs->fs_root = 0;
     
@@ -390,6 +394,11 @@ const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
     return answer;
 }
 
+int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs, char **(*fptr)(const char *path, void *ptr), void *ptr)
+{
+    bbx_fs->readdirectory_host = fptr;
+    bbx_fs->readdirectory_host_ptr = ptr;
+}
 
 /*
     Dump the BBX_FileSystem to a stream as FileSystem XML
@@ -609,7 +618,11 @@ void quine(void)
 char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path)
 {
     if (bbx_fs->mode == BBX_FS_STDIO)
+    {
+        if (bbx_fs->readdirectory_host)
+            return (*bbx_fs->readdirectory_host)(path, bbx_fs->readdirectory_host_ptr);
         return 0;
+    }
     if (bbx_fs->mode == BBX_FS_STRING)
     {
         XMLNODE *node = 0;

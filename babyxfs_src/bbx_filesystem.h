@@ -21,7 +21,7 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
 unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N);
 int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path);
 const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
-
+int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs, char **(*fptr)(const char *path, void *ptr), void *ptr);
 int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp);
 char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
 
