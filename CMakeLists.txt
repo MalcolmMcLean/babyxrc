@@ -47,6 +47,16 @@ target_link_libraries( "babyxrc" ${libs} )
 
 # Baby X file system programs
 
+file( GLOB BBX_SHELL babyxfs_src/shell/*.c )
+file( GLOB BBX_SHELLH babyxfs_src/shell/*.h )
+set( bbx_shell_includes "")
+set( bbx_shell_sources "")
+list(APPEND bbx_shell_includes "babyxfs_src")
+list(APPEND bbx_shell_sources ${BBX_SHELL} )
+list(APPEND bbx_shell_sources ${BBX_SHELLH} )
+
+list(APPEND bbx_shell_includes "babyxfs_src" )
+
 add_executable("testbabyxfilesystem"
     "babyxfs_src/bbx_write_source_archive.c"
     "babyxfs_src/bbx_write_source_archive.h"
@@ -66,7 +76,7 @@ target_link_libraries( "babyxfs_escapexml" ${libs} )
 add_executable("babyxfs_extract"
     "babyxfs_src/xmlparser2.c"
     "babyxfs_src/xmlparser2.h"
-     "babyxfs_src/bbx_filesystem.c"
+    "babyxfs_src/bbx_filesystem.c"
     "babyxfs_src/bbx_filesystem.h"
     "babyxfs_src/bbx_write_source_archive.c"
     "babyxfs_src/bbx_write_source_archive.h"
@@ -105,6 +115,16 @@ add_executable("babyxfs_cp"
     "babyxfs_src/babyxfs_cp.c")
 target_link_libraries( "babyxfs_cp" ${libs} )
 
+add_executable("babyxfs_shell"
+    "babyxfs_src/xmlparser2.c"
+    "babyxfs_src/xmlparser2.h"
+    "babyxfs_src/bbx_write_source_archive.c"
+    "babyxfs_src/bbx_write_source_archive.h"
+    "babyxfs_src/bbx_filesystem.c"
+    "babyxfs_src/bbx_filesystem.h"
+    ${bbx_shell_sources})
+    target_include_directories(babyxfs_shell PRIVATE ${bbx_shell_includes})
+target_link_libraries( "babyxfs_shell" ${libs} )
 
 add_executable("babyxfs_test"
     "babyxfs_src/xmlparser2.c"
