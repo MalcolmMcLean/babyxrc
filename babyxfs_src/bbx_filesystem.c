@@ -390,6 +390,7 @@ const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs)
     return answer;
 }
 
+
 /*
     Dump the BBX_FileSystem to a stream as FileSystem XML
  */
@@ -405,6 +406,206 @@ int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp)
     err = bbx_write_source_archive_root(fp, xml_getroot(bbx_fs->filesystemdoc), 0, "placholder", "..", "catastrope");
     return err;
 }
+
+/*
+  test if a character is escaped in C
+  Params: ch - the character to test
+  Returns: 1 if escaped in C strings, else 0
+*/
+static int c_escaped(int ch)
+{
+  char *escapes = "\a\b\f\n\r\t\v\?\'\"\\";
+
+  if(ch == 0)
+    return 1;
+  return strchr(escapes, ch) ? 1 : 0;
+
+}
+
+/*
+  get the C escape character to represent ch
+  Params: ch - an escaped character
+  Returns: character that stands in for it in C escape sequence,
+    0 if ch is not an escaped character
+*/
+static char c_escapechar(int ch)
+{
+  char *escapes = "\a\b\f\n\r\t\v\?\'\"\\";
+  char *characters = "abfnrtv?\'\"\\";
+  char *ptr;
+
+  if(ch == 0)
+    return '0';
+  ptr = strchr(escapes, ch);
+  if(ptr)
+    return characters[ptr - escapes];
+  else
+    return 0;
+
+}
+
+int c_escape_filter(FILE *fpout, FILE *fpin)
+{
+    int ch;
+    int linelen = 0;
+    
+    while ( (ch = fgetc(fpin)) != EOF)
+    {
+        if (c_escaped(ch))
+        {
+            fputc('\\', fpout);
+            fputc(c_escapechar(ch), fpout);
+            
+            linelen++;
+        }
+        else
+            fputc(ch, fpout);
+        
+        if (linelen >= 100)
+        {
+              fputc('\"', fpout);
+              fputc('\n', fpout);
+              fputc('\"', fpout);
+              linelen = 0;
+        
+        }
+        
+        linelen++;
+    }
+    
+    return 0;
+}
+
+/*
+  get the number of lines bigger than a certain value
+*/
+/*
+static size_t linesbiggerthan(const char *str, size_t maxlen)
+{
+  size_t len = 0;
+  size_t answer = 0;
+
+  while(*str)
+  {
+    if(*str == '\n')
+     len = 0;
+    else
+    {
+      len++;
+      if(len > maxlen)
+      {
+       len = 0;
+       answer++;
+      }
+    }
+     str++;
+   }
+
+  return answer;
+}
+ */
+
+/*
+  convert a string to a C language string;
+  Params:
+    str - the string to convert
+  Returns: C version of string, 0 on out of memory
+  Notes: newlines are represented by breaks in the string.
+*/
+/*
+static char *text_to_cstring(const char *str)
+{
+  size_t len = 0;
+  size_t i;
+  size_t j = 0;
+  size_t linelen = 0;
+  char *answer;
+
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == '\n')
+      len += 5;
+    else if(c_escaped(str[i]))
+      len+=2;
+   else
+     len += 1;
+  }
+  len += linesbiggerthan(str, 100) * 3;
+  len++;
+  len += 2;
+  answer = malloc(len);
+  if(!answer)
+    return 0;
+  answer[j++] = '"';
+  for(i=0;str[i];i++)
+  {
+    if(str[i] == '\n' && str[i+1] != 0)
+    {
+      answer[j++] = '\\';
+      answer[j++] = 'n';
+      answer[j++] = '\"';
+      answer[j++] = '\n';
+      answer[j++] = '\"';
+      linelen = 0;
+    }
+    else if(c_escaped(str[i]))
+    {
+      answer[j++] = '\\';
+      answer[j++] = c_escapechar(str[i]);
+      linelen++;
+    }
+    else
+    {
+      answer[j++] = str[i];
+      linelen++;
+    }
+    if(linelen == 100 && str[i+1] != '\n')
+    {
+      answer[j++] = '\"';
+      answer[j++] = '\n';
+      answer[j++] = '\"';
+      linelen = 0;
+    }
+  }
+  answer[j++] = '\"';
+  answer[j++] = 0;
+
+  return answer;
+
+}
+*/
+
+int bbx_filesystem_quine(BBX_FileSystem *bbx_fs, const char *path_to_source, FILE *fp)
+{
+    FILE *src_xml_fp;;
+    FILE *source_fp;
+    
+    src_xml_fp = tmpfile();
+    bbx_filesystem_dump(bbx_fs, src_xml_fp);
+    fseek(src_xml_fp, 0, SEEK_SET);
+    source_fp = bbx_filesystem_fopen(bbx_fs, path_to_source, "w");
+    fprintf(source_fp, "char source[] = ");
+    c_escape_filter(source_fp, src_xml_fp);
+    fprintf(source_fp, "\';\n");
+    bbx_filesystem_fclose(bbx_fs, source_fp);
+    fclose(src_xml_fp);
+    
+    bbx_filesystem_dump(bbx_fs, fp);
+}
+
+/*
+extern char source[];
+void quine(void)
+{
+    BBX_FileSystem *bbx_fs;
+    
+    bbx_fs = bbx_filesystem();
+    bbx_filesystem_set(bbx_fs, source, BBX_FS_STRING);
+    bbx_filesystem_quine(bbx_fs, "/src/quine/source.c", stdout);
+    bbx_filesystem_kill(bbx_fs);
+}
+ */
+
 char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path)
 {
     if (bbx_fs->mode == BBX_FS_STDIO)
