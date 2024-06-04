@@ -30,6 +30,8 @@ static int cp(BBX_FS_SHELL *shell, int argc, char **argv);
 static int rm(BBX_FS_SHELL *shell, int argc, char **argv);;
 static int cat(BBX_FS_SHELL *shell, int argc, char **argv);
 static int bbx_fs_system(BBX_FS_SHELL *shell, int argc, char **argv);
+static int import(BBX_FS_SHELL *shell, int argc, char **argv);
+static int export(BBX_FS_SHELL *shell, int argc, char **argv);
 static int babybasic(BBX_FS_SHELL *shell, int argc, char **argv);
 
 static char **getargs(char *str);
@@ -203,6 +205,14 @@ static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, c
    {
        bbx_fs_system(shell, argc, argv);
    }
+   else if (!strcmp(command, "import"))
+   {
+       import(shell, argc, argv);
+   }
+   else if (!strcmp(command, "export"))
+   {
+       export(shell, argc, argv);
+   }
    else if (!strcmp(command, "bb"))
    {
        babybasic(shell, argc, argv);
@@ -288,7 +298,9 @@ static int help(BBX_FS_SHELL *shell, int argc, char **argv)
     fprintf(shell->stdout, "\tcp - copy a file\n");
     fprintf(shell->stdout, "\trm - delete file\n");
     fprintf(shell->stdout, "\tcat - print out file contents\n");
-    fprintf(shell->stdout, "\tsystem - host operating sysyem command\n");
+    fprintf(shell->stdout, "\timport - read file from host\n");
+    fprintf(shell->stdout, "\texport - write file to host\n");
+    fprintf(shell->stdout, "\tsystem - host operating system command\n");
     fprintf(shell->stdout, "\tbb - Baby Basic\n");
     fprintf(shell->stdout, "\n");
     fprintf(shell->stdout, "\tquit - exit the shell\n");
@@ -392,6 +404,73 @@ static int bbx_fs_system(BBX_FS_SHELL *shell, int argc, char **argv)
     
     return 0;
 }
+
+static int import(BBX_FS_SHELL *shell, int argc, char **argv)
+{
+    char path[1024];
+    char *target;
+    FILE *fpin;
+    FILE *fpout;
+    int ch;
+    int i;
+    
+    if (argc != 3)
+        return 0;
+    
+    fpin = fopen(argv[1], "r");
+    if (!fpin)
+    {
+        fprintf(shell->stderr, "Can't open %s on host\n", argv[1]);
+        return 0;
+    }
+    
+    target = argv[2];
+    snprintf(path, 1024, "%s/%s", shell->path, target);
+    fpout = bbx_filesystem_fopen(shell->bbx_fs, path, "w");
+    if (fpout)
+    {
+        while ( (ch = fgetc(fpin)) != EOF)
+            if (fputc(ch, fpout) == EOF)
+                break;
+    }
+    bbx_filesystem_fclose(shell->bbx_fs, fpout);
+    fclose(fpin);
+    
+    return 0;
+}
+
+static int export(BBX_FS_SHELL *shell, int argc, char **argv)
+{
+    char path[1024];
+    char *source;
+    unsigned char *data;
+    int N;
+    FILE *fpout;
+    int i;
+    
+    if (argc != 3)
+        return 0;
+    
+    source = argv[1];
+    snprintf(path, 1024, "%s/%s", shell->path, source);
+    data = bbx_filesystem_slurpb(shell->bbx_fs, path, "rb", &N);
+    if (!data)
+        return 0;
+    
+    fpout = fopen(argv[2], "w");
+    if (fpout)
+    {
+        for (i = 0; i < N; i++)
+            fputc(data[i], fpout);
+        fclose(fpout);
+    }
+    else
+        fprintf(shell->stderr, "Can't open %s on host\n", argv[2]);
+    free(data);
+    
+    return 0;
+}
+
 
 static int babybasic(BBX_FS_SHELL *shell, int argc, char **argv)
 {
