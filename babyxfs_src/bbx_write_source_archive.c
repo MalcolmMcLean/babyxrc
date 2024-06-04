@@ -13,6 +13,17 @@
 #include "bbx_write_source_archive.h"
 #include "xmlparser2.h"
 
+static char *mystrdup(const char *str)
+{
+    char *answer;
+    
+    answer = malloc(strlen(str) +1);
+    if (answer)
+        strcpy(answer, str);
+    
+    return answer;
+}
+
 /*
    Does a string consist entirely of white space? (also treat nulls as white)
  */
@@ -177,6 +188,8 @@ static unsigned char *uudecodestr(const char *uucode, int *N)
     
     Nmaxout = ((int)strlen(uucode)/60 +1) * 45;
     out = malloc(Nmaxout);
+    if (!out)
+        return 0;
     
     while( uucode[ix] )
     {
@@ -243,6 +256,7 @@ static unsigned char *uudecodestr(const char *uucode, int *N)
         }
     }
     
+    out[jx] = 0;
     if (N)
         *N = jx;
 
@@ -577,6 +591,43 @@ out_of_memory:
     return -1;
 }
 
+static int getleadingandtrailing(char *data, int *leadret, int *trailret)
+{
+    int leading = 0;
+    int trailing = 0;
+    int len;
+    int i;
+    
+    leading = 0;
+    len = (int) strlen(data);
+    for (i = 0; data[i]; i++)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (data[i] == '\n')
+        leading = i + 1;
+    
+    trailing = 0;
+    i = len - 1;
+    for (i = len - 1; i > 0; i--)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (i > 0 && data[i] == '\n')
+        trailing = len - i;
+    
+    if (trailing + leading >= len )
+    {
+        leading = len;
+        trailing = 0;
+    }
+    
+    if (leadret)
+        *leadret = leading;
+    if (trailret)
+        *trailret = trailing;
+    
+    return 0;
+}
+
 
 
 static FILE *file_fopen(XMLNODE *node)
@@ -770,6 +821,110 @@ out_of_memory:
     free(xmlfilename);
     return -1;
 }
+
+char *bbx_writesource_archive_node_to_text(XMLNODE *node)
+{
+    const char *type;
+    char *answer = 0;
+    unsigned char *bdata;
+    int leading;
+    int trailing;
+    int  len;
+    int N;
+    
+    if (strcmp(xml_gettag(node), "file"))
+        return 0;
+    type = xml_getattribute(node, "type");
+    if (!type)
+        return 0;
+    if (!strcmp(type, "text"))
+    {
+        if (!node->data)
+            answer = mystrdup("");
+        else
+        {
+            len = strlen(node->data);
+            getleadingandtrailing(node->data, &leading, &trailing);
+            answer = malloc(len+1);
+            if (!answer)
+                return 0;
+            memcpy(answer, node->data + leading, len - leading - trailing);
+            answer[len - leading - trailing] = 0;
+        }
+    }
+    else if (!strcmp(type, "binary"))
+    {
+        bdata = uudecodestr(node->data, &N);
+        answer = (char *) bdata;
+    }
+    
+    return answer;
+}
+
+unsigned char *bbx_writesource_archive_node_to_binary(XMLNODE *node, int *N)
+{
+    const char *type;
+    unsigned char *answer = 0;
+    unsigned char *bdata;
+    int leading;
+    int trailing;
+    int len = 0;
+    
+    if (strcmp(xml_gettag(node), "file"))
+        return 0;
+    type = xml_getattribute(node, "type");
+    if (!type)
+        return 0;
+    
+    if (!strcmp(type, "text"))
+    {
+        answer =  (unsigned char *)bbx_writesource_archive_node_to_text(node);
+        len = strlen((char *)answer);
+    }
+    else if (!strcmp(type, "binary"))
+    {
+        answer = uudecodestr(node->data, &len);
+    }
+    if (N)
+        *N = len;
+    
+    return answer;
+}
+
+int bbx_writesource_archive_node_to_stream(XMLNODE *node, FILE *fp)
+{
+    const char *type = 0;
+    char *text = 0;
+    unsigned char *bdata = 0;
+    int i;
+    int leading;
+    int trailing;
+    int len = 0;
+    int err = 0;
+    
+    if (strcmp(xml_gettag(node), "file"))
+        return 0;
+    type = xml_getattribute(node, "type");
+    if (!type)
+        return 0;
+    
+    if (!strcmp(type, "text"))
+    {
+        text = bbx_writesource_archive_node_to_text(node);
+        fputs(text, fp);
+        free(text);
+    }
+    else if (!strcmp(type, "binary"))
+    {
+        bdata = uudecodestr(node->data, &len);
+        for (i = 0; i < len; i++)
+            fputc(bdata[i], fp);
+        free (bdata);
+    }
+    
+    return err;
+}
+
 
 
 static int bbx_write_source_archive_r(FILE *fp, XMLNODE *node, int depth, const char *source_xml, const char *source_xml_file, const char *source_xml_name)

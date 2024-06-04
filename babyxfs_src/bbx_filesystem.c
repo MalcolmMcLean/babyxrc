@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include <ctype.h>
 #include <assert.h>
 
@@ -42,6 +43,7 @@ static char **listdirectory(XMLNODE *node);
 
 static const char *getfilesystemname_r(XMLNODE *node);
 static char *makepath(const char *base, const char *query);
+static char *fslurp(FILE *fp);
 static unsigned char *fslurpb(FILE *fp, int *len);
 static FILE *xml_fopen(XMLDOC *doc, const char *path, const char *mode);
 static XMLNODE *findnodebypath(XMLNODE *node, const char *path, int pos);
@@ -334,7 +336,35 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp)
    return -1;
 }
 
-unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N)
+char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode)
+{
+    FILE *fp;
+    char *answer = 0;
+    int dummy = 0;
+    
+    if (bbx_fs->mode == BBX_FS_STRING)
+    {
+        XMLNODE *node;
+        
+        node = findnodebypath(bbx_fs->fs_root, path, 0);
+        if (node)
+            answer = bbx_writesource_archive_node_to_text(node);
+    }
+    
+    if (!answer)
+    {
+        fp = bbx_filesystem_fopen(bbx_fs, path, mode);
+        if (!fp)
+            return 0;
+        answer = fslurp(fp);
+        bbx_filesystem_fclose(bbx_fs, fp);
+    }
+    
+    
+    return answer;
+}
+
+unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N)
 {
     FILE *fp;
     unsigned char *answer = 0;
@@ -345,13 +375,25 @@ unsigned char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, co
     else
         N = &dummy;
     
-    fp = bbx_filesystem_fopen(bbx_fs, path, mode);
-    if (!fp)
-        return 0;
-    answer = fslurpb(fp, N);
-    if (answer && *N >= 0)
-        answer[*N] = 0;
-    bbx_filesystem_fclose(bbx_fs, fp);
+    if (bbx_fs->mode == BBX_FS_STRING)
+    {
+        XMLNODE *node;
+        
+        node = findnodebypath(bbx_fs->fs_root, path, 0);
+        if (node)
+            answer = bbx_writesource_archive_node_to_binary(node, N);
+    }
+    
+    if (!answer)
+    {
+        fp = bbx_filesystem_fopen(bbx_fs, path, mode);
+        if (!fp)
+            return 0;
+        answer = fslurpb(fp, N);
+        if (answer && *N >= 0)
+            answer[*N] = 0;
+        bbx_filesystem_fclose(bbx_fs, fp);
+    }
     
     return answer;
 }
@@ -778,6 +820,50 @@ static char *makepath(const char *base, const char *query)
     }
     strcpy(answer + i, query);
     
+    return answer;
+}
+
+/*
+  load a text file into memory
+
+*/
+static char *fslurp(FILE *fp)
+{
+  char *answer;
+  char *temp;
+  int buffsize = 1024;
+  int i = 0;
+  int ch;
+
+  answer = malloc(1024);
+  if(!answer)
+    return 0;
+  while( (ch = fgetc(fp)) != EOF )
+  {
+    if(i == buffsize-2)
+    {
+      if(buffsize > INT_MAX - 100 - buffsize/10)
+      {
+    free(answer);
+        return 0;
+      }
+      buffsize = buffsize + 100 * buffsize/10;
+      temp = realloc(answer, buffsize);
+      if(temp == 0)
+      {
+        free(answer);
+        return 0;
+      }
+      answer = temp;
+    }
+    answer[i++] = (char) ch;
+  }
+  answer[i++] = 0;
+
+  temp = realloc(answer, i);
+  if(temp)
+    return temp;
+  else
     return answer;
 }
 

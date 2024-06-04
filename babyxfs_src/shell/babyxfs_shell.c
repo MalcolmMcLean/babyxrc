@@ -161,15 +161,8 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
     printf("type quit to exit the shell\n");
     printf("\n");
    
-    shell = bbx_fs_shell(fs, stdout, stderr);
-   
-    while (fgets(line, 1024, stdin))
-    {
-        err = bbx_fs_shell_inputline(shell, line);
-        if (err)
-            break;
-    }
-    
+    shell = bbx_fs_shell(fs);
+    err = bbx_fs_shell_run(shell, stdout, stdin, stderr);
     bbx_fs_shell_kill(shell);
     
     return err;

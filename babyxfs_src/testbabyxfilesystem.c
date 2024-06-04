@@ -151,8 +151,8 @@ int main(int argc, char **argv)
     }
     else
     {
-        data_xml = bbx_filesystem_slurp(bbx_fs_xml, argv[3], "r", &N_xml);
-        data_stdio = bbx_filesystem_slurp(bbx_fs_stdio, argv[3], "r", &N_stdio);
+        data_xml = bbx_filesystem_slurpb(bbx_fs_xml, argv[3], "r", &N_xml);
+        data_stdio = bbx_filesystem_slurpb(bbx_fs_stdio, argv[3], "r", &N_stdio);
         if (!data_stdio)
             fprintf(stderr, "Can't slurp target file on stdio system\n");
         if (!data_xml)
