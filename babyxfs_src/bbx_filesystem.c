@@ -43,6 +43,8 @@ static char **listdirectory(XMLNODE *node);
 
 static const char *getfilesystemname_r(XMLNODE *node);
 static char *makepath(const char *base, const char *query);
+
+static int xml_node_unlink(XMLNODE *root, XMLNODE *node);
 static char *fslurp(FILE *fp);
 static unsigned char *fslurpb(FILE *fp, int *len);
 static FILE *xml_fopen(XMLDOC *doc, const char *path, const char *mode);
@@ -200,6 +202,8 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
           root = bbx_fs_getfilesystemroot(xml_getroot(bbx_fs->filesystemdoc));
           
           node = createnodebypath(root, path, 0);
+          if (!node)
+              return 0;
           
           if (!strcmp(xml_gettag(node), "newnode"))
           {
@@ -400,7 +404,6 @@ unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs, const char *path, c
 
 int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path)
 {
-    XMLNODE *root;
     int err;
     
     if (bbx_fs->mode != BBX_FS_STRING)
@@ -409,8 +412,7 @@ int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path)
         return -1;
     }
 
-    root = bbx_fs_getfilesystemroot(xml_getroot(bbx_fs->filesystemdoc));
-    err = babyxfs_rm(root, path);
+    err = babyxfs_rm(bbx_fs->fs_root, path);
     
     return err;
 }
@@ -527,104 +529,6 @@ int c_escape_filter(FILE *fpout, FILE *fpin)
     return 0;
 }
 
-/*
-  get the number of lines bigger than a certain value
-*/
-/*
-static size_t linesbiggerthan(const char *str, size_t maxlen)
-{
-  size_t len = 0;
-  size_t answer = 0;
-
-  while(*str)
-  {
-    if(*str == '\n')
-     len = 0;
-    else
-    {
-      len++;
-      if(len > maxlen)
-      {
-       len = 0;
-       answer++;
-      }
-    }
-     str++;
-   }
-
-  return answer;
-}
- */
-
-/*
-  convert a string to a C language string;
-  Params:
-    str - the string to convert
-  Returns: C version of string, 0 on out of memory
-  Notes: newlines are represented by breaks in the string.
-*/
-/*
-static char *text_to_cstring(const char *str)
-{
-  size_t len = 0;
-  size_t i;
-  size_t j = 0;
-  size_t linelen = 0;
-  char *answer;
-
-  for(i=0;str[i];i++)
-  {
-    if(str[i] == '\n')
-      len += 5;
-    else if(c_escaped(str[i]))
-      len+=2;
-   else
-     len += 1;
-  }
-  len += linesbiggerthan(str, 100) * 3;
-  len++;
-  len += 2;
-  answer = malloc(len);
-  if(!answer)
-    return 0;
-  answer[j++] = '"';
-  for(i=0;str[i];i++)
-  {
-    if(str[i] == '\n' && str[i+1] != 0)
-    {
-      answer[j++] = '\\';
-      answer[j++] = 'n';
-      answer[j++] = '\"';
-      answer[j++] = '\n';
-      answer[j++] = '\"';
-      linelen = 0;
-    }
-    else if(c_escaped(str[i]))
-    {
-      answer[j++] = '\\';
-      answer[j++] = c_escapechar(str[i]);
-      linelen++;
-    }
-    else
-    {
-      answer[j++] = str[i];
-      linelen++;
-    }
-    if(linelen == 100 && str[i+1] != '\n')
-    {
-      answer[j++] = '\"';
-      answer[j++] = '\n';
-      answer[j++] = '\"';
-      linelen = 0;
-    }
-  }
-  answer[j++] = '\"';
-  answer[j++] = 0;
-
-  return answer;
-
-}
-*/
 
 int bbx_filesystem_quine(BBX_FileSystem *bbx_fs, const char *path_to_source, FILE *fp)
 {
@@ -656,6 +560,90 @@ void quine(void)
     bbx_filesystem_kill(bbx_fs);
 }
  */
+
+int bbx_filesystem_mkdir(BBX_FileSystem *bbx_fs, const char *path)
+{
+    if (bbx_fs->mode == BBX_FS_STDIO)
+    {
+        return -1;
+    }
+    if (bbx_fs->mode == BBX_FS_STRING)
+    {
+        XMLNODE *node;
+        const char *filename;
+        
+        filename = basename(path);
+    
+        node = createnodebypath(bbx_fs->fs_root, path, 0);
+        if (!node)
+            return -1;
+        
+        if (!strcmp(xml_gettag(node), "newnode"))
+        {
+            XMLATTRIBUTE *nameattr;
+            
+            nameattr = bbx_malloc(sizeof(XMLATTRIBUTE));
+            nameattr->name = bbx_strdup("name");
+            nameattr->value = bbx_strdup(filename);
+            nameattr->next = 0;
+            
+            node->attributes = nameattr;
+            
+            free (node->tag);
+            node->tag = bbx_strdup("directory");
+        }
+        
+        if (strcmp(xml_gettag(node), "directory"))
+        {
+            fprintf(stderr, "the file %s already exists\n", path);
+            return -1;
+        
+        }
+        
+        return 0;
+    }
+    
+    return -1;
+}
+
+int bbx_filesystem_rmdir(BBX_FileSystem *bbx_fs, const char *path)
+{
+    if (bbx_fs->mode == BBX_FS_STDIO)
+    {
+        return -1;
+    }
+    if (bbx_fs->mode == BBX_FS_STRING)
+    {
+        XMLNODE *node;
+        int err = 0;
+        
+        node = findnodebypath(bbx_fs->fs_root, path, 0);
+        if (!node)
+        {
+            fprintf(stderr, "Can't find directory\n");
+            return -1;
+        }
+        if (node->child)
+        {
+            fprintf(stderr, "Can't delete a non-empty directory\n");
+            return -1;
+        }
+        if (strcmp(xml_gettag(node), "directory"))
+        {
+            fprintf(stderr, "%s is not a directory\n", path);
+            return -1;
+        }
+        err = xml_node_unlink(bbx_fs->fs_root, node);
+        if (err)
+        {
+            fprintf(stderr, "BBX_FileSystem internal error\n");
+            return -1;
+        }
+        bbx_fs_xml_killnode_r(node);
+
+    }
+}
+
 
 char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path)
 {

@@ -1115,6 +1115,9 @@ int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned ch
     const char *type;
     char *xmltext = 0;
     int len;
+    int leading;
+    int trailing;
+    int i;
     
     if (strcmp(xml_gettag(node), "file"))
         return -1;
@@ -1127,9 +1130,9 @@ int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned ch
     fwrite(data, 1, N, fpin);
     fseek(fpin, 0, SEEK_SET);
     
-    /*
+    
     leading = 0;
-    len = node->data ? (int) strlen(node->data) + 0;
+    len = node->data ? (int) strlen(node->data) : 0;
     for (i = 0; data[i]; i++)
         if (!isspace((unsigned char) data[i]) || data[i] == '\n')
             break;
@@ -1146,7 +1149,7 @@ int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned ch
     
     if (trailing + leading >= len )
         ;
-     */
+    
     
     fprintf(fp, "\n");
     if (!strcmp(type, "binary"))
@@ -1155,7 +1158,9 @@ int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned ch
     }
     else if (!strcmp(type, "text"))
     {
-        xml_escapefilter(fp, fpin);
+        getleadingandtrailing(node->data, &leading, &trailing);
+        for (i = leading; i < len - leading - trailing; i++)
+            fputc(data[i], fp);
     }
     fprintf(fp, "\n\t");
     

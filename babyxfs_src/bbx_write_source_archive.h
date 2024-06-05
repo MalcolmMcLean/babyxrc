@@ -10,11 +10,12 @@
 
 #include "xmlparser2.h"
 
-char *bbx_writesource_archive_node_to_text(XMLNODE *node);
+void bbx_fs_xml_killnode_r(XMLNODE *node);
 
-int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned char *data, int N, const char *datatype);
+char *bbx_writesource_archive_node_to_text(XMLNODE *node);
 unsigned char *bbx_writesource_archive_node_to_binary(XMLNODE *node, int *N);
 
+int bbx_write_source_archive_write_to_file_node(XMLNODE *node, const unsigned char *data, int N, const char *datatype);
 int bbx_write_source_archive_root(FILE *fp, XMLNODE *node, int depth, const char *source_xml, const char *source_xml_file, const char *source_xml_name);
 int bbx_write_source_archive(FILE *fp, const char *source_xml, const char *source_xml_file, const char *source_xml_name);
 

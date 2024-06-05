@@ -25,10 +25,14 @@ typedef struct bbx_fs_shell
 static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line);
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
 
-static int help(BBX_FS_SHELL *shell, int argc, char **argv);;
+static int help(BBX_FS_SHELL *shell, int argc, char **argv);
+static int rm(BBX_FS_SHELL *shell, int argc, char **argv);
 static int cp(BBX_FS_SHELL *shell, int argc, char **argv);
-static int rm(BBX_FS_SHELL *shell, int argc, char **argv);;
+static int mv(BBX_FS_SHELL *shell, int argc, char **argv);
 static int cat(BBX_FS_SHELL *shell, int argc, char **argv);
+static int mkdir(BBX_FS_SHELL *shell, int argc, char **argv);
+static int rmdir(BBX_FS_SHELL *shell, int argc, char **argv);
+
 static int bbx_fs_system(BBX_FS_SHELL *shell, int argc, char **argv);
 static int import(BBX_FS_SHELL *shell, int argc, char **argv);
 static int export(BBX_FS_SHELL *shell, int argc, char **argv);
@@ -197,9 +201,21 @@ static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, c
    {
        cp(shell, argc, argv);
    }
+   else if (!strcmp(command, "mv"))
+   {
+       mv(shell, argc, argv);
+   }
    else if (!strcmp(command, "cat"))
    {
        cat(shell, argc, argv);
+   }
+   else if (!strcmp(command, "mkdir"))
+   {
+       mkdir(shell, argc, argv);
+   }
+   else if (!strcmp(command, "rmdir"))
+   {
+       rmdir(shell, argc, argv);
    }
    else if (!strcmp(command, "system"))
    {
@@ -212,6 +228,27 @@ static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, c
    else if (!strcmp(command, "export"))
    {
        export(shell, argc, argv);
+   }
+   else if (!strcmp(command, "edit"))
+   {
+       char *exportargs[4];
+       char *importargs[4];
+       char buff[1024];
+       if (argc == 2)
+       {
+           exportargs[0] = "export";
+           exportargs[1] = argv[1];
+           exportargs[2] = argv[1];
+           exportargs[3] = 0;
+           export(shell, 3, exportargs);
+           snprintf(buff, 1024, "nano %s\n", argv[1]);
+           system(buff);
+           importargs[0] = "import";
+           importargs[1] = argv[1];
+           importargs[2] = argv[1];
+           importargs[3] = 0;
+           import(shell, 3, importargs);
+       }
    }
    else if (!strcmp(command, "bb"))
    {
@@ -360,6 +397,43 @@ static int rm(BBX_FS_SHELL *shell, int argc, char **argv)
     return  0;
 }
 
+static int mv(BBX_FS_SHELL *shell, int argc, char **argv)
+{
+    char *target;
+    char *source;
+    char path[1024];
+    FILE *fp = 0;
+    unsigned char *data;
+    int len;
+    
+    if (argc != 3)
+        return 0;
+    
+    target = argv[2];
+    source = argv[1];
+    
+    snprintf(path, 1024, "%s/%s", shell->path, source);
+    data = bbx_filesystem_slurpb(shell->bbx_fs, path, "r", &len);
+    if (!data)
+        return 0;
+    
+    snprintf(path, 1024, "%s/%s", shell->path, target);
+    fp = bbx_filesystem_fopen(shell->bbx_fs, path, "w");
+    if (!fp)
+    {
+        free(data);
+        return 0;
+    }
+    fwrite(data, 1, len, fp);
+    bbx_filesystem_fclose(shell->bbx_fs, fp);
+    
+    snprintf(path, 1024, "%s/%s", shell->path, source);
+    bbx_filesystem_unlink(shell->bbx_fs, path);
+    
+    free (data);
+    
+    return  0;
+}
 
 static int cat(BBX_FS_SHELL *shell, int argc, char **argv)
 {
@@ -383,6 +457,36 @@ static int cat(BBX_FS_SHELL *shell, int argc, char **argv)
     }
     
     free(data);
+    
+    return  0;
+}
+
+static int mkdir(BBX_FS_SHELL *shell, int argc, char **argv)
+{
+    char *target;
+    char path[1024];
+
+    if (argc != 2)
+        return 0;
+    target = argv[1];
+    
+    snprintf(path, 1024, "%s/%s", shell->path, target);
+    bbx_filesystem_mkdir(shell->bbx_fs, path);
+    
+    return  0;
+}
+
+static int rmdir(BBX_FS_SHELL *shell, int argc, char **argv)
+{
+    char *target;
+    char path[1024];
+
+    if (argc != 2)
+        return 0;
+    target = argv[1];
+    
+    snprintf(path, 1024, "%s/%s", shell->path, target);
+    bbx_filesystem_rmdir(shell->bbx_fs, path);
     
     return  0;
 }
