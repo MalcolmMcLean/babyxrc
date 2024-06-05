@@ -822,6 +822,133 @@ out_of_memory:
     return -1;
 }
 
+XMLATTRIBUTE *bbx_fs_xml_xmlattribute(const char *name, const char *value)
+{
+    XMLATTRIBUTE *attr;
+    
+    attr = malloc(sizeof(XMLATTRIBUTE));
+    attr->name = mystrdup(name);
+    attr->value = mystrdup(value);
+    attr->next = 0;
+    
+    return attr;
+}
+
+void bbx_fs_xml_killattributes_r(XMLATTRIBUTE *attr)
+{
+    if (attr)
+    {
+        bbx_fs_xml_killattributes_r(attr->next);
+        free(attr->name);
+        free(attr->value);
+        free(attr);
+    }
+}
+
+void bbx_fs_xml_killnode_r(XMLNODE *node);
+
+XMLNODE *bbx_fs_xml_filenode(const char *name, const char *type)
+{
+    XMLNODE *node = 0;
+    XMLATTRIBUTE *nameattr = 0;
+    XMLATTRIBUTE *typeattr = 0;
+    
+    node = malloc(sizeof(XMLNODE));
+    if (!node)
+        goto out_of_memory;
+    node->tag = mystrdup("file");
+    node->attributes = 0;
+    node->data = mystrdup("\n\n\t\t");
+    node->lineno = -1;
+    node->position = 0;
+    node->child = 0;
+    node->next = 0;
+    
+    if (!node->tag || !node->data)
+        goto out_of_memory;
+    
+    nameattr = bbx_fs_xml_xmlattribute("name", name);
+    typeattr = bbx_fs_xml_xmlattribute("type", type);
+    if(!typeattr || !nameattr)
+        goto out_of_memory;
+    nameattr->next = typeattr;
+    node->attributes = nameattr;
+    
+    return  node;
+out_of_memory:
+    bbx_fs_xml_killnode_r(node);
+    bbx_fs_xml_killattributes_r(nameattr);
+    bbx_fs_xml_killattributes_r(typeattr);
+    return 0;
+}
+
+XMLNODE *bbx_fs_xml_directorynode(const char *name)
+{
+    XMLNODE *node = 0;
+    XMLATTRIBUTE *nameattr = 0;
+        
+    node = malloc(sizeof(XMLNODE));
+    if (!node)
+        goto out_of_memory;
+    node->tag = mystrdup("directory");
+    node->attributes = 0;
+    node->data = mystrdup("\n\n\t\t");
+    node->lineno = -1;
+    node->position = 0;
+    node->child = 0;
+    node->next = 0;
+    
+    if (!node->tag || !node->data)
+        goto out_of_memory;
+    
+    nameattr = bbx_fs_xml_xmlattribute("name", name);
+    if (!nameattr)
+        goto out_of_memory;
+    node->attributes = nameattr;
+    
+    return  node;
+out_of_memory:
+    bbx_fs_xml_killnode_r(node);
+    bbx_fs_xml_killattributes_r(nameattr);
+    return 0;
+}
+
+XMLNODE *bbx_fs_xml_FileSystemnode(void)
+{
+    XMLNODE *node = 0;
+        
+    node = malloc(sizeof(XMLNODE));
+    if (!node)
+        goto out_of_memory;
+    node->tag = mystrdup("FileSystem");
+    node->attributes = 0;
+    node->data = mystrdup("\n\n\t\t");
+    node->lineno = -1;
+    node->position = 0;
+    node->child = 0;
+    node->next = 0;
+    
+    if (!node->tag || !node->data)
+        goto out_of_memory;
+    return  node;
+    
+out_of_memory:
+    bbx_fs_xml_killnode_r(node);
+}
+
+void bbx_fs_xml_killnode_r(XMLNODE *node)
+{
+    if (node)
+    {
+        bbx_fs_xml_killnode_r(node->child);
+        bbx_fs_xml_killnode_r(node->next);
+        free(node->data);
+        free(node->tag);
+        bbx_fs_xml_killattributes_r(node->attributes);
+        free(node);
+    }
+}
+
 char *bbx_writesource_archive_node_to_text(XMLNODE *node)
 {
     const char *type;
