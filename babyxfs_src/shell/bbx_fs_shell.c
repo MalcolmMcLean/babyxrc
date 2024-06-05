@@ -6,6 +6,7 @@
 //
 
 #include "bbx_fs_shell.h"
+#include "bbx_options.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -13,6 +14,7 @@
 #include "basic.h"
 
 extern char cp_usage[];
+extern char help_usage[];
 
 typedef struct bbx_fs_command
 {
@@ -404,6 +406,28 @@ static int getcommand(char *command, int N, const char *input)
 
 static int help(BBX_FS_SHELL *shell, int argc, char **argv)
 {
+    BBX_Options *bbx_opt;
+    int list = 0;
+    int Nargs = 0;
+    
+    bbx_opt = bbx_options(argc, argv, "");
+    list = bbx_options_get(bbx_opt, "-list", 0);
+    Nargs = bbx_options_Nargs(bbx_opt);
+    bbx_options_kill(bbx_opt);
+    bbx_opt = 0;
+    
+    if (Nargs > 0)
+    {
+        fprintf(shell->stdout, "%s", help_usage);
+        return 0;
+    }
+    
+    if (list)
+    {
+        listcommands(shell);
+        return 0;
+    }
+    
     fprintf(shell->stdout, "Baby X FileSystem shell\n");
     fprintf(shell->stdout,"\n");
     fprintf(shell->stdout, "Explore this FileSystem XML file with the shell\n");
@@ -420,8 +444,6 @@ static int help(BBX_FS_SHELL *shell, int argc, char **argv)
     fprintf(shell->stdout, "\n");
     fprintf(shell->stdout, "\tquit - exit the shell\n");
     fprintf(shell->stdout, "\n");
-    
-    listcommands(shell);
     
     return  0;
 }

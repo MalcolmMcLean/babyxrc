@@ -122,6 +122,8 @@ add_executable("babyxfs_shell"
     "babyxfs_src/bbx_write_source_archive.h"
     "babyxfs_src/bbx_filesystem.c"
     "babyxfs_src/bbx_filesystem.h"
+    "babyxfs_src/bbx_options.c"
+    "babyxfs_src/bbx_options.h"
     ${bbx_shell_sources})
     target_include_directories(babyxfs_shell PRIVATE ${bbx_shell_includes})
 target_link_libraries( "babyxfs_shell" ${libs} )
