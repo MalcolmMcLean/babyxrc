@@ -1,0 +1,124 @@
+<BabyXRC>
+<comment>
+How to use the cd coomand
+</comment>
+<string name = "cd_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+
+</string>
+
+<comment>
+How to use the help coomand
+</comment>
+<string name = "help_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+
+</string>
+
+<comment>
+How to use the rm coomand
+</comment>
+<string name = "rm_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+
+</string>
+
+<comment>
+How to use the cp coomand
+</comment>
+<string name = "cp_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+
+</string>
+
+<comment>
+How to use the mv coomand
+</comment>
+<string name = "mv_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+
+</string>
+
+<comment>
+How to use the cat coomand
+</comment>
+<string name = "cat_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the mkdir coomand
+</comment>
+<string name = "mkidir_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the rmdir coomand
+</comment>
+<string name = "rmdir_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the system coomand
+</comment>
+<string name = "system_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the import coomand
+</comment>
+<string name = "import_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the export coomand
+</comment>
+<string name = "export_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the edit coomand
+</comment>
+<string name = "edit_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the bb coomand
+</comment>
+<string name = "bb_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+</BabyXRC>

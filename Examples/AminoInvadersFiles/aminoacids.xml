@@ -1,24 +1,23 @@
 <BabyXRC>
-<image src = "alaST.GIF", name = "alanineST", width = "44", height = "38"> </image> 
-<image src = "argST.GIF", name = "arginineST", width = "42", height = "64"> </image> 
-<image src = "asnST.GIF", name = "asparagineST", width = "46", height = "38"> </image> 
-<image src = "aspST.GIF", name = "aspartateST", "width = "41", height = "52"> </image> 
-<image src = "cysST.GIF", name = "cysteineST", "width = "41", height = "52"> </image> 
-<image src = "glnST.GIF", name = "glutamineST", "width = "52", height = "62"> </image> 
-<image src = "gluST.GIF", name = "glutamateST", width = "42", height = "37"> </image> 
-<image src = "glyST.GIF", name = "glycineST", width = "48", height = "30"> </image> 
-<image src = "hisST.GIF", name = "histidineST", width = "43", height = "38"> </image> 
-<image src = "isoST.GIF", name = "isoleucineST", width = "44", height = "40"> </image> 
-<image src = "leuST.GIF", name = "leucineST", width = "47", height = "39"> </image> 
-<image src = "lysST.GIF", name = "lysineST", width = "53", height = "52"> </image> 
-<image src = "metST.GIF", name = "methionineST", width = "45", height = "55"> </image> 
-<image src = "pheST.GIF", name = "phenylalanineST", width = "63", height = "48"> </image> 
-<image src = "proST.GIF", name = "prolineST", width = "61", height = "39"> </image> 
-<image src = "serST.GIF", name = "serineST", width = "48", height = "40"> </image> 
-<image src = "thrST.GIF", name = "threonineST", width = "49", height = "44"> </image> 
-<image src = "tryST.GIF", name = "tryptophanST", width = "64", height = "42"> </image> 
-<image src = "tyrST.GIF", name = "tyrosineST", width = "40", height = "61"> </image> 
-<image src = "valST.GIF", name = "valineST", width = "52", height = "44"> </image>
-<cursor src ="yellow_smiley.cur", name ="yellowsmiley_cur"> </cursor>
-<image src = "bee.svg", name = "testsvg", width = "52", height = "44"> </image>
+<image src = "alaST.GIF" name = "alanineST" width = "44" height = "38"> </image>
+<image src = "argST.GIF" name = "arginineST" width = "42" height = "64"> </image>
+<image src = "asnST.GIF" name = "asparagineST" width = "46" height = "38"> </image>
+<image src = "aspST.GIF" name = "aspartateST" width = "41" height = "52"> </image>
+<image src = "cysST.GIF" name = "cysteineST" width = "41" height = "52"> </image>
+<image src = "glnST.GIF" name = "glutamineST" width = "52" height = "62"> </image>
+<image src = "gluST.GIF" name = "glutamateST" width = "42" height = "37"> </image>
+<image src = "glyST.GIF" name = "glycineST" width = "48" height = "30"> </image>
+<image src = "hisST.GIF" name = "histidineST" width = "43" height = "38"> </image>
+<image src = "isoST.GIF" name = "isoleucineST" width = "44" height = "40"> </image>
+<image src = "leuST.GIF" name = "lysineST" width = "53" height = "52"> </image>
+<image src = "metST.GIF" name = "methionineST" width = "45" height = "55"> </image>
+<image src = "pheST.GIF" name = "phenylalanineST" width = "63" height = "48"> </image>
+<image src = "proST.GIF" name = "prolineST" width = "61" height = "39"> </image>
+<image src = "serST.GIF" name = "serineST" width = "48" height = "40"> </image>
+<image src = "thrST.GIF" name = "threonineST" width = "49" height = "44"> </image>
+<image src = "tryST.GIF" name = "tryptophanST" width = "64" height = "42"> </image>
+<image src = "tyrST.GIF" name = "tyrosineST" width = "40" height = "61"> </image>
+<image src = "valST.GIF" name = "valineST" width = "52" height = "44"> </image>
+<cursor src ="yellow_smiley.cur" name = "yellowsmiley_cur"> </cursor>
+<image src = "bee.svg" name = "testsvg" width = "52" height = "44"> </image>
 </BabyXRC>

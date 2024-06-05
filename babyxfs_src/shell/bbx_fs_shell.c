@@ -12,6 +12,9 @@
 
 #include "basic.h"
 
+extern char cp_usage[];
+
+
 typedef struct bbx_fs_shell
 {
     BBX_FileSystem *bbx_fs;
@@ -359,7 +362,10 @@ static int cp(BBX_FS_SHELL *shell, int argc, char **argv)
     int i;
 
     if (argc != 3)
+    {
+        fprintf(shell->stderr, "%s", cp_usage);
         return 0;
+    }
     source = argv[1];
     target = argv[2];
     

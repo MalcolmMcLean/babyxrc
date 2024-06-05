@@ -5,7 +5,7 @@
 #include <limits.h>
 
 #include "options.h"
-#include "xmlparser.h"
+#include "xmlparser2.h"
 #include "asciitostring.h"
 #include "loadasutf8.h"
 #include "loadcursor.h"
@@ -402,6 +402,63 @@ error_exit:
     free(answer);
     return 0;
     
+}
+
+static int getleadingandtrailing(char *data, int *leadret, int *trailret)
+{
+    int leading = 0;
+    int trailing = 0;
+    int len;
+    int i;
+    
+    leading = 0;
+    len = (int) strlen(data);
+    for (i = 0; data[i]; i++)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (data[i] == '\n')
+        leading = i + 1;
+    
+    trailing = 0;
+    i = len - 1;
+    for (i = len - 1; i > 0; i--)
+        if (!isspace((unsigned char) data[i]) || data[i] == '\n')
+            break;
+    if (i > 0 && data[i] == '\n')
+        trailing = len - i;
+    
+    if (trailing + leading >= len )
+    {
+        leading = len;
+        trailing = 0;
+    }
+    
+    if (leadret)
+        *leadret = leading;
+    if (trailret)
+        *trailret = trailing;
+    
+    return 0;
+}
+
+static char *xml_trim(char *str)
+{
+    int leading;
+    int trailing;
+    size_t len;
+    char *answer;
+    
+    if (!str)
+        return mystrdup("");
+    len = strlen(str);
+    getleadingandtrailing(str, &leading, &trailing);
+    answer = malloc(len - leading - trailing + 1);
+    if (!answer)
+        return 0;
+    memcpy(answer, str + leading, len - leading -trailing);
+    answer[len - leading -trailing] = 0;
+    
+    return answer;
 }
 
 static int parseboolean(const char *boolattribute, int *error)
@@ -1342,6 +1399,7 @@ int main(int argc, char **argv)
   OPTIONS *opt = 0;
   XMLDOC *doc;
   int err;
+  char error[1024];
   char *scriptfile;
   XMLNODE **scripts;
   XMLNODE *node;
@@ -1369,10 +1427,11 @@ int main(int argc, char **argv)
   killoptions(opt);
   opt = 0;
 
-  doc = loadxmldoc(scriptfile, &err);
+  doc = loadxmldoc(scriptfile, error, 1024);
   if(!doc)
   {
     fprintf(stderr, "Can't read resource script file\n");
+      fprintf(stderr, "%s\n", error);
     exit(EXIT_FAILURE);
   } 
   scripts = xml_getdescendants(xml_getroot(doc), "BabyXRC", &Nscripts);
