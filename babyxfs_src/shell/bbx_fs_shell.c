@@ -15,6 +15,16 @@
 
 extern char cp_usage[];
 extern char help_usage[];
+extern char rm_usage[];
+extern char mv_usage[];
+extern char cat_usage[];
+extern char mkdir_usage[];
+extern char rmdir_usage[];
+extern char system_usage[];
+extern char export_usage[];
+extern char import_usage[];
+extern char bb_usage[];
+
 
 typedef struct bbx_fs_command
 {
@@ -492,7 +502,10 @@ static int rm(BBX_FS_SHELL *shell, int argc, char **argv)
     char path[1024];
 
     if (argc != 2)
+    {
+        fprintf(shell->stdout, "%s", rm_usage);
         return 0;
+    }
     target = argv[1];
     
     snprintf(path, 1024, "%s/%s", shell->path, target);
@@ -511,7 +524,10 @@ static int mv(BBX_FS_SHELL *shell, int argc, char **argv)
     int len;
     
     if (argc != 3)
+    {
+        fprintf(shell->stdout, mv_usage);
         return 0;
+    }
     
     target = argv[2];
     source = argv[1];
@@ -548,7 +564,10 @@ static int cat(BBX_FS_SHELL *shell, int argc, char **argv)
     int i;
     
     if (argc != 2)
+    {
+        fprintf(shell->stdout, "%s", cat_usage);
         return 0;
+    }
 
     target = argv[1];
     snprintf(path, 1024, "%s/%s", shell->path, target);
@@ -571,7 +590,10 @@ static int mkdir(BBX_FS_SHELL *shell, int argc, char **argv)
     char path[1024];
 
     if (argc != 2)
+    {
+        fprintf(shell->stdout, "%s", mkdir_usage);
         return 0;
+    }
     target = argv[1];
     
     snprintf(path, 1024, "%s/%s", shell->path, target);
@@ -586,7 +608,10 @@ static int rmdir(BBX_FS_SHELL *shell, int argc, char **argv)
     char path[1024];
 
     if (argc != 2)
+    {
+        fprintf(shell->stdout, "%s", rmdir_usage);
         return 0;
+    }
     target = argv[1];
     
     snprintf(path, 1024, "%s/%s", shell->path, target);
@@ -602,6 +627,10 @@ static int bbx_fs_system(BBX_FS_SHELL *shell, int argc, char **argv)
     
     strcpy(line, "");
     
+    if (argc <= 1)
+    {
+        fprintf(shell->stdout, "%s", system_usage);
+    }
     for (i = 1; i < argc; i++)
     {
         strncat(line, argv[i], 1024);
@@ -623,7 +652,10 @@ static int import(BBX_FS_SHELL *shell, int argc, char **argv)
     int i;
     
     if (argc != 3)
+    {
+        fprintf(stdout, "%s", import_usage);
         return 0;
+    }
     
     fpin = fopen(argv[1], "r");
     if (!fpin)
@@ -657,7 +689,10 @@ static int export(BBX_FS_SHELL *shell, int argc, char **argv)
     int i;
     
     if (argc != 3)
+    {
+        fprintf(shell->stdout, "%s", export_usage);
         return 0;
+    }
     
     source = argv[1];
     snprintf(path, 1024, "%s/%s", shell->path, source);
@@ -688,7 +723,10 @@ static int babybasic(BBX_FS_SHELL *shell, int argc, char **argv)
     char path[1024];
     
     if (argc != 2)
+    {
+        fprintf(stdout, "%s", bb_usage);
         return 0;
+    }
     target = argv[1];
     snprintf(path, 1024, "%s/%s", shell->path, target);
     script = bbx_filesystem_slurp(shell->bbx_fs, path, "r");
