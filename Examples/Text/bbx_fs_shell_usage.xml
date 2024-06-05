@@ -1,0 +1,123 @@
+<BabyXRC>
+<comment>
+How to use the cd command
+</comment>
+<string name = "cd_usage">
+cd - change directory
+Usage: cd &lt;target directory&gt;
+ use cd .. to move up.
+</string>
+
+<comment>
+How to use the help command
+</comment>
+<string name = "help_usage">
+heel - get help
+Usage: help [options] [command]
+  Options: -list - list all commands
+  use help command for help on a command.
+
+</string>
+
+<comment>
+How to use the rm command
+</comment>
+<string name = "rm_usage">
+rm - remove a file
+Usage: rm &lt;target file&gt;
+ 
+</string>
+
+<comment>
+How to use the cp command
+</comment>
+<string name = "cp_usage">
+cp - copy a file
+Usage: cp &lt;source file&gt; &lt;target file&gt;
+
+</string>
+
+<comment>
+How to use the mv command
+</comment>
+<string name = "mv_usage">
+mv move a file
+Usage: mv &lt;source file&gt; &lt;target file&gt;
+
+</string>
+
+<comment>
+How to use the cat command
+</comment>
+<string name = "cat_usage">
+cat - print of a file
+Usage: cat &lt;source file&gt;
+
+</string>
+
+<comment>
+How to use the mkdir command
+</comment>
+<string name = "mkdir_usage">
+mkdir - make a directory
+Usage: mkdir &lt;target directory&gt;
+
+</string>
+
+<comment>
+How to use the rmdir command
+</comment>
+<string name = "rmdir_usage">
+rmdir - remove directory
+Usage: rmdir &lt;target directory&gt;
+ 
+</string>
+
+<comment>
+How to use the system command
+</comment>
+<string name = "system_usage">
+system - call a system command on host operating system
+Usage: system &lt;host command&gt; ...
+ usually works, can go horribly wrong
+</string>
+
+<comment>
+How to use the import command
+</comment>
+<string name = "import_usage">
+import - read a file a file to host
+Usage: cd &lt;host source&gt; &lt;target file&gt;
+ 
+</string>
+
+<comment>
+How to use the export command
+</comment>
+<string name = "export_usage">
+export - write a file to the host
+Usage: export &lt;source file&gt; &lt;host target&gt;
+ 
+</string>
+
+<comment>
+How to use the edit coomand
+</comment>
+<string name = "edit_usage">
+edit - edit a file
+Usage: edit &lt;source file&gt;
+ Note, we have to call an editor on the host.
+It is not possible to write an interactive text editor in
+portable ANSI C. This command might go horribly wrong.
+</string>
+
+<comment>
+How to use the bb coomand
+</comment>
+<string name = "bb_usage">
+bb - Baby Basic
+Usage: cd &lt;basicfile.bas&gt;
+   BabyBasic is the BabyXF Shell's scripting language.
+</string>
+
+</BabyXRC>

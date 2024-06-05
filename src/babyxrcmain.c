@@ -404,7 +404,7 @@ error_exit:
     
 }
 
-static int getleadingandtrailing(char *data, int *leadret, int *trailret)
+static int getleadingandtrailing(const char *data, int *leadret, int *trailret)
 {
     int leading = 0;
     int trailing = 0;
@@ -441,7 +441,7 @@ static int getleadingandtrailing(char *data, int *leadret, int *trailret)
     return 0;
 }
 
-static char *xml_trim(char *str)
+static char *xml_trim(const char *str)
 {
     int leading;
     int trailing;
@@ -674,8 +674,9 @@ int processstringtag(FILE *fp, int header, const char *fname, const char *name, 
        fclose(fpstr);
     }
   }
-  else if(str)
+  else if (str )
   {
+      char *trimmed = xml_trim(str);
     string = addquotes(str);
   }
   if(!string)
