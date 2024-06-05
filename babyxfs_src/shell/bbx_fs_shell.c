@@ -313,6 +313,32 @@ static int run_internal_command(BBX_FS_SHELL *shell, const char *command, int ar
        
 }
 
+static int listcommands(BBX_FS_SHELL *shell)
+{
+    BBX_FS_COMMAND *cmd;
+    
+    fprintf(shell->stdout, "cd\n");
+    fprintf(shell->stdout, "ls\n");
+    fprintf(shell->stdout, "help\n");
+    fprintf(shell->stdout, "rm\n");
+    fprintf(shell->stdout,"cp\n");
+    fprintf(shell->stdout, "mv\n");
+    fprintf(shell->stdout, "cat\n");
+    fprintf(shell->stdout, "mkdir\n");
+    fprintf(shell->stdout, "rmdir\n");
+    fprintf(shell->stdout, "system\n");
+    fprintf(shell->stdout, "import\n");
+    fprintf(shell->stdout, "export\n");
+    fprintf(shell->stdout, "edit\n");
+    fprintf(shell->stdout, "bb\n");
+    
+    cmd = shell->commands;
+    while (cmd)
+    {
+        fprintf(shell->stdout, "%s\n", cmd->name);
+        cmd = cmd->next;
+    }
+}
 static char **getargs(char *str)
 {
     int N = 0;
@@ -395,6 +421,7 @@ static int help(BBX_FS_SHELL *shell, int argc, char **argv)
     fprintf(shell->stdout, "\tquit - exit the shell\n");
     fprintf(shell->stdout, "\n");
     
+    listcommands(shell);
     
     return  0;
 }
