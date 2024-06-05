@@ -14,6 +14,12 @@
 
 extern char cp_usage[];
 
+typedef struct bbx_fs_command
+{
+    char *name;
+    int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err);
+    struct bbx_fs_command *next;
+} BBX_FS_COMMAND;
 
 typedef struct bbx_fs_shell
 {
@@ -22,11 +28,15 @@ typedef struct bbx_fs_shell
     FILE *stdin;
     FILE *stdout;
     FILE *stderr;
+    BBX_FS_COMMAND *commands;
 } BBX_FS_SHELL;
 
 
 static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line);
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
+static int run_external_command(BBX_FS_SHELL *shell, const char *command,
+                                int argc, char **argv);
+static int run_internal_command(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
 
 static int help(BBX_FS_SHELL *shell, int argc, char **argv);
 static int rm(BBX_FS_SHELL *shell, int argc, char **argv);
@@ -64,7 +74,7 @@ BBX_FS_SHELL *bbx_fs_shell(BBX_FileSystem *bbx_fs)
     shell->stdout = stdout;
     shell->stderr = stderr;
     strcpy(shell->path, "/");
-    
+    shell->commands = 0;
    
     
     return shell;
@@ -97,6 +107,18 @@ int bbx_fs_shell_run(BBX_FS_SHELL *shell, FILE *output, FILE *input, FILE *error
     }
     
     return err;
+}
+
+int bbx_fs_shell_addcommand(BBX_FS_SHELL *shell, const char *command,
+                            int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err))
+{
+    BBX_FS_COMMAND *bbx_command;
+    
+    bbx_command = bbx_malloc(sizeof(BBX_FS_COMMAND));
+    bbx_command->fptr = fptr;
+    bbx_command->name = bbx_strdup(command);
+    bbx_command->next = shell->commands;
+    shell->commands = bbx_command;
 }
 
 
@@ -192,6 +214,31 @@ static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line)
 
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
 {
+    run_internal_command(shell, command, argc, argv);
+    run_external_command(shell, command, argc, argv);
+    return 0;
+}
+
+static int run_external_command(BBX_FS_SHELL *shell, const char *command,
+                                int argc, char **argv)
+{
+    BBX_FS_COMMAND *cmd = shell->commands;
+    
+    while (cmd)
+    {
+        if (!strcmp(cmd->name, command))
+        {
+            (*cmd->fptr)(argc, argv,shell->stdout, shell->stdin, shell->stderr);
+        }
+        cmd = cmd->next;
+    }
+    
+    return  0;;
+}
+
+
+static int run_internal_command(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
+{
    if (!strcmp(command, "help"))
    {
        help(shell, argc, argv);
@@ -261,6 +308,8 @@ static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, c
     {
         fprintf(shell->stderr, "unknown command %s\n", command);
     }
+    
+    return  0;;
        
 }
 

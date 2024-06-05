@@ -133,7 +133,10 @@ out_of_memory:
     return 0;
 }
 
-
+int helloworld(int argc, char **argv, FILE *out, FILE *in, FILE *err)
+{
+    return fprintf(out, "Hello world\n");
+};
 
 void usage()
 {
@@ -162,6 +165,7 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
     printf("\n");
    
     shell = bbx_fs_shell(fs);
+    bbx_fs_shell_addcommand(shell, "hello", helloworld);
     err = bbx_fs_shell_run(shell, stdout, stdin, stderr);
     bbx_fs_shell_kill(shell);
     
