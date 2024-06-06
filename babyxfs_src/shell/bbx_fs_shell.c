@@ -135,6 +135,17 @@ int bbx_fs_shell_addcommand(BBX_FS_SHELL *shell, const char *command,
     shell->commands = bbx_command;
 }
 
+int bbx_fs_shell_set_editor(BBX_FS_SHELL *shell, const char *editor)
+{
+    if (editor)
+    {
+        free(shell->editor);
+        shell->editor = bbx_strdup(editor);
+        return 0;
+    }
+    
+    return  -1;
+}
 
 static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line)
 {
@@ -317,6 +328,7 @@ static int run_internal_command(BBX_FS_SHELL *shell, const char *command, int ar
                importargs[3] = 0;
                import(shell, 3, importargs);
            }
+           /* safer not to free(tempfile), it could  retutn anything */
        }
    }
    else if (!strcmp(command, "bb"))
