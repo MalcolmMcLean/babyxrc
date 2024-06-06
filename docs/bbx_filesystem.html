@@ -1,0 +1,392 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+<script>
+function fileClick(a) {
+
+        var linkTag = a.href;
+        var substring = "file:///";
+        if (linkTag.includes(substring)) {
+            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
+            fileOpen(url);
+        }
+        else {
+            window.open(linkTag, '_blank');
+        }
+    }
+
+    function fileOpen(url) {
+        $.ajax({
+            url: url,
+            complete: function (jqxhr, txt_status) {
+                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
+                if (txt_status == 'success') {
+                    window.open(url, '_self');
+                }
+                else {
+                    alert("File not found[404]!");
+                }
+                // }
+            }
+        });
+    }
+    </script>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+<H1>bbx_filesystem library </H1>
+<P>
+The Baby X filesystem library, BBX_FileSystem, is a set of functions designed to work with FileSystem XML files. The function make it easy for programmers to use these files aand to manipulate the. It is part of the BabyXFS or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories in Baby X programs. BBX_fileSystem is the heart of the poject. It is a suite of programs allowing Baby X programmers or anyone else to mount FileSytem XML files as virtual filing systems.
+</P>
+
+<H3>The functions </H3>
+
+<P>
+
+These are the functions in the library.
+
+<P>
+<P>
+<pre><code class="language-c">
+    //
+    //  bbx_filesystem.h
+    //  babyxfs
+    //
+    //  Created by Malcolm McLean on 31/05/2024.
+    //
+
+    #ifndef bbx_filesystem_h
+    #define bbx_filesystem_h
+
+    #define BBX_FS_STDIO 1
+    #define BBX_FS_STRING 2
+
+    typedef struct bbx_filesystem BBX_FileSystem;
+
+    BBX_FileSystem *bbx_filesystem(void);
+    void bbx_filesystem_kill(BBX_FileSystem *bbx_fs);
+    int bbx_filesystem_set(BBX_FileSystem *bbx_fs, const char *pathorxml, int mode);
+    FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char *mode);
+    int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
+    char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode);
+    unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N);
+    int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path);
+    const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
+    int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs, char **(*fptr)(const char *path, void *ptr), void *ptr);
+    int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp);
+    char **bbx_filesystem_mkdir(BBX_FileSystem *bbx_fs, const char *path);
+    char **bbx_filesystem_rmdir(BBX_FileSystem *bbx_fs, const char *path);
+    char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
+
+    #endif /* bbx_filesystem_h */
+</code></pre>
+</P>
+
+<H3>bbx_filesystem</H3>
+<P>
+Constructs an empty BBX_FileSystem object.
+</P>
+<pre>
+    BBX_FileSystem *bbx_filesystem(void);
+
+    Returns: the constructed BBX_FileSystem object.
+    
+</pre>
+
+</P>
+<H3>bbx_filesystem_kill</H3>
+<P>
+Destroys a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    void bbx_filesystem_kill(BBX_FileSystem *bbx_fs);
+    
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           
+</pre>
+</P>
+
+<H3>bbx_filesystem_set</H3>
+<P>
+Mounts either a FileSystem XML string or a host directory on the BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    int bbx_filesystem_set(BBX_FileSystem *bbx_fs,
+    const char *pathorxml, int mode);
+    
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           pathorxml - the host directory to mount, or FileSystemXML.
+           mode -
+                  BBX_FS_STDIO  - pathorxml is a directory on the host.
+                  BBX_FS_STRING - pathorxml is FileSystem XML (as a string
+                     in memory, not a path).
+
+    Returns: 0 on success, -1 on failure.
+</pre>
+</P>
+<P>
+Pass it a string with FileSystem XML to mount the system. Or a host directory, though
+BBX_F_STDIO mode isn't entirely tested. You can free the XML string after the function
+has returned, it doesn't use it after setting.
+</P>
+
+<H3>bbx_filesystem_fopen</H3>
+Opens a file from a BBX_FileSystem object.
+<P>
+<pre>
+    FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs,
+    const char *path, const char *mode);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - the path to the file to open
+           mode - the mode, "r" to read and "w" to write.
+    Returns: pointer to the opened stream, 0 on failure.
+    
+</pre>
+</P>
+<P>
+This is the fopen() function for the BBX_FileSystem. The FILE *s
+must be closed with bbx_filesystem_fclose(), they must not be passed
+to stdio fclose(). But othewise, a stdio functions like fputc() and
+fprintf() can be called on them.
+</P>
+
+<H3>bbx_filesystem_fclose</H3>
+<P>
+Closes a file opened from a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           fp - a FILE pointer returned from bbx_filesystem_fopen.
+    Returns: on success, -1 on failure (which can happen).
+           
+</pre>
+</P>
+<P>
+This is the fclose() function for the BBX_FileSystem. The FILE *s must
+have been returned from bbx_filessytem_fopen. Every file pointer opened
+with bbx-filesysytem_fopen must be closed with this function, and
+it must never be passed a FILE * created with stio.h functions.
+
+Note that if the file was opened in "w" mode, the function might well fail.
+This is also true of stdio fclose(), but few programmers bother to check.
+With this function, it can fail.
+</P>
+
+<H3>bbx_filesystem_slurp</H3>
+<P>
+Load an entire text file from a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs,
+    const char *path, const char *mode);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - the path to the file.
+           mode - read mode, should be "r" but some host
+                  operating systemes will insist on "rt".
+    Returns: allocated pointer to file contents, 0 on failure.
+    
+</pre>
+</P>
+<P>
+Load in an entire file. If the file in binary, you will get strange
+results. In BBX_FS_STRING mode, mode should be "r" or at least a short
+string beginning wth "r". The parameter is provided to coax stdio
+implementations which insist on "rt or maybe an alternative into doing the
+right thing.
+</P>
+
+<H3>bbx_filesystem_slurpb</H3>
+<P>
+Load an entire binary file from a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs,
+    const char *path, const char *mode, int *N);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - the pathn to the file.
+           mode - read mode, should be "r" but some host
+                  operating systemes will insist on "rb".
+                  N - return for the number of bytes read.
+    Returns: allocated pointer to file contents.
+
+</pre>
+</P>
+<P>
+Load in an entire file. If the file in text, you will be given
+theterminating nul, but it is poor form to rely on it. The pointer needs
+to be freed when done.
+</P>
+
+<H3>bbx_filesystem_unlink</H3>
+<P>
+Delete a file from A BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - the path to the file to delete.
+    Returns: 0 on success, -1 on fail.
+</pre>
+</P>
+<P>
+It unlinks a file form the directory tree. In BBX_FS_STRING mode, this is
+the same as deletion. On stdio system, unlinking may not delete, and there
+may be other links to the same file.
+</P>
+<H3>bbx_filesystem_getname</H3>
+<P>
+Get the name of the FileSystem mounted in the BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+    Returns: the name of the filessyrm mounted within it.
+</pre>
+>?P>
+<P>
+A FileSystem XML should have a single directory node as a child,
+which is the root of the data. The name is the name of that node.
+</P>
+<H3>bbx_filesystem_setreadir</H3>
+<P>
+Set a function to read a directory on host-mounted BBX_FileSystem systems.
+</P>
+<P>
+<pre>
+    int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs,
+    char **(*fptr)(const char *path, void *ptr), void *ptr);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           fptr - a function which will read a directory
+                    on a hosted file system.
+    Returns: 0 on success, -1 on failure.
+</pre>
+</P>
+<P>
+ANSI C provides no function to read directories, and so the
+bbx_filesystem_list can only be implemented by proving this
+function.  It should return a list of all the files in the
+current working diectory.
+</P>
+<H3>bbx_filesystem_dump</H3>
+<P>
+Write out the entire contents of a BBX_Filesystem object to a FileSysytem XML file.
+</P>
+<P>
+<pre>
+    int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           fp - stream to write XML to.
+    Returns: 0 on success, -1 on failure.
+</pre>
+</P>
+<P>
+This is an easy way of saving the state of the system. It will only work on
+BBX_FS_STRING mode file systems, however.
+</P>
+<H3>bbx_filesystem_mkdir</H3>
+<P>
+Create a directory on a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    char **bbx_filesystem_mkdir(BBX_FileSystem *bbx_fs, const char *path);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - path to a directory.
+    Returns: a programming error, the pointer is useless.
+</pre>
+</P>
+<P>
+This can only be done for BBX_FS_STRING systems. ANSI systems have no way.
+</P>
+<H3>bbx_filesystem_rmdir</H3>
+<P>
+Remove a directory from a BBX_FileSystem object.
+</P>
+<P>
+<pre>
+    char **bbx_filesystem_rmdir(BBX_FileSystem *bbx_fs, const char *path);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           pth - path to a empty directory.
+    Returns: a programming error, the pointer is useless.
+</pre>
+</P>
+<P>
+This can only be done for BBX_FS_STRING systems. ANSI systems have no way.
+The directory must be empty. Otherwise it to easy to lose all your data by
+accidentallly deleting a senior node.
+</P>
+<H3>bbx_filesystem_list</H3>
+<P>
+List the contents of a BBX_FileSystem directory.
+</P>
+<P>
+<pre>
+    char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
+    Params:
+           bbx_fs - the BBX_FileSystem object.
+           path - path to a directory.
+    Returns: allocated pointer to allocated list of strings.
+</pre>
+</P>
+<P>
+This returns the contents of a directory as a simple list of allocated
+strings in the form
+</P>
+<P>
+<pre>
+mydirectory/
+myfolder/
+mymate.txt
+myenemy.bin
+anotherfolder/
+</pre>
+</P>
+<P>
+Directories are indicated with a trailing /. The order should not be
+taken to have any meaning.
+</P>
+<H3>FileSystem XML files</H3>
+<P>
+The <A href="FileSystemXML.html">FileSystem</A> XML format was invented to meet the needs of hobby programmers. It is a very clean XML format which is easy to parse and robust, as text files are all human-readable. You can of course compress the files using general purpose text compreession if you need to save space.
+</P>
+<P>
+FileSystem XML files were invented form Baby X, but they are not branded as Baby X, because it is intended as a general purpose format which should attract wide use.
+</P>
+
+</BODY> </HTML>
+

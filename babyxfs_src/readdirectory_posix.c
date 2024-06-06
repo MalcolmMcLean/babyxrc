@@ -53,11 +53,12 @@ static char **mystrcatlist(char **list, char *str)
             N++;
     }
     
-    answer = realloc(list, (N+1) * sizeof(char *));
+    answer = realloc(list, (N+2) * sizeof(char *));
     if (!answer)
         return 0;
     
     answer[N] = str ? mystrdup(str) : 0;
+    answer[N+1] = 0;
     
     return answer;
     
@@ -145,7 +146,7 @@ out_of_memory:
     return 0;
 }
 
-int main(int argc, char **argv)
+static int rd_main(int argc, char **argv)
 {
     int i;
     char **list;

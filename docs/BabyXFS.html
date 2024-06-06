@@ -59,9 +59,17 @@ The Baby X filesystem project, or BabyXFS is a project designed to allow Baby X 
 The <A href="FileSystemXML.html">FileSystem</A> XML format was invented to meet the needs of hobby programmers. It is a very clean XML format which is easy to parse and robust, as text files are all human-readable. You can of course compress the files using general purpose text compreession if you need to save space.
 </P>
 <P>
-Filesystem XML files were invented form Baby X, but they are not branded as Baby X, because it is intended as a general purpose format which should attract wide use.
+FileSystem XML files were invented form Baby X, but they are not branded as Baby X, because it is intended as a general purpose format which should attract wide use.
 </P>
 
+<H3>The BBX_FileSystem library</H3>
+<P>
+The BabyXFS FileSystem library is a suite of functions for mounting FileSystem XML
+files virtual drives on your machine and thus reading the contents.
+</P>
+<P>
+The function in bbx_filesystem.c are documented <A href="bbx_filesystem.html">here</A>.
+</P>
 <H2> The Baby X filesystem programs </H2>
 <P>
 BabyXFS has an entire suite of programs and sourse subroutines designed to allow users to use FileSystem files. There are of course programs to generate the XML files from directories, and to recreate the directories from the files. You can also list the files in a FileSystem file, or extract them.
@@ -178,7 +186,7 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  <P>
  It's also a very robust solution. The files are packaged as a C string. They can be compiled anywhere there is A C compiler available. And all the text files are in plain text. If thete is a bug, you can inspect the file in the XML, and you can easily see if that is the problem. And the format is sufficiently robust that you can edit it in the source, though of course you will lose the changes when you need to regenerate the XML, so this should be cinsidered hacking rather than bug fixing. When you find the problem, you go back to the files on disk.
  </P>
- <H3> BabyXRC script to importvthe xml files </H3>
+ <H3> BabyXRC script to import the xml files </H3>
  <P>
  <pre>
      
@@ -193,7 +201,7 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  
  <H3>testbabyxfilesystem</H3>
  <P>
- This program tests out thr BBX_FileSystem, and ensures that the FileSystem XML and the system on disk and in sych and there are no problems. Hee's the current main function.
+ This program tests out the BBX_FileSystem, and ensures that the FileSystem XML and the system on disk and in sych and there are no problems. Here's the current main function.
  </P>
  <P>
  <pre><code class="language-c">
