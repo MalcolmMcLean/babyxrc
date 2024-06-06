@@ -12,6 +12,7 @@ asciitostring.c - routines to escape strings to C strings.
 xmlparser2.c - a very powerful but baby XML parser, in the spirit of Baby X.
 bbx_filesystem.c - mount a FileSystem xml as a directory in user programs.
 
+bbx_writesource_archive.c - support code for bbx_filesystem.c.
 bbx_writesource.c - code so you can write yur own source code to disk.
 bbx_writesource_flat.c - ANSI compliant function which doesn't create directories.
 
@@ -19,12 +20,18 @@ babyxfs_dirtoxml.c - babyxfs_dirtoxml main file.
 babyxfs_xmltodir.c - babyxfs_xmltodir main file.
 babyxfs_ls.c - babyxfs_ls main file.
 babyxfs_extract.c - babyxfs_extract main file.
-babyxfs_rm.c - babxfs_rm main file
-babyxfs_cp.c - babxfs_cp main file
-babyxfs_escapexml - babyxfs_escapexml main file
+babyxfs_rm.c - babxfs_rm main file.
+babyxfs_cp.c - babxfs_cp main file.
+babyxfs_escapexml - babyxfs_escapexml main file.
 testbabyxfilesystem.c - testbabyxfilesystem main file. 
+rot13.c - rot13 main file.
 
 source.c - test data to pass to bbx_writesource.c.
+
+shell/
+    The source code for the Baby X shell, an operating system for
+FileSystem files. It's a simple or baby shell written in pure ANSI
+C with no dependabcies other than the C standard library.
 
 The programs
 
