@@ -6,7 +6,7 @@ The purpose of the program is to convert resources - images, text, fonts and so 
 
 Check out our [webpages](http://malcolmmclean.github.io/babyxrc).
 
-And the new BabyXF (Baby X FileSystem) project [webpages](http://malcolmmclean.github.io/babyxrc/BabyXFS.hml).
+And the new BabyXF (Baby X FileSystem) project [webpages](http://malcolmmclean.github.io/babyxrc/BabyXFS.html).
 
 ### Usage
 
