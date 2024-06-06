@@ -51,7 +51,7 @@ function fileClick(a) {
     <script src="prism.js"></script>
 <H1>Baby X FileSystem</H1>
 <P>
-THe Baby X filesystem project, or BabyXFS is a project designed to allow Baby X user to mount directories in Baby X programs. However becuase of the highly portable nature of Baby X, it is also modular and can be used enitrely independently, by non- Baby X or even non- Baby X resource compiler users. However I recommend these projects as they come to maturity and encouraage you to get involved.
+The Baby X filesystem project, or BabyXFS is a project designed to allow Baby X user to mount directories in Baby X programs. However becuase of the highly portable nature of Baby X, it is also modular and can be used enitrely independently, by non- Baby X or even non- Baby X resource compiler users. However I recommend these projects as they come to maturity and encouraage you to get involved.
 </P>
 
 <H3>FileSystem XML files</H3>
@@ -62,7 +62,7 @@ The <A href="FileSystemXML.html">FileSystem</A> XML format was invented to meet 
 Filesystem XML files were invented form Baby X, but they are not branded as Baby X, because it is intended as a general purpose format which should attract wide use.
 </P>
 
-<H2> THe Baby X filesystem programs </H2>
+<H2> The Baby X filesystem programs </H2>
 <P>
 BabyXFS has an entire suite of programs and sourse subroutines designed to allow users to use FileSystem files. There are of course programs to generate the XML files from directories, and to recreate the directories from the files. You can also list the files in a FileSystem file, or extract them.
 </P>
@@ -89,14 +89,17 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  
  <H3>babyxfs_xmltodir</H3>
  <P>
- babyxfs_xmltodir, takes a FileSystem XML file, and recreates the directory on disk.So it is to be used with babyxfs_xmltodir to create and extract archives.
+ babyxfs_xmltodir, takes a FileSystem XML file, and recreates the
+ directory on disk.So it is to be used with babyxfs_xmltodir to
+ create and extract archives.
   </P>
   <P>
   <pre>
       
       babyxfs_xmltodie &lt;filesystem.xml&gt; &lt;targetfolder&gt;
      
-      The program accepts a FileSystem XML file as an argument, and writes it to the target directory.
+      The program accepts a FileSystem XML file as an argument,
+      and writes it to the target directory.
       
       Example:
          babysfxs_xmlrodir  poems.xml /users/fred/Documents/poetrycollection
@@ -104,7 +107,7 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
   </pre>
   </P>
   <P>
-  babyxfs_xmltodir isquite asimple program because thec FileSystem XML format is so simple.
+  babyxfs_xmltodir is quite a simple program because the FileSystem XML format is so simple.
   </P>
   
   <H3>babyxfs_ls</H3>
@@ -116,12 +119,18 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
        
        babyxfs_ls &lt;filesystem.xml&gt; &lt;glob&gt;
       
-       The program accepts a FileSystem XML file as an argument, and a path, and lists the files to standard output.
+       The program accepts a FileSystem XML file as an argument,
+       and a path, and lists the files to standard output.
        
        Example:
           babysfxs_ls  poems.xml "/poems/*"
           
-        This will list all the files under theroot directory, which should be "poems", the same as the name of the XML file. However of course there is no way of enforcing that, and quety with "/*" if you do not know the root. REmember to enclose globs in quotes under Unix, as otherwise the system will expand them for its own file system.
+        This will list all the files under theroot directory, which
+        should be "poems", the same as the name of the XML file. However
+        of course there is no way of enforcing that, and query with "/*"
+        if you do not know the root. Remember to enclose globs in quotes
+        under Unix, as otherwise the system will expand them for its own
+        file system.
           
    </pre>
    </P>
@@ -138,12 +147,17 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
         
         babyxfs_ls &lt;filesystem.xml&gt; &lt;glob&gt;
        
-        The program accepts a FileSystem XML file as an argument, and a path, and lists the files to standard output.
+        The program accepts a FileSystem XML file as an argument, and
+        a path, and lists the files to standard output.
         
         Example:
            babysfxs_ls  poems.xml "/poems/*"
            
-         This will list all the files under theroot directory, which should be "poems", the same as the name of the XML file. However of course there is no way of enforcing that, and quety with "/*" if you do not know the root. REmember to enclose globs in quotes under Unix, as otherwise the system will expand them for its own file system.
+         This will list all the files under the root directory, which should
+         be "poems", the same as the name of the XML file. However of course
+         there is no way of enforcing that, and quety with "/*" if you do not
+         know the root. Remember to enclose globs in quotes under Unix, as
+         otherwise the system will expand them for its own file system.
            
     </pre>
     </P>
@@ -156,12 +170,12 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  THe FileSystem format is mainly designed for embedding in programs, so that they don't need to ship with supporting files on disk. However they can still use routines designed to wotk with files on disk. So the BBX_FileSystem object is an archive which supports fopen(), and fclose(). It the returns a standard library FILE * which can be passed ton any routines written in C or C++ designed to operatec ob C streams.
  </P>
  <P>
- Now you can toggle the BBX_FileSystem between using a FileSystem XML file, and using the regular file system on the host machine. ANd this is desigend to make Baby X programs or non- Baby X programs which take the BabyXFS subsystem, easy to develop. When you are developing the program, you set the archive to an external directory. And you have all the facilities of your desktop system to move files in and out and manipulate them, and practically unlimited storage. Then when thev program is getting near release, you settle on a relatively small and stable set of data that you actually need, and you create a clean directory with everhing else emoved. Then you aim the BBX_FileSystem at that and give it a test to make sure that nothing esenntial has been accidentally removed.
+ Now you can toggle the BBX_FileSystem between using a FileSystem XML file, and using the regular file system on the host machine. ANd this is desigend to make Baby X programs or non- Baby X programs which take the BabyXFS subsystem, easy to develop. When you are developing the program, you set the archive to an external directory. And you have all the facilities of your desktop system to move files in and out and manipulate them, and practically unlimited storage. Then when the program is getting near release, you settle on a relatively small and stable set of data that you actually need, and you create a clean directory with everhing else emoved. Then you aim the BBX_FileSystem at that and give it a test to make sure that nothing esenntial has been accidentally removed.
  </P>
  <P>
    And now we use babyxfs_dirtoxml to serialise thec target directory, and write out a FileSystem XML file. Which we add to our program as a string resource using the Baby X resource compiler. ANd then weretarget the BBX_FileSystem at that string. And now our program should work in exactly the same way. But it no longer relies on external files. Everything is packaged within the exexcutable.
  </P>
- </P>
+ <P>
  It's also a very robust solution. The files are packaged as a C string. They can be compiled anywhere there is A C compiler available. And all the text files are in plain text. If thete is a bug, you can inspect the file in the XML, and you can easily see if that is the problem. And the format is sufficiently robust that you can edit it in the source, though of course you will lose the changes when you need to regenerate the XML, so this should be cinsidered hacking rather than bug fixing. When you find the problem, you go back to the files on disk.
  </P>
  <H3> BabyXRC script to importvthe xml files </H3>
@@ -169,7 +183,7 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  <pre>
      
  &lt;BabyXRC&gt;
- &lt;comment&gt; This folder cintains the poetry collection */&lt;/comment&gt;
+ &lt;comment&gt; This folder contains the poetry collection.&lt;/comment&gt;
     &lt;string src="myfolder.xml"&gt;&lt;/string&gt;
  &lt;/BabyXRC&gt;
 
@@ -179,7 +193,7 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  
  <H3>testbabyxfilesystem</H3>
  <P>
- This program tests out thE BBX_FileSystem, andensures that the FileSystem XML and the system on disk and in sych and there are no problems. Hee's the current main function.
+ This program tests out thr BBX_FileSystem, and ensures that the FileSystem XML and the system on disk and in sych and there are no problems. Hee's the current main function.
  </P>
  <P>
  <pre><code class="language-c">
