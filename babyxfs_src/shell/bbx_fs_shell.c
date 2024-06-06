@@ -41,6 +41,7 @@ typedef struct bbx_fs_shell
     FILE *stdout;
     FILE *stderr;
     BBX_FS_COMMAND *commands;
+    char *editor;
 } BBX_FS_SHELL;
 
 
@@ -87,7 +88,7 @@ BBX_FS_SHELL *bbx_fs_shell(BBX_FileSystem *bbx_fs)
     shell->stderr = stderr;
     strcpy(shell->path, "/");
     shell->commands = 0;
-   
+    shell->editor = bbx_strdup("nano");
     
     return shell;
 }
@@ -96,6 +97,7 @@ void bbx_fs_shell_kill(BBX_FS_SHELL *shell)
 {
    if (shell)
    {
+       free(shell->editor);
        free(shell);
    }
 }
@@ -298,18 +300,23 @@ static int run_internal_command(BBX_FS_SHELL *shell, const char *command, int ar
        char buff[1024];
        if (argc == 2)
        {
-           exportargs[0] = "export";
-           exportargs[1] = argv[1];
-           exportargs[2] = argv[1];
-           exportargs[3] = 0;
-           export(shell, 3, exportargs);
-           snprintf(buff, 1024, "nano %s\n", argv[1]);
-           system(buff);
-           importargs[0] = "import";
-           importargs[1] = argv[1];
-           importargs[2] = argv[1];
-           importargs[3] = 0;
-           import(shell, 3, importargs);
+           char *tempfile = 0;
+           tempfile = tmpnam(0);
+           if (tempfile)
+           {
+               exportargs[0] = "export";
+               exportargs[1] = argv[1];
+               exportargs[2] = tempfile;
+               exportargs[3] = 0;
+               export(shell, 3, exportargs);
+               snprintf(buff, 1024, "%s %s\n", shell->editor, tempfile);
+               system(buff);
+               importargs[0] = "import";
+               importargs[1] = tempfile;
+               importargs[2] = argv[1];
+               importargs[3] = 0;
+               import(shell, 3, importargs);
+           }
        }
    }
    else if (!strcmp(command, "bb"))
