@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <ctype.h>
 
+#include "bbx_options.h"
 #include "bbx_filesystem.h"
 #include "bbx_fs_shell.h"
 
@@ -141,7 +142,9 @@ int helloworld(int argc, char **argv, FILE *out, FILE *in, FILE *err)
 void usage()
 {
     fprintf(stderr, "babyxfs_shell: run a shell on a FileSystem XML archive\n");
-    fprintf(stderr, "Usage: - babyxfs_shell <filesystem.xml>\n");
+    fprintf(stderr, "Usage: - babyxfs_shell <filesystem.xml> [options] \n");
+    fprintf(stderr, "\t options:\n");
+    fprintf(stderr, "\t\t -editor - set the text file editor (e.g. \"vi\")\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Generate the FileSystem files with the program babyxfs_dirtoxml\n");
     fprintf(stderr, "\n");
@@ -158,6 +161,26 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
     char line[1204];
     int err;
     
+    BBX_Options *bbx_opt;
+    char editor[256];
+    int hasedit;
+    int Nargs;
+    
+    strcpy(editor, "nano");
+    
+    bbx_opt = bbx_options(argc, argv, "");
+    hasedit = bbx_options_get(bbx_opt, "-editor", "%256s", editor);
+    Nargs = bbx_options_Nargs(bbx_opt);
+    bbx_options_kill(bbx_opt);
+
+    if (Nargs != 0)
+        usage();
+    
+    if (hasedit)
+    {
+        fprintf(stderr, "editor %s\n", editor);
+    }
+    
     printf("Welcome to the babyxfs_shell \n");
     printf("\n");
     printf("type help for help\n");
@@ -166,6 +189,11 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
    
     shell = bbx_fs_shell(fs);
     bbx_fs_shell_addcommand(shell, "hello", helloworld);
+    if (hasedit)
+    {
+        bbx_fs_shell_set_editor(shell, editor);
+    }
+    
     err = bbx_fs_shell_run(shell, stdout, stdin, stderr);
     bbx_fs_shell_kill(shell);
     
@@ -185,7 +213,7 @@ int main(int argc, char **argv)
     BBX_FileSystem *bbx_fs_xml = 0;
     int err;
     
-    if (argc != 2)
+    if (argc < 2)
         usage();
     
     fp = fopen(argv[1], "r");
