@@ -31,7 +31,7 @@ source.c - test data to pass to bbx_writesource.c.
 shell/
     The source code for the Baby X shell, an operating system for
 FileSystem files. It's a simple or baby shell written in pure ANSI
-C with no dependabcies other than the C standard library.
+C with no dependencies other than the C standard library.
 
 The programs
 
