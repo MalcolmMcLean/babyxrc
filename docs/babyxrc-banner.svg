@@ -1,0 +1,37 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 62">
+  <defs>
+    <style>
+      .cls-1 {
+        font-size: 35.9px;
+        font-family: Adrianna-Extrabold, Adrianna;
+        font-weight: 800;
+      }
+
+      .cls-1, .cls-5 {
+        fill: #010101;
+      }
+
+      .cls-2 {
+        letter-spacing: -0.02em;
+      }
+
+      .cls-3 {
+        letter-spacing: 0em;
+      }
+
+      .cls-4 {
+        letter-spacing: -0.04em;
+      }
+    </style>
+  </defs>
+  <g>
+    <text class="cls-1" transform="translate(5.36 40.41) scale(0.93 1)"><tspan class="cls-2">B</tspan><tspan class="cls-3" x="24.05" y="0">a</tspan><tspan class="cls-4" x="46.64" y="0">b</tspan><tspan x="68.9" y="0">y</tspan></text>
+    <g id="xKQxkx.tif">
+      <g>
+        <path class="cls-5" d="M137.92,47.06l.16.25h-8.66a.36.36,0,0,1-.35-.16L118.22,31.49l-.12-.18,2.63-3.57q7-9.48,13.93-19a.57.57,0,0,1,.51-.26c1,0,1.91,0,2.91,0-.07.1-.11.17-.16.23L124.48,27a.29.29,0,0,0,0,.41Z"/>
+        <path class="cls-5" d="M121.94,24.84Q113.69,36,105.46,47.11a.42.42,0,0,1-.39.21h-2.89l1-1.37q6.3-8.62,12.59-17.25a.33.33,0,0,0,0-.47L102.35,8.78l-.17-.24.22,0h8.47a.36.36,0,0,1,.32.18q5.37,7.87,10.75,15.74A.3.3,0,0,1,121.94,24.84Z"/>
+      </g>
+    </g>
+    <text class="cls-1" transform="translate(152.25 40.41) scale(0.93 1)">RC</text>
+  </g>
+</svg>
