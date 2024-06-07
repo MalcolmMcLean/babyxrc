@@ -1,0 +1,105 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+<script>
+function fileClick(a) {
+
+        var linkTag = a.href;
+        var substring = "file:///";
+        if (linkTag.includes(substring)) {
+            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
+            fileOpen(url);
+        }
+        else {
+            window.open(linkTag, '_blank');
+        }
+    }
+
+    function fileOpen(url) {
+        $.ajax({
+            url: url,
+            complete: function (jqxhr, txt_status) {
+                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
+                if (txt_status == 'success') {
+                    window.open(url, '_self');
+                }
+                else {
+                    alert("File not found[404]!");
+                }
+                // }
+            }
+        });
+    }
+    </script>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" with = "64" height = "62"> </IMG> </A>
+<H1>The BBX_FileSytem object </H1>
+<P>
+The Baby X FileSystem object, BBX_FileSystem, is a Baby X object designed to work with FileSystem XML files. The object makes it easy for programmers to use these files aand to manipulate the. It is part of the BabyXFS or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories. The C code is documented <A href = "bbx_filesystem.html">here</A>
+</P>
+
+<H3>The functions </H3>
+
+<P>
+
+These are the functions in the library.
+
+<P>
+<P>
+<pre><code class="language-c">
+    //
+    //  bbx_filesystem.h
+    //  babyxfs
+    //
+    //  Created by Malcolm McLean on 31/05/2024.
+    //
+
+    #ifndef bbx_filesystem_h
+    #define bbx_filesystem_h
+
+    #define BBX_FS_STDIO 1
+    #define BBX_FS_STRING 2
+
+    typedef struct bbx_filesystem BBX_FileSystem;
+
+    BBX_FileSystem *bbx_filesystem(void);
+    void bbx_filesystem_kill(BBX_FileSystem *bbx_fs);
+    int bbx_filesystem_set(BBX_FileSystem *bbx_fs, const char *pathorxml, int mode);
+    FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char *mode);
+    int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
+    char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs, const char *path, const char *mode);
+    unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs, const char *path, const char *mode, int *N);
+    int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path);
+    const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
+    int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs, char **(*fptr)(const char *path, void *ptr), void *ptr);
+    int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp);
+    char **bbx_filesystem_mkdir(BBX_FileSystem *bbx_fs, const char *path);
+    char **bbx_filesystem_rmdir(BBX_FileSystem *bbx_fs, const char *path);
+    char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
+
+    #endif /* bbx_filesystem_h */
+</code></pre>
+</P>
+
+
+
+</BODY> </HTML>
+
