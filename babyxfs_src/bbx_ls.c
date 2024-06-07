@@ -250,8 +250,23 @@ void filter_in_glob(char **list, const char *glob)
     free(glob_d);
 }
 
+static void usage()
+{
+    fprintf(stderr, "bbx_ls - the Baby X ls program\n");
+    fprintf(stderr,"Usage: bbx_ls [options] [path]\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "\toptions\n");
+    fprintf(stderr, "\t\t-l - long mode\n");
+    fprintf(stderr, "\t\t-f - just list files\n");
+    fprintf(stderr, "\t\t-d - just list directories\n");
+    fprintf(stderr, "\t\t-sort <sorttype> - set the type of sort\n");
+    fprintf(stderr, "\t\t\t\"default\" the normal sort\n");
+    fprintf(stderr, "\t\t\t\"ext\" sort by extension\n");
+}
+
 int main(int argc, char **argv)
 {
+    char errormessage[1024];
     DIRENTRY *directory = 0;
     char **dir = 0;
     char *glob = 0;
@@ -281,6 +296,10 @@ int main(int argc, char **argv)
         pathandglob = bbx_options_arg(bbx_opt, 0);
     for (i = 0; i <Nargs; i++)
         printf("-%s\n", bbx_options_arg(bbx_opt,i));
+    if (bbx_options_error(bbx_opt, errormessage, 1024))
+    {
+        fprintf(stderr, "%s\n", errormessage);
+    }
     bbx_options_kill(bbx_opt);
     bbx_opt  = 0;
     
@@ -318,31 +337,34 @@ int main(int argc, char **argv)
     }
     else
         path = ".";
-    
-    printf("here path %s\n", path);
-    
-    FILE *fp = 0;
-    fp = fopen(path, "r");
-    if (fp)
+    if (strcmp(path, "."))
     {
-        dir = malloc(sizeof(char *) * 2);
-        dir[0] = basename(path);
-        dir[1] = 0;
-        if (strrchr(path, '/'))
+        FILE *fp = 0;
+        fp = fopen(path, "r");
+        printf("path %s fp %p\n", path, fp);
+        if (fp)
         {
-            char *copy_path;
-            char *ptr = strrchr(path, '/');
-            int len;
-            
-            len = ptr - path;
-            copy_path = malloc((len+1) *sizeof(char *));
-            memcpy(copy_path, path, len);
-            copy_path[len] = 0;
-            path = copy_path;
+            dir = malloc(sizeof(char *) * 2);
+            dir[0] = basename(path);
+            dir[1] = 0;
+            if (strrchr(path, '/'))
+            {
+                char *copy_path;
+                char *ptr = strrchr(path, '/');
+                int len;
+                
+                len = ptr - path;
+                copy_path = malloc((len+1) *sizeof(char *));
+                memcpy(copy_path, path, len);
+                copy_path[len] = 0;
+                path = copy_path;
+            }
+            else
+                path = ".";
+            fclose(fp);
         }
         else
-            path = ".";
-        fclose(fp);
+            dir = readdirectory_posix(path);
     }
     else
         dir = readdirectory_posix(path);
@@ -407,13 +429,17 @@ int main(int argc, char **argv)
         for (i = 0; i < N; i++)
         {
             const char *type = "dir";
-            if (!is_directory(directory[i].name))
+            if (is_directory(directory[i].name))
+            {
+                fprintf(stdout, "%-8s %10s \t%s\n", type, " ", directory[i].name);
+            }
+            else
+            {
                 type = directory[i].isbinary ? "binary" : "text";
-            fprintf(stdout, "%-8s %10d \t%s\n", type, (int) directory[i].size, directory[i].name);
+                fprintf(stdout, "%-8s %10d \t%s\n", type, (int) directory[i].size, directory[i].name);
+            }
         }
     }
-        
-   // bbx_ls(stdout, dir, glob);
 
    return 0;
 }
