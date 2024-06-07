@@ -93,6 +93,17 @@ int isglob(const char *glob)
     return 0;
 }
 
+static const char *basename(const char *path)
+{
+    const char *answer = 0;
+    answer = strrchr(path, '/');
+    if (answer)
+        answer = answer + 1;
+    else
+        answer = path;
+    
+    return answer;
+}
 
 
 static int is_directory(const char *name)
@@ -156,6 +167,13 @@ static int comp_natural(const void *namea, const void *nameb)
     else
         return -1;
 }
+
+typedef struct
+{
+    char *name;
+    int isbinary;
+    unsigned long long size;
+} DIRENTRY;
 
 int bbx_ls(FILE *fp, char **directory, const char *glob)
 {
@@ -234,6 +252,7 @@ void filter_in_glob(char **list, const char *glob)
 
 int main(int argc, char **argv)
 {
+    DIRENTRY *directory = 0;
     char **dir = 0;
     char *glob = 0;
     char sortmode [32] = "default";
@@ -278,6 +297,10 @@ int main(int argc, char **argv)
                 memcpy(path, pathandglob, base -  pathandglob);
                 path[base - pathandglob] = 0;
             }
+            else
+            {
+                path = pathandglob;
+            }
         }
         else
         {
@@ -296,11 +319,35 @@ int main(int argc, char **argv)
     else
         path = ".";
     
-    printf("hre oath %s\n", path);
-
-   dir = readdirectory_posix(path);
-if (!dir)
-    return 0;
+    printf("here path %s\n", path);
+    
+    FILE *fp = 0;
+    fp = fopen(path, "r");
+    if (fp)
+    {
+        dir = malloc(sizeof(char *) * 2);
+        dir[0] = basename(path);
+        dir[1] = 0;
+        if (strrchr(path, '/'))
+        {
+            char *copy_path;
+            char *ptr = strrchr(path, '/');
+            int len;
+            
+            len = ptr - path;
+            copy_path = malloc((len+1) *sizeof(char *));
+            memcpy(copy_path, path, len);
+            copy_path[len] = 0;
+            path = copy_path;
+        }
+        else
+            path = ".";
+        fclose(fp);
+    }
+    else
+        dir = readdirectory_posix(path);
+    if (!dir)
+        return 0;
     
    if (f_flag)
        filter_out_directories(dir);
@@ -323,9 +370,50 @@ if (!dir)
     else if (!strcmp(sortmode, "natural"))
         qsort(dir, N, sizeof(char *), comp_natural);
     
+    if (1)
+    {
+        int N = 0;
+        
+        for (i = 0; dir[i]; i++)
+            N++;
+        directory = malloc((N +1) * sizeof(DIRENTRY));
+        if (!directory)
+        {
+            return -1;
+        }
+        for (i = 0; i < N; i++)
+        {
+            char fname[1024];
+            if (strcmp(path, "."))
+                snprintf(fname, 1024, "%s/%s", path, dir[i]);
+            else
+                snprintf(fname, 1024, "%s", dir[i]);
+            
+            directory[i].name = dir[i];
+            if (!is_directory(directory[i].name))
+            {
+                printf("calling getsize with %s\n", fname);
+                directory[i].size = getsize(fname);
+                directory[i].isbinary = is_binary(fname);
+            }
+            else
+            {
+                directory[i].size = 0;
+                directory[i].isbinary = 0;
+            }
+        }
         
         
-   bbx_ls(stdout, dir, glob);
+        for (i = 0; i < N; i++)
+        {
+            const char *type = "dir";
+            if (!is_directory(directory[i].name))
+                type = directory[i].isbinary ? "binary" : "text";
+            fprintf(stdout, "%-8s %10d \t%s\n", type, (int) directory[i].size, directory[i].name);
+        }
+    }
+        
+   // bbx_ls(stdout, dir, glob);
 
    return 0;
 }
