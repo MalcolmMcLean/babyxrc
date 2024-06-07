@@ -68,6 +68,20 @@ add_executable("testbabyxfilesystem"
     "babyxfs_src/testbabyxfilesystem.c")
 target_link_libraries( "testbabyxfilesystem" ${libs} )
 
+add_executable("rot13"
+    "babyxfs_src/rot13.c")
+target_link_libraries( "rot13" ${libs} )
+
+add_executable("bbx_ls"
+    "babyxfs_src/strnatcmp.c"
+    "babyxfs_src/strnatcmp.h"
+    "babyxfs_src/readdirectory_posix.c"
+    "babyxfs_src/bbx_options.c"
+    "babyxfs_src/bbx_options.h"
+    "babyxfs_src/bbx_ls.c")
+target_link_libraries( "rot13" ${libs} )
+
+
 add_executable("babyxfs_escapexml"
     "babyxfs_src/babyxfs_escapexml.c")
 target_link_libraries( "babyxfs_escapexml" ${libs} )
