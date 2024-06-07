@@ -51,11 +51,24 @@ function fileClick(a) {
     <script src="prism.js"></script>
     <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
     <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" with = "64" height = "62"> </IMG> </A>
-<H1>The BBX_FileSytem object </H1>
+<H1>The BBX_FileSystem object </H1>
 <P>
-The Baby X FileSystem object, BBX_FileSystem, is a Baby X object designed to work with FileSystem XML files. The object makes it easy for programmers to use these files aand to manipulate the. It is part of the BabyXFS or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories. The C code is documented <A href = "bbx_filesystem.html">here</A>
+The Baby X FileSystem object, BBX_FileSystem, is a Baby X object designed to work with FileSystem XML files. The object makes it easy for programmers to use these files aand to manipulate the. It is part of the <A href = "BabyXFS.html">BabyXFS</A> or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories. The C code is documented <A href = "bbx_filesystem.html">here</A>
 </P>
-
+<H3> A baby virtual filesystem</H3>
+<P>
+The BBX_FileSystem object is designed to answer the question of how to mount virtual file systems in Baby X or other small "baby" hobby programs. So like all of Baby X, the emphasis is on simplicity and potrability, to give the hobby programmer an easy or "baby" component to work with. So the BBX_FileSystem object use <A href = "FileSystemXML.html">FileSystem XML</A> files, a vey cleam XML format desined for Baby X, but free for anyone to use. It loads a FileSystem XML file and treates it as an internal drive which the program can query.
+</P>
+<P>
+The object has two dependencies, a BabyXFS utilities file, and an XML parser. So three .c  files and three .h files are all you need to take to use it. The files are hosted on github, <A href ="https://github.com/MalcolmMcLean/babyxrc">here</A>. And then you simply drop those files into your program and you can use it. It's all clean ANSI C.
+</P>
+<P>
+And you can easily convert a folder on youe machine to a FileSystem XML file using the utilities in the <h href = BabyXFS.html>BabyXFS</A> subsystem. So the object is extremely powerful and easy to use, and of course like all of Baby X, it is free for anyone to use for any purpose, thought it is mainly aimed at the hobby programmer writing small programs.
+<P>
+<H3>Mounting host directories</H3>
+<P>
+Whilst the BBX_FileSystem object is designed to be used with FileSystem XML files, you can also mount a host directory. Theere is of course little point doing this in a user program, as yu would just use stdio and the facilities of the host operating system directly, But it is a development too. Whilst developing the program you set the BBX_FileSystem object to BBX_FS_ANSI mode, and it use the host directory. Any you'veall the facilities of the host machine for editin that folder. Then when the program is near release, and you have settled on the resource files, you convert to a FileSystem XML file using the BabyXFS tool babyxfs_dirtoxml, and switcht he objct to BBX_FS_STRING mode.
+</P>
 <H3>The functions </H3>
 
 <P>
