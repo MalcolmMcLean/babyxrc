@@ -76,6 +76,7 @@ add_executable("bbx_ls"
     "babyxfs_src/strnatcmp.c"
     "babyxfs_src/strnatcmp.h"
     "babyxfs_src/readdirectory_posix.c"
+    "babyxfs_src/is_directory_posix.c"
     "babyxfs_src/bbx_options.c"
     "babyxfs_src/bbx_options.h"
     "babyxfs_src/bbx_ls.c")

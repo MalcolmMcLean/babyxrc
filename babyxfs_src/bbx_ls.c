@@ -7,6 +7,7 @@
 #include "bbx_options.h"
 
 char **readdirectory_posix(const char *path);
+int is_directory_posix(const char *path);
 
 char *bbx_strdup(const char *str)
 {
@@ -160,7 +161,7 @@ static int is_directory(const char *name)
 
 
 
-static int comp_aphabetical(const void *namea, const void *nameb)
+static int comp_alphabetical(const void *namea, const void *nameb)
 {
     const char *stra = *(const char **) namea;
     const char *strb = *(const char **) nameb;
@@ -216,6 +217,23 @@ typedef struct
     int isbinary;
     unsigned long long size;
 } DIRENTRY;
+
+static int comp_size(const void *dirptra, const void *dirptrb)
+{
+    const DIRENTRY *dira = (const DIRENTRY *) dirptra;
+    const DIRENTRY *dirb = (const DIRENTRY *) dirptrb;
+    
+    if (is_directory(dira->name) && is_directory(dirb->name))
+        return strnatcmp(dira->name, dirb->name);
+    else if (!is_directory(dira->name) && !is_directory(dirb->name))
+        return (int) (dira->size - dirb->size);
+    else if (!is_directory(dira->name))
+        return 1;
+    else
+        return -1;
+}
+
+
 
 /*
 int bbx_ls(FILE *fp, char **directory, const char *glob)
@@ -342,6 +360,7 @@ int main(int argc, char **argv)
     if (strcmp(sortmode, "default") &&
         strcmp(sortmode, "alpha") &&
         strcmp(sortmode, "ext") &&
+        strcmp(sortmode, "size") &&
         strcmp(sortmode, "none")
                )
     {
@@ -414,10 +433,7 @@ int main(int argc, char **argv)
     
     if (strcmp(path, "."))
     {
-        FILE *fp = 0;
-        fp = fopen(path, "r");
-        printf("path %s fp %p\n", path, fp);
-        if (fp)
+        if (!is_directory_posix(path))
         {
             dir = malloc(sizeof(char *) * 2);
             dir[0] = basename(path);
@@ -436,7 +452,6 @@ int main(int argc, char **argv)
             }
             else
                 path = ".";
-            fclose(fp);
         }
         else
             dir = readdirectory_posix(path);
@@ -459,26 +474,24 @@ int main(int argc, char **argv)
     printf("\n");
     
     N = 0;
-    for (i =0; dir[i]; i++)
+    for (i = 0; dir[i]; i++)
         N++;
     if (!strcmp(sortmode, "default"))
         qsort(dir, N, sizeof(char *), comp_natural);
     else if (!strcmp(sortmode, "ext"))
         qsort(dir, N, sizeof(char *), comp_extension);
     else if (!strcmp(sortmode, "alpha"))
-        qsort(dir, N, sizeof(char *), comp_aphabetical);
+        qsort(dir, N, sizeof(char *), comp_alphabetical);
     
-    if (l_flag == 0)
-    {
-        for (i = 0; i < N; i++)
-            printf("%s\n", dir[i]);
-    }
-    else
-    {
-        int N = 0;
+    int needextended = 0;
+    if (l_flag)
+        needextended = 1;
+    if (!strcmp(sortmode, "size"))
+        needextended = 1;
         
-        for (i = 0; dir[i]; i++)
-            N++;
+    if (needextended)
+    {
+    
         directory = malloc((N +1) * sizeof(DIRENTRY));
         if (!directory)
         {
@@ -495,7 +508,6 @@ int main(int argc, char **argv)
             directory[i].name = dir[i];
             if (!is_directory(directory[i].name))
             {
-                printf("calling getsize with %s\n", fname);
                 directory[i].size = getsize(fname);
                 directory[i].isbinary = is_binary(fname);
             }
@@ -505,8 +517,24 @@ int main(int argc, char **argv)
                 directory[i].isbinary = 0;
             }
         }
-        
-        
+    }
+
+    if (!strcmp(sortmode, "size"))
+    {
+        if (needextended == 0 || directory == 0)
+            return  - 1;
+        qsort(directory, N, sizeof(DIRENTRY), comp_size);
+        for(i = 0; i < N; i++)
+            dir[i] = directory[i].name;
+    }
+    
+    if (l_flag == 0)
+    {
+        for (i = 0; i < N; i++)
+            printf("%s\n", dir[i]);
+    }
+    else
+    {
         for (i = 0; i < N; i++)
         {
             const char *type = "dir";
