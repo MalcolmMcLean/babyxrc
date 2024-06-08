@@ -1,12 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "strnatcmp.h"
-
 #include "bbx_options.h"
 
 char **readdirectory_posix(const char *path);
+
+char *bbx_strdup(const char *str)
+{
+    char *answer;
+    
+    answer = malloc(strlen(str) +1);
+    assert(answer);
+    strcpy(answer, str);
+    
+    return answer;
+}
 
 static int getsize(const char *fname)
 {
@@ -106,6 +117,36 @@ static const char *basename(const char *path)
 }
 
 
+static int dirnamewithglob(const char *pathandglob, char **pathret, char **globret)
+{
+    char *base = 0;
+    char *path = 0;
+    char *glob = 0;
+    int answer = 0;
+    
+    base = strrchr(pathandglob, '/');
+    
+    if (base)
+    {
+        if (isglob(base + 1))
+        {
+            path = malloc(base - pathandglob + 1);
+            memcpy(path, pathandglob, base - pathandglob);
+            path[base - pathandglob] = 0;
+            glob = bbx_strdup(base + 1);
+        }
+        else
+            path = bbx_strdup(pathandglob);
+    }
+    else if (isglob(pathandglob))
+        glob = bbx_strdup(pathandglob);
+    else
+        path = bbx_strdup(pathandglob);
+    
+    return answer;
+}
+
+
 static int is_directory(const char *name)
 {
     int N;
@@ -119,7 +160,7 @@ static int is_directory(const char *name)
 
 
 
-static int compf(const void *namea, const void *nameb)
+static int comp_aphabetical(const void *namea, const void *nameb)
 {
     const char *stra = *(const char **) namea;
     const char *strb = *(const char **) nameb;
@@ -132,25 +173,6 @@ static int compf(const void *namea, const void *nameb)
         return 1;
     else
         return -1;
-}
-
-static int comp_extension(const void *namea, const void *nameb)
-{
-    const char *stra = *(const char **) namea;
-    const char *strb = *(const char **) nameb;
-    char *exta;
-    char *extb;
-    
-    exta = strrchr(stra, '.');
-    extb = strrchr(strb, '.');
-    
-    if (!exta && !extb)
-        return compf(namea, nameb);
-    if (!exta)
-        return -1;
-    if (!extb)
-        return 1;
-    return strcmp(exta, extb);
 }
 
 static int comp_natural(const void *namea, const void *nameb)
@@ -168,6 +190,26 @@ static int comp_natural(const void *namea, const void *nameb)
         return -1;
 }
 
+static int comp_extension(const void *namea, const void *nameb)
+{
+    const char *stra = *(const char **) namea;
+    const char *strb = *(const char **) nameb;
+    char *exta;
+    char *extb;
+    
+    exta = strrchr(stra, '.');
+    extb = strrchr(strb, '.');
+    
+    if (!exta && !extb)
+        return comp_natural(namea, nameb);
+    if (!exta)
+        return -1;
+    if (!extb)
+        return 1;
+    return strcmp(exta, extb);
+}
+
+
 typedef struct
 {
     char *name;
@@ -175,6 +217,7 @@ typedef struct
     unsigned long long size;
 } DIRENTRY;
 
+/*
 int bbx_ls(FILE *fp, char **directory, const char *glob)
 {
   int i;
@@ -183,7 +226,6 @@ int bbx_ls(FILE *fp, char **directory, const char *glob)
     for (i = 0; directory[i]; i++)
         N++;
         
-  // qsort(directory, N, sizeof(char *), compf);
 
   for (i = 0; directory[i]; i++)
   {
@@ -203,6 +245,7 @@ int bbx_ls(FILE *fp, char **directory, const char *glob)
 
   return 0;
 }
+ */
 
 void filter_out_directories(char **list)
 {
@@ -261,12 +304,15 @@ static void usage()
     fprintf(stderr, "\t\t-d - just list directories\n");
     fprintf(stderr, "\t\t-sort <sorttype> - set the type of sort\n");
     fprintf(stderr, "\t\t\t\"default\" the normal sort\n");
+    fprintf(stderr, "\t\t\r\"alpha\" alphabetical sort\n");
     fprintf(stderr, "\t\t\t\"ext\" sort by extension\n");
+    fprintf(stderr, "\t\t\t\"none\" don't sort (OS order)\n");
 }
 
 int main(int argc, char **argv)
 {
     char errormessage[1024];
+    int err = 0;
     DIRENTRY *directory = 0;
     char **dir = 0;
     char *glob = 0;
@@ -280,7 +326,7 @@ int main(int argc, char **argv)
     int i;
     BBX_Options *bbx_opt;
     int Nargs = 0;
-    
+
     bbx_opt = bbx_options(argc, argv, "");
     l_flag = bbx_options_get(bbx_opt, "-l", 0);
     f_flag = bbx_options_get(bbx_opt, "-f", 0);
@@ -292,20 +338,46 @@ int main(int argc, char **argv)
     printf("f %d\n", f_flag);
     printf("d %d\n", d_flag);
     printf("sort %s\n", sortmode);
+    
+    if (strcmp(sortmode, "default") &&
+        strcmp(sortmode, "alpha") &&
+        strcmp(sortmode, "ext") &&
+        strcmp(sortmode, "none")
+               )
+    {
+        fprintf(stderr, "unrecognised sort %s\n", sortmode);
+        err = 1;
+    }
+    
+    
+    
     if (Nargs > 0)
         pathandglob = bbx_options_arg(bbx_opt, 0);
     for (i = 0; i <Nargs; i++)
         printf("-%s\n", bbx_options_arg(bbx_opt,i));
     if (bbx_options_error(bbx_opt, errormessage, 1024))
     {
+        err = 1;
         fprintf(stderr, "%s\n", errormessage);
+    }
+    if (Nargs > 1 && err == 0)
+    {
+        err = 1;
+        usage();
     }
     bbx_options_kill(bbx_opt);
     bbx_opt  = 0;
     
+    if (err)
+        return -1;
+    
+    
+    
     
     if (pathandglob)
     {
+        // path = dirnamewithglob(pathandglob);
+    
         char * base = strrchr(pathandglob, '/');
         if (base)
         {
@@ -337,6 +409,9 @@ int main(int argc, char **argv)
     }
     else
         path = ".";
+    
+    
+    
     if (strcmp(path, "."))
     {
         FILE *fp = 0;
@@ -370,6 +445,7 @@ int main(int argc, char **argv)
         dir = readdirectory_posix(path);
     if (!dir)
         return 0;
+   
     
    if (f_flag)
        filter_out_directories(dir);
@@ -386,13 +462,18 @@ int main(int argc, char **argv)
     for (i =0; dir[i]; i++)
         N++;
     if (!strcmp(sortmode, "default"))
-        qsort(dir, N, sizeof(char *), compf);
+        qsort(dir, N, sizeof(char *), comp_natural);
     else if (!strcmp(sortmode, "ext"))
         qsort(dir, N, sizeof(char *), comp_extension);
-    else if (!strcmp(sortmode, "natural"))
-        qsort(dir, N, sizeof(char *), comp_natural);
+    else if (!strcmp(sortmode, "alpha"))
+        qsort(dir, N, sizeof(char *), comp_aphabetical);
     
-    if (1)
+    if (l_flag == 0)
+    {
+        for (i = 0; i < N; i++)
+            printf("%s\n", dir[i]);
+    }
+    else
     {
         int N = 0;
         
