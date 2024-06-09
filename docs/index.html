@@ -1,8 +1,12 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
+    <title> The Baby X Resource Compiler </title>
+    <meta charset="UTF-8">
 <style>
 body {
     margin-left: 120px;
+    background-color: #C0C0FF;
 }
 
 P {
@@ -13,18 +17,104 @@ pre{
     width : 50em;
     background-color: #FFFFFF;
 }
+    .nav {
+    width:10em;
+    }
+    .cell{
+        width:38em;
+    }
+    .xcell{
+        all: initial; /* Set default CSS */
+    }
+    
+    #navlist
+    {
+        vertical-align:top;
+    }
+    #navlist li {
+        margin:0
+    }
+    
+    /* Add a black background color to the top navigation */
+    .topnav {
+      background-color: #c0c0ff;
+      overflow: hidden;
+    }
+
+    /* Style the links inside the navigation bar */
+    .topnav a {
+      float: left;
+      color: #c0c0ff;
+      text-align: center;
+      padding: 14px 4px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    /* Change the color of links on hover */
+    .topnav a:hover {
+      background-color: #d0d0ff;
+      color: black;
+    }
+
+    /* Add a color to the active/current link */
+    .topnav a.active {
+      background-color: #04AA6D;
+      color: white;
+    }
+    
+    .center {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      width: 50%;
+    }
 </style>
 
 </HEAD>
-<BODY bgcolor="#c0c0ff">
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </IMG> </A>
-    <A href = "https://github.com/MalcolmMcLean/babyxrc"> <IMG src = "babyxrc_logo.svg" alt="Malcolm's github site", width = "64" height = "62"> </IMG> </A>
-    &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
-    
-<H1> The Baby X resource compiler </H1>
-
-<P>
+<BODY>
+    <div class="topnav">
+        <A href="https://github.com/MalcolmMcLean"><IMG src="BabyXLogos/Cartoon_Owl_clip_art.svg" alt="Cartoon Owl" height="32"></A>
+        <A href="https://github.com/MalcolmMcLean/babyxrc"><IMG src="BabyXLogos/baby-x-rc-logo.svg" alt="BabyXRC logo" height="32"></A>
+        <A href="https://github.com/MalcolmMcLean/babyx"><IMG src="BabyXLogos/babyx-banner.svg" alt="BabyX banner" height="32"></A>
+        <A href="https://github.com/MalcolmMcLean/babyxrc"><IMG src="BabyXLogos/babyxrc-banner.svg" alt="BabyXRC banner" height="32"></A>
+        <A href="BabyXFS.html"><IMG src="BabyXLogos/babyxfs-banner.svg" alt="BabyXFS banner" height="32"></A>
+        <A href="https://github.com/MalcolmMcLean/minixml"><IMG src="BabyXLogos/MiniXML_logo.png" alt="MiniXML logo" height="32"></A>
+        <A href="https://malcolmmclean.github.io/minibasic"><IMG src="BabyXLogos/MiniBasicLogo.svg" alt = "MiniBasic logo" height="32"></A>
+    </div>
+<BR>
+<IMG src = "BabyXLogos/babyxrc-title.svg" alt="BabyXRC title" height="50" class="center">
+<TABLE>
+    <TR>
+        <TD class="nav" style="background-color:white;text-align:left;vertical-align:0">
+            <!-- <nav style="margin:2px"> -->
+        <ul id="navlist" style="list-style-type:none;margin:0">
+         <LI><A href="BBX_FileSystemObject.html">BBX_FileSystemObject</A></LI>
+         <LI><A href="BBX_OptionsObject.html">BBX_OptionsObject</A></LI>
+         <LI><A href="BabyXFS.html">BabyXFS</A></LI>
+         <LI><A href="FileSystemXML.html">FileSystemXML</A></LI>
+         <LI><A href="bbx_filesystem.html">bbx_filesystem</A></LI>
+         <LI><A href="importingdirectories.html">importingdirectories</A></LI>
+         <LI><A href="index.html">index</A></LI>
+         <LI><A href="sourcefiles.html">sourcefiles</A></LI>
+         <LI><A href="usingcsv.html">usingcsv</A></LI>
+         <LI><A href="usingoptions.html">usingoptions</A></LI>
+         <LI><A href="usingrbtree.html">usingrbtree</A></LI>
+         <LI><A href="usingutf8.html">usingutf8</A></LI>
+         <LI><A href="usingxmlparser.html">usingxmlparser</A></LI>
+       </ul>
+            <!-- </nav>  -->
+        </TD>
+        <TD>
+            <P style="width:2em">
+            </P>
+        </TD>
+<TD>
+<div style="width:38em">
+    <TABLE>
+        <TR>
+            <TD>
+        <div style="float:left;width:20em">
 The <A href="https://github.com/MalcolmMcLean/babyxrc">Baby X resource compiler</A> takes binary resources - images, fonts, audio
 clips and text - and converts them to compileable C source. Unike most 
 other resource compilers, it doesn't simply package binary data, it reads 
@@ -34,55 +124,70 @@ formats. However most programs want images as RGBA data. So the Baby X
 resource compiler loads the image, decompresses it, and writes out as 
 RGBA. If the input image is the wrong size, the Baby X resource compiler 
 will resize it for you.
+    </div>
+        </TD>
+            <TD>
+                <div style="width:18em">
+                    <div style="width:8em;float:right;top:2px;background-color:white">
+            <IMG src="BabyXLogos/baby-x-rc-logo.svg" alt="BabyXRC logo" width="120" height="120">
+                </div>
+                </div>
+        </TD>
+        </TR>
+        </TABLE>
+ 
+ <P class="cell">
+ We now have an anciliary project, <A href = "http://malcolmmclean.github.io/babyxrc/BabyXFS.html"> BabyXFS </A>, or the Baby X filesystem project. This is designed to allow Baby X programmers to mount directories and embed them in programs. The files use the <A href = "FileSystemXML.html">&lt;FileSystem&gt;</A> XML file format. This allows directories to be packaged up and then imported via he Baby X resource compiler. There is now a suite of babyxfs_ programs to manipulate the FileSystem XML files. A particularly intetesting use case is allowing a program to print out its own source so it can be recompiled on a diferent platform. This is explained as part of the BabyXFS project, <A href="https://github.com/MalcolmMcLean/babyxrc/tree/master/Examples/BabyXFS/writing_own_source">here</A>.
  </P>
- <P>
- We now have an anciliary project, <A href = "http://malcolmmclean.github.io/babyxrc/BabyXFS.html"> BabyXFS </A>, or the Baby X filesystem project. This is designed to allow Baby X programmers to mount directories and embed them in programs. The files use the <A href = "FileSystemXML.html">&lt;FileSystem&gt;</A> XML file format. This allows directories to be packaged up and then imported via he Baby X resource compiler. There is now a suite of babyxfs_ programs to manipulate the FileSystem XML files. A paricularly intetesting use case is allowing a program to print out its own source so it can be recompiled on a diferent platform. This is explained as part of the BabyXFS project, <A href="https://github.com/MalcolmMcLean/babyxrc/tree/master/Examples/BabyXFS/writing_own_source">here</A>.
- </P>
-<P>
+<P class ="cell">
 The Baby X resource compiler will load most images in most common formats, 
 including .jpeg, .png, .tiff, .gif, and .bmp. SVG images are rasterized 
 (import SVG  as text data if you want to treat SVG as vector). So the 
 loadimage function will load almost anything, and you are welcome to steal 
 it for your own projects. (If you enhance or bug fix, please contact me).
  </P>
-<P>
+<P class="cell">
 Audio is loaded as .wav, .aiff, or .mp3. AIFF files with bitrates other 
 than 16 bits per sample are not supported, nor are compressed AIFC files, 
 with the exception of the special case of AIFC files which reverse 
 endianness. MP3 files will be decompressed (include as &lt;binary&gt; if 
-you have facilites for playing MP3. There's a samplerate parameter so you 
+you have facilites for playing MP3. There&apos;s a samplerate parameter so you
 can include audio from any source and store it at the samplerate required 
 by your platform.
 </P>
-<P>
+<P class="cell">
 The Baby X resource compiler will also take in text in most common formats,
 and save it as human-readable ASCII strings, UTF-8, or UTF-16. Text files 
 commonly have non-standard extensions, so the format has to be determined 
 by heuristic analysis. For this reason it is recommended to use UTF-8 
-whereever posible. It's also recommended to use UTF-8 in the output. 
+whereever posible. It&apos;s also recommended to use UTF-8 in the output.
 However UTF-16 output is provided for compatibility. By default, surrogate 
 pairs are turned off, because the usual reason for using UTF-16 is that 
-the program doesn't want to handle non-fixed width representations. 
-However you can turn them on with the "allowsurrogatepairs" attribute. You
+the program doesn&apos;t want to handle non-fixed width representations.
+However you can turn them on with the &quot;allowsurrogatepairs&quot; attribute. You
 can incorporate UTF-8 in your source with the &lt;string&gt; tag, but some 
-compilers and editors won't accept it. So the &lt;utf8&gt; tag dumps UTF-8 
+compilers and editors won&apos;t accept it. So the &lt;utf8&gt; tag dumps UTF-8
 as ASCII-encoded binary. 
  </P>
  
-<P>
+<P class = "cell">
 Users of the Baby X resource compiler will be C programmers, so it is the 
 work of a moment to modify the program slightly to output data in a 
 slightly different format, for example if you need an exact binary 
 signature for audio samples, or if you want images as ARGB rather than 
-RGBA. It's hard to predict these requirements by providing runtime 
+RGBA. It&apos;s hard to predict these requirements by providing runtime
 options. So whilst it sounds a bit 1970s, modifying the program source is 
 the best approach.
  </P>
- <P>
+ <P class  = "cell">
  For a developer-oriented documentation of the Baby X resource compiler source,
  see the <A href="sourcefiles.html"> Baby X resource compiler source overview</A>.
  </P>
-
+ </div>
+ </TD>
+ </TR>
+ </TABLE>
+<H2>Using the Baby X resource compiler</H2>
 <H3>Usage</H3>
 <pre>
 babyxrc script.xml &gt; outputfile.c
@@ -133,6 +238,7 @@ at 22050Hz.
 </P>
 <H3>Tag list</H3>
 <P>
+<UL>
 <LI> &lt;string&gt; - output data as a human-readable C string </LI>
 <LI> &lt;utf8&gt; - output data as UTF-8 </LI>
 <LI> &lt;utf16&gt; - output data as UTF-16 </LI>
@@ -149,7 +255,7 @@ C structs </LI>
 <LI> &lt;international&gt; child &lt;string&gt; and &lt;utf8&gt; tags 
 represent translations 
 </LI>
- 
+</UL>
 <P>
 The tag type gives the output format, not the input format of the 
 resource. Usually the resource compiler will determine the format of
@@ -287,7 +393,7 @@ resized.
 <P>
 The &lt;font&gt; tag is mainly intended for ripping true type fonts and
 rasterising them so they can be used by simple programs. If you 
-have runtime support for true type fonts, load the font with the <binary>
+have runtime support for true type fonts, load the font with the &lt;binary&gt;
 tag.
 </P>
 
@@ -339,7 +445,6 @@ supported is csv.
 <P>
 <B>Attributes</B> name <BR>
 <B>Children</B> &lt;string&gt; &lt;utf8&gt; tags.
-</B>
 
 <pre>
 &lt;international name = "hellofred"&gt;
@@ -352,7 +457,7 @@ supported is csv.
 Here we are setting up an internationalised string with the base identifer 
 "hellofred" and English, French, and Chinese translations. The English 
 and French are entered directly, the Chinese is read in from an external 
-file. In this context, <string> and <utf8> tags should take a "language" 
+file. In this context, &lt;string&gt; and &lt;utf8&gt; tags should take a "language"
 attribute.
 </P>
 <H3>Helping out</H3>
@@ -398,7 +503,6 @@ If the tag has children or for other reasons is difficult to process using
 the abvoe interface, the  write a "processtagnamenode" function which 
 takes the node as a parameter. You'll then need to use the xml functions 
 in xmlparser.h to access the node's information.
- </P>
- <div align='center'><a href='https://www.free-website-hit-counter.com'><img src='https://www.free-website-hit-counter.com/c.php?d=6&id=172126&s=10' border='0' alt='Free Website Hit Counter'></a><br / ><small><a href='https://www.free-website-hit-counter.com' title="Free Website Hit Counter">Free website hit counter</a></small></div>
+ </P> 
  </BODY>
  </HTML>

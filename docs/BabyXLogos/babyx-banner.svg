@@ -1,0 +1,36 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 145 62">
+  <defs>
+    <style>
+      .cls-1 {
+        font-size: 35.9px;
+        font-family: Adrianna-Extrabold, Adrianna;
+        font-weight: 800;
+      }
+
+      .cls-1, .cls-5 {
+        fill: #010101;
+      }
+
+      .cls-2 {
+        letter-spacing: -0.03em;
+      }
+
+      .cls-3 {
+        letter-spacing: 0em;
+      }
+
+      .cls-4 {
+        letter-spacing: -0.04em;
+      }
+    </style>
+  </defs>
+  <g>
+    <text class="cls-1" transform="translate(2.22 40.65) scale(0.93 1)"><tspan class="cls-2">B</tspan><tspan class="cls-3" x="24.05" y="0">a</tspan><tspan class="cls-4" x="46.64" y="0">b</tspan><tspan x="68.9" y="0">y</tspan></text>
+    <g id="xKQxkx.tif">
+      <g>
+        <path class="cls-5" d="M134.78,47.3l.16.25h-8.66a.35.35,0,0,1-.34-.16L115.08,31.73l-.12-.18c.88-1.2,1.75-2.39,2.63-3.57L131.53,9a.55.55,0,0,1,.5-.26h2.91c-.07.09-.11.16-.16.23L121.34,27.26a.29.29,0,0,0,0,.41Q128.07,37.48,134.78,47.3Z"/>
+        <path class="cls-5" d="M118.8,25.08q-8.25,11.13-16.47,22.27a.43.43,0,0,1-.4.2H99l1-1.37,12.59-17.26a.32.32,0,0,0,0-.47L99.21,9l-.16-.25h8.68a.36.36,0,0,1,.32.18L118.8,24.67A.29.29,0,0,1,118.8,25.08Z"/>
+      </g>
+    </g>
+  </g>
+</svg>
