@@ -253,7 +253,7 @@ at 22050Hz.
 <LI> &lt;string&gt; - output data as a human-readable C string </LI>
 <LI> &lt;utf8&gt; - output data as UTF-8 </LI>
 <LI> &lt;utf16&gt; - output data as UTF-16 </LI>
-<LI> &lt;comment&gt; - add comment to outut file </LI>
+<LI> &lt;comment&gt; - add comment to output file </LI>
 <LI> &lt;binary&gt; - dump raw binary data unprocessed </LI> 
 <LI> &lt;image&gt; - output data as a 32 bit rgba buffer </LI> 
 <LI> &lt;font&gt; - rip a font, rasterise, and output data as greyscale 
@@ -295,6 +295,7 @@ tags &lt;string&gt; &lt;utf8&gt; &lt;utf16&gt; can omit the
 </pre>
 <P>
 In the first case we are creating a string with the value "Fred Bloggs".
+<BR>
 In the second case the string is quoted, so it is not escaped but is
 output as is. (This is useful for entering printf format strings).
 And it is also const.In the third case, the string is read from an external
@@ -313,6 +314,7 @@ file. It will be escaped so tabs will be expanded to "\t" and newlines to "\n".
 In the first case we are creating UTF-8 string with the value "Fred 
 Bloggs". You can put UTF-8 in this position to etner human-readable
 extended character (this text file is ASCII so we can't show that).
+<BR>
 In the second case we are creating a UTF-8 string from an input file.
 The resource compiler will attempt to dtermine the format. However it
 is recommedend to use UTF-8.
@@ -329,12 +331,12 @@ is recommedend to use UTF-8.
 </pre>
 <P>
 In the first case we are creating UTF-16 with the value "Fred Bloggs".
+<BR>
 In the second case we are creating UTF-16 from a text file. The extension
 suggests that it is UTF-8 file (as recommended). The resource compiler 
 will re-encode it as UTF-16. name isn't given and will default to 
 "fred", based on the file name.
-</P>
-<P>
+<BR>
 In the third case we are allowing surrogate pairs in the UTF-16 output.
 By default this isn't on an code points over 0xFFFF will be mapped to 
 0xFFFE (unknown character). This is because a lot of code relies on one
@@ -351,6 +353,7 @@ wide character representing one code point.
 </pre>
 <P>
 In the first case the comment text is embedded in the script file.
+<BR>
 In the second case we load in the text from an external file.
 </P>
 
@@ -362,7 +365,7 @@ In the second case we load in the text from an external file.
 &lt;binary name = Fred, src = "fred.bin"&gt;&lt;/binary&gt;
 </pre>
 <P>
-In the first case the file "fred.bin" is simply read in  and passed out
+In the first case the file "fred.bin" is simply read in and passed out
 as binary bytes, with no processing.
 </P>
 
@@ -377,13 +380,14 @@ as binary bytes, with no processing.
 <P>
 In the first case the image is read from "fred.jpeg" and written out as
 32 bit rgba values.
-Int the second case the image is read from 'fred.tiff" and resized to 
+<BR>
+In the second case the image is read from "fred.tiff" and resized to
 width 100 pixels, height 80 pixels, then written out as 32 bit rgba 
 values.
 </P>
 <P>
 Supported formats are .png, .jpeg, .gif, .bmp, .tiff and .svg. The format
-will be determiend form the file extension. Svg files will be converted to
+will be determined form the file extension. Svg files will be converted to
 raster.
 </P>
 
@@ -398,6 +402,7 @@ raster.
 <P>
 In the first case we a loading a true type font, and outputting raster
 glyphs for 12 point text.
+<BR>
 In the second case we are loading a BDF raster font which cannot be
 resized.
 </P>
@@ -420,11 +425,12 @@ tag.
 <P>
 In the first case we are inputting "fred,wav" and writing the data out
 as 16 bit pcm samples with minimal processing.
+<BR>
 In the second case we are inputting an MP3 file, decompressing it, 
 resampling at 22050Hz, the outputting as PCM samples.
 </P>
 <P>
-If you have facilities for playing MP3 streams, loas the MP3 with the 
+If you have facilities for playing MP3 streams, load the MP3 with the
 &lt;binary&gt; tag.
 </P>
   
