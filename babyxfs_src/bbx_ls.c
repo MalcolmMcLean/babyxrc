@@ -9,11 +9,34 @@
 char **readdirectory_posix(const char *path);
 int is_directory_posix(const char *path);
 
+static void *bbx_malloc(size_t size)
+{
+    void *answer = 0;
+    int N;
+    
+    N = (int) size;
+    if (N < 0 || N != size)
+    {
+        fprintf(stderr, "Illegal memory request %d bytes\n", N);
+        exit(EXIT_FAILURE);
+    }
+    if (N == 0)
+        N = 1;
+    answer = malloc( (size_t) N);
+    if (!answer)
+    {
+        fprintf(stderr, "Baby X system out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    return answer;
+}
+
 char *bbx_strdup(const char *str)
 {
     char *answer;
     
-    answer = malloc(strlen(str) +1);
+    answer = bbx_malloc(strlen(str) +1);
     assert(answer);
     strcpy(answer, str);
     
@@ -117,6 +140,51 @@ static const char *basename(const char *path)
     return answer;
 }
 
+static char *directoryname(const char *path)
+{
+    char *answer = 0;
+    const char *base = 0;
+    
+    base = strrchr(path, '/');
+    
+    if (base)
+    {
+        answer = bbx_malloc(base - path + 1);
+        memcpy(answer, path, base - path);
+        answer[base - path] = 0;
+    }
+    
+    
+    return answer;
+}
+
+static char *filename(const char *directory, const char *base)
+{
+    char *answer = 0;
+    int dirlen;
+    int baselen;
+    
+    if (!directory)
+        return bbx_strdup(base);
+    
+    dirlen = strlen(directory);
+    baselen = strlen(base);
+    
+    answer = bbx_malloc(baselen + dirlen + 1 + 1);
+    if (!answer)
+        goto out_of_memory;
+    
+    strcpy(answer, directory);
+    strcat(answer, "/");
+    strcat(answer, base);
+    
+    return answer;
+    
+out_of_memory:
+    return 0;
+}
+
+
 
 static int dirnamewithglob(const char *pathandglob, char **pathret, char **globret)
 {
@@ -125,15 +193,20 @@ static int dirnamewithglob(const char *pathandglob, char **pathret, char **globr
     char *glob = 0;
     int answer = 0;
     
+    if (pathret)
+        *pathret = 0;
+    if (globret)
+        *globret = glob;
+    
     base = strrchr(pathandglob, '/');
     
     if (base)
     {
         if (isglob(base + 1))
         {
-            path = malloc(base - pathandglob + 1);
-            memcpy(path, pathandglob, base - pathandglob);
-            path[base - pathandglob] = 0;
+            path = directoryname(pathandglob);
+            if (!path)
+                return -1;
             glob = bbx_strdup(base + 1);
         }
         else
@@ -143,6 +216,11 @@ static int dirnamewithglob(const char *pathandglob, char **pathret, char **globr
         glob = bbx_strdup(pathandglob);
     else
         path = bbx_strdup(pathandglob);
+   
+    if (pathret)
+        *pathret = path;
+    if (globret)
+        *globret = glob;
     
     return answer;
 }
@@ -233,38 +311,6 @@ static int comp_size(const void *dirptra, const void *dirptrb)
         return -1;
 }
 
-
-
-/*
-int bbx_ls(FILE *fp, char **directory, const char *glob)
-{
-  int i;
-    int N = 0;
-    
-    for (i = 0; directory[i]; i++)
-        N++;
-        
-
-  for (i = 0; directory[i]; i++)
-  {
-     int size = is_directory(directory[i]) ? 0 : getsize(directory[i]);
-      const char *type;
-      
-      if (glob && !matchwild(directory[i], glob))
-          continue;
-      
-      if (is_directory(directory[i]))
-          type = "dir";
-      else
-          type = is_binary(directory[i]) ? "binary" : "text";
-      
-     fprintf(fp, "%-8s %10d \t%s\n", type, size, directory[i]);
-  }
-
-  return 0;
-}
- */
-
 void filter_out_directories(char **list)
 {
     int i = 0;
@@ -295,7 +341,7 @@ void filter_in_glob(char **list, const char *glob)
     
     if (!glob)
         return;
-    glob_d = malloc(strlen(glob) + 2);
+    glob_d = bbx_malloc(strlen(glob) + 2);
     strcmp(glob_d, glob);
     strcat(glob_d, "/");
     
@@ -333,12 +379,14 @@ int main(int argc, char **argv)
     int err = 0;
     DIRENTRY *directory = 0;
     char **dir = 0;
-    char *glob = 0;
+    char **dir_mem = 0;
+ 
     char sortmode [32] = "default";
     int l_flag = 0;
     int f_flag = 0;
     int d_flag = 0;
     char *path = 0;
+    char *glob = 0;
     char *pathandglob = 0;
     int N;
     int i;
@@ -352,10 +400,10 @@ int main(int argc, char **argv)
     bbx_options_get(bbx_opt, "-sort", "%32s", sortmode, 0);
     Nargs = bbx_options_Nargs(bbx_opt);
     
-    printf("l %d\n", l_flag);
-    printf("f %d\n", f_flag);
-    printf("d %d\n", d_flag);
-    printf("sort %s\n", sortmode);
+    // printf("l %d\n", l_flag);
+    // printf("f %d\n", f_flag);
+    // printf("d %d\n", d_flag);
+    // printf("sort %s\n", sortmode);
     
     if (strcmp(sortmode, "default") &&
         strcmp(sortmode, "alpha") &&
@@ -368,12 +416,10 @@ int main(int argc, char **argv)
         err = 1;
     }
     
-    
-    
     if (Nargs > 0)
         pathandglob = bbx_options_arg(bbx_opt, 0);
-    for (i = 0; i <Nargs; i++)
-        printf("-%s\n", bbx_options_arg(bbx_opt,i));
+  //  for (i = 0; i <Nargs; i++)
+    //    printf("-%s\n", bbx_options_arg(bbx_opt,i));
     if (bbx_options_error(bbx_opt, errormessage, 1024))
     {
         err = 1;
@@ -390,68 +436,32 @@ int main(int argc, char **argv)
     if (err)
         return -1;
     
-    
-    
-    
     if (pathandglob)
     {
-        // path = dirnamewithglob(pathandglob);
-    
-        char * base = strrchr(pathandglob, '/');
-        if (base)
-        {
-            if (isglob(base + 1))
-            {
-                glob = base + 1;
-                path = malloc(base - pathandglob + 1);
-                memcpy(path, pathandglob, base -  pathandglob);
-                path[base - pathandglob] = 0;
-            }
-            else
-            {
-                path = pathandglob;
-            }
-        }
-        else
-        {
-            if (isglob(pathandglob))
-            {
-                glob = pathandglob;
-                path = ".";
-            }
-            else
-            {
-                path = pathandglob;
-            }
-                
-        }
+        dirnamewithglob(pathandglob, &path, &glob);
+        if (path == 0)
+            path = bbx_strdup(".");
+         
     }
     else
-        path = ".";
-    
-    
+        path = bbx_strdup(".");
     
     if (strcmp(path, "."))
     {
         if (!is_directory_posix(path))
         {
-            dir = malloc(sizeof(char *) * 2);
-            dir[0] = basename(path);
+            dir = bbx_malloc(sizeof(char *) * 2);
+            dir[0] = bbx_strdup(basename(path));
             dir[1] = 0;
             if (strrchr(path, '/'))
             {
-                char *copy_path;
-                char *ptr = strrchr(path, '/');
-                int len;
-                
-                len = ptr - path;
-                copy_path = malloc((len+1) *sizeof(char *));
-                memcpy(copy_path, path, len);
-                copy_path[len] = 0;
-                path = copy_path;
+                *strchr(path, '/') = 0;
             }
             else
-                path = ".";
+            {
+                free(path);
+                path = bbx_strdup(".");
+            }
         }
         else
             dir = readdirectory_posix(path);
@@ -460,6 +470,13 @@ int main(int argc, char **argv)
         dir = readdirectory_posix(path);
     if (!dir)
         return 0;
+    
+    N = 0;
+    for (i = 0; dir[i]; i++)
+        N++;
+    dir_mem  = bbx_malloc( (N +1) * sizeof(char *));
+    for (i = 0; i < N + 1; i++)
+        dir_mem[i] = dir[i];
    
     
    if (f_flag)
@@ -469,13 +486,11 @@ int main(int argc, char **argv)
     if (glob)
         filter_in_glob(dir, glob);
     
-    for (i = 0; dir[i]; i++)
-        printf("%s\n", dir[i]);
-    printf("\n");
     
     N = 0;
     for (i = 0; dir[i]; i++)
         N++;
+    
     if (!strcmp(sortmode, "default"))
         qsort(dir, N, sizeof(char *), comp_natural);
     else if (!strcmp(sortmode, "ext"))
@@ -491,19 +506,18 @@ int main(int argc, char **argv)
         
     if (needextended)
     {
-    
-        directory = malloc((N +1) * sizeof(DIRENTRY));
-        if (!directory)
-        {
-            return -1;
-        }
+        directory = bbx_malloc((N +1) * sizeof(DIRENTRY));
+        
         for (i = 0; i < N; i++)
         {
-            char fname[1024];
-            if (strcmp(path, "."))
-                snprintf(fname, 1024, "%s/%s", path, dir[i]);
+            char *fname;
+            
+            if(!strcmp(path, "."))
+                fname = bbx_strdup(dir[i]);
             else
-                snprintf(fname, 1024, "%s", dir[i]);
+                fname = filename(path, dir[i]);
+            if (!fname)
+                return - 1;
             
             directory[i].name = dir[i];
             if (!is_directory(directory[i].name))
@@ -516,6 +530,7 @@ int main(int argc, char **argv)
                 directory[i].size = 0;
                 directory[i].isbinary = 0;
             }
+            free(fname);
         }
     }
 
@@ -531,7 +546,7 @@ int main(int argc, char **argv)
     if (l_flag == 0)
     {
         for (i = 0; i < N; i++)
-            printf("%s\n", dir[i]);
+            fprintf(stdout, "%s\n", dir[i]);
     }
     else
     {
@@ -549,6 +564,15 @@ int main(int argc, char **argv)
             }
         }
     }
+    
+    free (directory);
+    free(path);
+    free(glob);
+    free(dir);
+    
+    for (i = 0; dir_mem[i]; i++)
+        free (dir_mem[i]);
+    free (dir_mem);
 
    return 0;
 }
