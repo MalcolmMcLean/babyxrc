@@ -1,0 +1,118 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    &nbsp;&nbsp;
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+<H1> Using loadimage in Baby X </H1>
+<P>
+The Baby X resource compiler comes with a powerful loadimage() function which you will want to take for your own baby programs if you want to allow the user to specify and image to load a runtime.
+</P> 
+
+<H3> The image load function </H3>
+<P>
+The image loader which comes with the Baby X resource compiler is
+powerful and easy to use. It will load most common image files.
+</P>
+<pre><code class="language-c">
+    /*
+    load an image as 32 bit rgba.
+          
+    Params:
+           fname - the name of the file to load.
+           width - return pointer for image width.
+           height - return pointer for image height.
+           err - return for error code.
+    Returns:
+           the image as a 32 bit rgba buffer, 0 on fail.
+                
+    */
+    unsigned char *loadrgba(char *fname, int *width, int *height, int *err)
+    {
+      int fmt;
+      unsigned char *answer = 0;
+
+      if(err)
+        *err = 0;
+
+      fmt = getformat(fname);
+
+      switch(fmt)
+      {
+      case FMT_UNKNOWN:
+        if(err)
+          *err = -3;
+        return 0;
+      case FMT_JPEG:
+        answer = loadasjpeg(fname, width, height);
+        break;
+      case FMT_PNG:
+        answer =  loadaspng(fname, width, height);
+        break;
+      case FMT_BMP:
+        answer =  loadasbmp(fname, width, height);
+        break;
+      case FMT_GIF:
+        answer =  loadasgif(fname, width, height);
+        break;
+      case FMT_TIFF:
+         answer = loadastiff(fname, width, height);
+         break;
+      case FMT_SVG:
+          answer = loadassvg(fname, width, height);
+          break;
+      }
+      if(!answer)
+        if(err)
+          *err = -1;
+
+      return answer;
+    }
+    
+
+</code></pre>
+
+<P>
+And of course I do not need to insult your intelligence by showing an example of how to use it.
+</P>
+
+<P>
+Dependencies:
+<UL>
+    <LI>bmp.c</LI>
+    <LI>jpeg.c</LI>
+    <LI>gif.c
+    <UL>
+        <LI>rbtree.c</LI>
+    </UL>
+    <LI>lodepng.c</LI>
+    <LI>loadtiff.c</LI>
+    <LI>nanosvg.h,</LI>
+    <LI>nanosvgrast.h</LI>
+</UL>
+And the C files all have associated headers. So you need to take those files and drop them into your Baby X program, as well as loadimage.c.
+<P>
+<P>
+And this function is heart of the resource compiler. It's what most people will use it for.
+</P>
+</BODY>
+</HTML>
