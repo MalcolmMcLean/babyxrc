@@ -49,6 +49,7 @@ function fileClick(a) {
 <script>
 
 var g_binary = [];
+var g_tempbuff = [];
 var g_width;
 var g_height;
 var g_Ticker;
@@ -95,7 +96,7 @@ function plane_reset(width, height)
     {
         for (x = 0; x < g_plane.width; x++)
         {
-            g_binary[y*g_width+x] = Math.floor( Math.random() * 2);
+            g_binary[y*g_width+x] =  Math.random() < 0.3 ? 1 : 0;
         }
    }
 }
@@ -148,23 +149,39 @@ function steplife()
           {
               if (nn > 3)
               {
-                    g_binary[y * g_plane.width + x] = 0;
+                    g_tempbuff[y * g_plane.width + x] = 0;
               }
               else if (nn < 2)
               {
-                    g_binary[y * g_plane.width + x] = 0;
+                    g_tempbuff[y * g_plane.width + x] = 0;
+              }
+              else
+              {
+                  g_tempbuff[y*g_plane.width + x] = 1
               }
           }
           else
           {
               if (nn == 3)
               {
-                  g_binary[y * g_plane.width + x] = 1;
+                  g_tempbuff[y * g_plane.width + x] = 1;
+              }
+              else
+              {
+                  g_tempbuff[y * g_plane.width + x] = 0;
               }
           }
       }
+      
+
   }
-  
+  for (y = 0; y < g_plane.height; y++)
+  {
+      for (x = 0; x < g_plane.width; x++)
+      {
+          g_binary[y * g_plane.width + x] = g_tempbuff[y * g_plane.width + x];
+       }
+  }
   return 0;
 }
 
@@ -210,6 +227,7 @@ function setUp()
   for(i=0;i<g_width*g_height;i++)
   {
      g_binary.push(0);
+     g_tempbuff.push(0);
   }
 
   plane_reset(g_width, g_height);
@@ -260,7 +278,7 @@ function myFunction()
 </div>
 
 <P>
-<A href="https://malcolmmclean.github.io/babyx">Baby X</A> is a project designed to allow user to write small or "baby" programs. At its heart is the <A href="https://github.com/MalcolmMcLean/babyx">"Baby X library</A>, a library of C functions designed to prove a simple but adequate windowing system which works on both Linux and Windows. The other main component is the resource compiler <A href ="index.html">"BabyXRC</A>, which is designed to package up fonts, images, strings, and so on for use with <A href=" https://malcolmmclean.github.io/babyx/BabyXHelloWorld.html">Baby X programs</A>. And the other component is the filing system <A href="BabyXFS.html">BabyXFS</A>, which provides a virtual filing system for computers with the <A href="FileSystemXML.html">FilesSystem XML</A> files. All three components are independent of the other. You can use the Baby X resource compiler to compile resources for non Baby X programs, and you can use BabyXFS to add virtual filing to non-Baby X programs.
+<A href="https://malcolmmclean.github.io/babyx">Baby X</A> is a project designed to allow user to write small or "baby" programs. At its heart is the <A href="https://github.com/MalcolmMcLean/babyx">Baby X library</A>, a library of C functions designed to prove a simple but adequate windowing system which works on both Linux and Windows. The other main component is the resource compiler <A href ="index.html">BabyXRC</A>, which is designed to package up fonts, images, strings, and so on for use with <A href=" https://malcolmmclean.github.io/babyx/BabyXHelloWorld.html">Baby X programs</A>. And the other component is the filing system <A href="BabyXFS.html">BabyXFS</A>, which provides a virtual filing system for computers with the <A href="FileSystemXML.html">FilesSystem XML</A> files. All three components are independent of the other. You can use the Baby X resource compiler to compile resources for non Baby X programs, and you can use BabyXFS to add virtual filing to non-Baby X programs.
 </P>
 <P>
 Baby X is designed mainly for hobby programmers, but is competely free to anyone for any use, with the exception of components not authored by me, where you must respect the attached licence terms.
