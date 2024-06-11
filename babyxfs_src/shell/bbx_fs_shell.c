@@ -1127,7 +1127,7 @@ static void ls_usage()
     fprintf(stderr, "\t\t-d - just list directories\n");
     fprintf(stderr, "\t\t-sort <sorttype> - set the type of sort\n");
     fprintf(stderr, "\t\t\t\"default\" the normal sort\n");
-    fprintf(stderr, "\t\t\r\"alpha\" alphabetical sort\n");
+    fprintf(stderr, "\t\t\t\"alpha\" alphabetical sort\n");
     fprintf(stderr, "\t\t\t\"ext\" sort by extension\n");
     fprintf(stderr, "\t\t\t\"none\" don't sort (OS order)\n");
 }
