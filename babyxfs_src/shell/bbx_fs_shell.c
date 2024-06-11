@@ -509,7 +509,7 @@ static int cp(BBX_FS_SHELL *shell, int argc, char **argv)
     data = bbx_filesystem_slurpb(shell->bbx_fs, path, "rb", &N);
     
     if (!data)
-        return;
+        return 0;
     snprintf(path, 1024, "%s/%s", shell->path, target);
     fp = bbx_filesystem_fopen(shell->bbx_fs, path, "w");
     if (data && fp)
@@ -661,8 +661,8 @@ static int bbx_fs_system(BBX_FS_SHELL *shell, int argc, char **argv)
     }
     for (i = 1; i < argc; i++)
     {
-        strncat(line, argv[i], 1024);
-        strncat(line, " ", 1024);
+        strncat(line, argv[i], 1023);
+        strncat(line, " ", 1023);
     }
     
     system(line);
@@ -1116,7 +1116,7 @@ static void filter_in_glob(char **list, const char *glob)
     free(glob_d);
 }
 
-static void usage()
+static void ls_usage()
 {
     fprintf(stderr, "bbx_ls - the Baby X ls program\n");
     fprintf(stderr,"Usage: bbx_ls [options] [path]\n");
@@ -1159,10 +1159,10 @@ static int ls(BBX_FS_SHELL *shell, int argc, char **argv)
     bbx_options_get(bbx_opt, "-sort", "%32s", sortmode, 0);
     Nargs = bbx_options_Nargs(bbx_opt);
     
-    printf("l %d\n", l_flag);
-    printf("f %d\n", f_flag);
-    printf("d %d\n", d_flag);
-    printf("sort %s\n", sortmode);
+   // printf("l %d\n", l_flag);
+   // printf("f %d\n", f_flag);
+   // printf("d %d\n", d_flag);
+   // printf("sort %s\n", sortmode);
     
     if (strcmp(sortmode, "default") &&
         strcmp(sortmode, "alpha") &&
@@ -1178,7 +1178,7 @@ static int ls(BBX_FS_SHELL *shell, int argc, char **argv)
     if (Nargs > 0)
         pathandglob = bbx_options_arg(bbx_opt, 0);
     for (i = 0; i <Nargs; i++)
-        printf("-%s\n", bbx_options_arg(bbx_opt,i));
+      //  printf("-%s\n", bbx_options_arg(bbx_opt,i));
     if (bbx_options_error(bbx_opt, errormessage, 1024))
     {
         err = 1;
@@ -1187,7 +1187,7 @@ static int ls(BBX_FS_SHELL *shell, int argc, char **argv)
     if (Nargs > 1 && err == 0)
     {
         err = 1;
-        usage();
+        ls_usage();
     }
     bbx_options_kill(bbx_opt);
     bbx_opt  = 0;
@@ -1212,8 +1212,19 @@ static int ls(BBX_FS_SHELL *shell, int argc, char **argv)
         dir = bbx_filesystem_list(shell->bbx_fs, fs_path);
         if (!dir)
         {
+            FILE *fp;
+            int fileexists;
+            
+            fp = bbx_filesystem_fopen(shell->bbx_fs, fs_path, "r");
+            if (fp)
+                fileexists = 1;
+            bbx_filesystem_fclose(shell->bbx_fs, fp);
+            
             dir = bbx_malloc(sizeof(char *) * 2);
-            dir[0] = bbx_strdup(basename(path));
+            if (fileexists)
+                dir[0] = bbx_strdup(basename(path));
+            else
+                dir[0] = 0;
             dir[1] = 0;
             if (strrchr(path, '/'))
             {
@@ -1228,7 +1239,7 @@ static int ls(BBX_FS_SHELL *shell, int argc, char **argv)
     }
     else
         dir = bbx_filesystem_list(shell->bbx_fs, shell->path);
-    printf("Here dir %p\n", dir);
+    
     if (!dir)
         return 0;
     
