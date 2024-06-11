@@ -32,7 +32,7 @@ static void *bbx_malloc(size_t size)
     return answer;
 }
 
-char *bbx_strdup(const char *str)
+static char *bbx_strdup(const char *str)
 {
     char *answer;
     
@@ -87,7 +87,7 @@ static int is_binary(const char *name)
     return answer;
 }
 
-int matchwild(const char *text, const char *glob)
+static int matchwild(const char *text, const char *glob)
 {
    int i = 0;
    int j = 0;
@@ -118,7 +118,7 @@ int matchwild(const char *text, const char *glob)
    return 0;
 }
 
-int isglob(const char *glob)
+static int isglob(const char *glob)
 {
     if (strchr(glob, '*'))
         return 1;
@@ -311,7 +311,7 @@ static int comp_size(const void *dirptra, const void *dirptrb)
         return -1;
 }
 
-void filter_out_directories(char **list)
+static void filter_out_directories(char **list)
 {
     int i = 0;
     int j = 0;
@@ -322,7 +322,7 @@ void filter_out_directories(char **list)
     list[j] = 0;
 }
 
-void filter_out_files(char **list)
+static void filter_out_files(char **list)
 {
     int i = 0;
     int j = 0;
@@ -333,7 +333,7 @@ void filter_out_files(char **list)
     list[j] = 0;
 }
 
-void filter_in_glob(char **list, const char *glob)
+static void filter_in_glob(char **list, const char *glob)
 {
     char *glob_d;
     int i = 0;
