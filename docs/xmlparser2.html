@@ -1,0 +1,418 @@
+<HTML>
+<HEAD>
+    <link href="prism.css" rel="stylesheet" />
+<style>
+body {
+    margin-left: 120px;
+}
+
+P {
+    width: 50em;
+}
+
+pre{
+    width : 50em;
+    background-color: #FFFFFF;
+}
+</style>
+<script>
+function fileClick(a) {
+
+        var linkTag = a.href;
+        var substring = "file:///";
+        if (linkTag.includes(substring)) {
+            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
+            fileOpen(url);
+        }
+        else {
+            window.open(linkTag, '_blank');
+        }
+    }
+
+    function fileOpen(url) {
+        $.ajax({
+            url: url,
+            complete: function (jqxhr, txt_status) {
+                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
+                if (txt_status == 'success') {
+                    window.open(url, '_self');
+                }
+                else {
+                    alert("File not found[404]!");
+                }
+                // }
+            }
+        });
+    }
+    </script>
+
+</HEAD>
+<BODY bgcolor="#c0c0ff">
+    <script src="prism.js"></script>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    &nbsp;&nbsp;
+    <IMG src = "MiniXML_logo.png" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+<H1>xmlparser2</H1>
+<P>
+The miniXML parser source file, xmlparser2.c, is a set of functions designed to work with XML files. The functions make it easy for programmers to use these files and to manipulate them. It is not part of Baby X and therefore doesn't take the bbx prefix.
+</P>
+
+<H3>The functions </H3>
+
+<P>
+
+These are the functions in the library.
+
+<P>
+<P>
+<pre><code class="language-c">
+    #ifndef xmlparser_h
+    #define xmlparser_h
+
+    #include &ltstdio.h&gt;
+
+    typedef struct xmlattribute
+    {
+      char *name;                /* attribute name */
+      char *value;               /* attribute value (without quotes) */
+      struct xmlattribute *next; /* next pointer in linked list */
+    } XMLATTRIBUTE;
+
+    typedef struct xmlnode
+    {
+      char *tag;                 /* tag to identify data type */
+      XMLATTRIBUTE *attributes;  /* attributes */
+      char *data;                /* data as ascii */
+      int position;              /* position of the node within parent's data string */
+      int lineno;                /* line number of node in document */
+      struct xmlnode *next;      /* sibling node */
+      struct xmlnode *child;     /* first child node */
+    } XMLNODE;
+
+    typedef struct
+    {
+      XMLNODE *root;             /* the root node */
+    } XMLDOC;
+
+
+    XMLDOC *loadxmldoc(const char *fname, char *errormessage, int Nerr);
+    XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr);
+    XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
+    void killxmldoc(XMLDOC *doc);
+    void killxmlnode(XMLNODE *node);
+
+    XMLNODE *xml_getroot(XMLDOC *doc);
+    const char *xml_gettag(XMLNODE *node);
+    const char *xml_getdata(XMLNODE *node);
+    const char *xml_getattribute(XMLNODE *node, const char *attr);
+    int xml_Nchildren(XMLNODE *node);
+    int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
+    XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
+    XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
+    char *xml_getnesteddata(XMLNODE *node);
+
+    int xml_getlineno(XMLNODE *node);
+    XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...);
+
+    #endif
+    
+</code></pre>
+</P>
+
+<H3>loadxmldoc</H3>
+<P>
+Loads an XML file and returns an XMLDOC object.
+</P>
+<pre>
+    XMLDOC *loadxmldoc(const char *fname, char *errormessage, int Nerr);
+    Params:
+           fname - the name of the file to load.
+           errormesssage - return buffer for error messages.
+           Nerr - size of the error message buffer.
+
+    Returns: the constructed XMLDOC object.
+    
+</pre>
+
+This is the main function to load an XML filr from disk and parse it. The XMl loader is quite good, and will load UTF-16 and convert to UTF-8. Ir's also got fairly strong error reporting
+
+</P>
+<H3>floadxmldoc</H3>
+<P>
+Loads XML from an open stream and returns an XMLDOC object.
+</P>
+<P>
+<pre>
+    XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr);
+    
+    Params:
+           fp - pointer to a file opened for reading.
+           errormessage - return buffer for error messages
+           Nerr - size of the error message buffer
+           
+    Returns: the constructed XMLDOC object.
+           
+</pre>
+loadxmldoc isof course just a wrapper for this function, which is exposed in case you have data coming from an open stream and can't provide a filename.
+</P>
+
+<H3>xmldocfromstring</H3>
+<P>
+Reads XML from a string, and returns an XMLDOC object.
+</P>
+<P>
+<pre>
+    XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
+    
+    Params:
+           str - a string conatining xml.
+           errormesssage - retun buffer for error messages.
+           Nerr - size of the error message bufffer.
+
+    Returns: the constructed XMLDOC object.
+</pre>
+</P>
+<P>
+Pass it a string with XML to use the system in an IO-free manner.
+</P>
+
+<H3>killxmldoc</H3>
+Destroys an XMLDOC object.
+<P>
+<pre>
+    void killxmldoc(XMLDOC *doc);
+    Params:
+           doc - the XMLDOC object to destroy.
+    
+</pre>
+</P>
+<P>
+This destroys an XMLDOC. XML documents can get vey large, and so you want to destroy them as soon as possible.
+</P>
+
+<H3>killxmlnode</H3>
+<P>
+Destroys an XMLNODE, its siblings, and its children.
+</P>
+<P>
+<pre>
+    void killxmlnode(XMLNODE *node);
+    Params:
+           node - the XMLNODE object to destroy.
+           
+</pre>
+</P>
+<P>
+The function will destroy all of the siblings of the xml node.b So the node must be unlinked before calling
+</P>
+
+<H2> Document query functions</H2>
+
+<H3>xml_getroot</H3>
+<P>
+Returns the root node of the XMLDOC object.
+</P>
+<P>
+<pre>
+    XMLNODE *xml_getroot(XMLDOC *doc);
+    Params:
+           doc - the XMLDOC object.
+
+    Returns: root node of the document.
+    
+</pre>
+</P>
+<P>
+Access function. Never access the root directly, unless actually writng to it for some reason.
+</P>
+
+<H3>xml_gettag</H3>
+<P>
+Gets the tag or element name associated with a node.
+</P>
+<P>
+<pre>
+    const char *xml_gettag(XMLNODE *node);
+    Params:
+           node - the XMLNODE.
+    
+    Returns: the tag or element name associated with the node.
+
+</pre>
+</P>
+<P>
+Access function. You get a bit  of security with "const".""
+</P>
+
+<H3>xml_getdata</H3>
+<P>
+gets the data associated with the node.
+</P>
+<P>
+<pre>
+    const char *xml_getdata(XMLNODE *node);
+    Params:
+           node - the XMLNODE object.
+           
+    Returns: the data associed with the node.
+</pre>
+</P>
+<P>
+Some nodes have data, and other will just have whitespece, which nevertheless must be preeseved, If a node was in the closed single args form (&lts;mystg /&gt;) the the data element should be null.
+</P>
+<H3>xml_getatttribute</H3>
+<P>
+Get an attribute attached to a node.
+</P>
+<P>
+<pre>
+    const char *xml_getattribute(XMLNODE *node, const char *attr);
+    Params:
+           node - the XMLNODE object.
+           attr - the name of the attribute to query
+    Returns: the value of the attribute, or null if it does not exist.
+</pre>
+</P>
+<P>
+The attributesa are stored in a linked list. The function traverse he list and reports the first match.
+</P>
+<H3>xml_Nchildren</H3>
+<P>
+Get the number of direct children of the node.
+</P>
+<P>
+<pre>
+    int xml_Nchildren(XMLNODE *node);
+    Params:
+           node - the XMLNODE object.
+           
+    Returns: number of direct children of the node.
+</pre>
+</P>
+<P>
+Cinvenience functio to count the cgildren.
+</P>
+<H3>xml_Nchildrenwithtag</H3>
+<P>
+Get the number of direct children of a node associated wih a tag.
+</P>
+<P>
+<pre>
+    int xml_Nchildrenwithtag(XMLNODE *node, const char *tag);
+    Params:
+           node - the XMLNODE object.
+           tag - thetag or element name to query.
+    Returns: the number of direct children with thaat tag type.
+</pre>
+</P>
+<P>
+Convenience function to get the nodes of the tag type we are inrerested in.
+ </P>
+<H3>xml_getchild</H3>
+<P>
+Get the node's first child.
+</P>
+<P>
+<pre>
+    XMLNODE *xml_getchild(XMLNODE *node, const char *tag, int index);
+    Params:
+           node - the XMLNODE object.
+           tag - the tag to query.
+           index - seniority of the child with that tag
+    Returns: the child with that tag, as referenced by index
+</pre>
+</P>
+<P>
+Sccess fucntion to first child.
+</P>
+<H3>xml_getdescendants</H3>
+<P>
+Get all the descendants of a node associated with a tag.
+</P>
+<P>
+<pre>
+    XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
+    Params:
+           node - the XMLNODE object.
+           tag - the tag to query
+           N - return pointer for the number of descendants found.
+    Returns: an allocated list of all the descendants of that node.
+</pre>
+</P>
+<P>
+This is often what you want to do.
+</P>
+<H3>xml_getnesteddata</H3>
+<P>
+Get the data held by a node and its descendants.
+</P>
+<P>
+<pre>
+    char *xml_getnesteddata(XMLNODE *node);
+    Params:
+           node - the XMLNODE object.
+        
+    Returns: allocated pointer to the data held by the nodecand its children..
+</pre>
+</P>
+<P>
+This is needed for XML which is raeup instead of tagged data. The node needs to know the positons of any childre within its data string.
+</P>
+
+<H3>xml_getlineno</H3>
+<P>
+Get the number of the line in the XML document where the node appeared.
+</P>
+<P>
+<pre>
+    int xml_getlineno(XMLNODE *node);
+    Params:
+           node - the XMLNODE object.
+           
+    Returns: the line number the node appeared in the XML document.
+</pre>
+</P>
+<P>
+This is an absolutely crucial little function for reporting errors. XML fles often get very large, and withot some reference to the place a corrupted node appears in the data, repair is hopeless.
+</P>
+
+<H3>xml_unknownattributes</H3>
+<P>
+Return any attributes which do not match a list of known attributes.
+</P>
+<P>
+<pre>
+    XMLATTRIBUTE *xml_unknownattributes(XMLNODE *node, ...)
+    Params:
+           node - the XMLNODE object.
+           ... - a list of known attributes associated with the node.
+    Returns: an allocated linked list of attributes not in thev list
+             of known attributes.
+</pre>
+</P>
+<P>
+This is another function mainly for debugging. Nodes might have unkown attributes associated with them. Which will often indicate a bug somewhere upstream.
+</P>
+<P>
+You use it ike this
+<pre>
+    void *sentinel = 0;
+    XMLARRIBUTE *attr;
+     
+     attr = xml_unknownattriby=uyes(node, "faith", "hope" charity, sentinel);
+     if (!attr)
+     {
+        /* all ok */
+     }
+     /* now ww have deep copy of tha unknown attriubutes.
+     
+</pre>
+<P>
+<H3>XML files</H3>
+<P>
+XML is a recognised format for files. 
+</P>
+
+</BODY> </HTML>
+
