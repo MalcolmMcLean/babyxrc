@@ -14,6 +14,9 @@ pre{
     width : 50em;
     background-color: #FFFFFF;
 }
+    .toplevel {
+        width : 50em;
+    }
 </style>
 <script>
 function fileClick(a) {
@@ -52,12 +55,39 @@ function fileClick(a) {
     <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </IMG> </A>
     <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </IMG> </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
 <H1>Baby X FileSystem</H1>
+<div class="toplevel">
+<div style="float:right">
+<IMG src="BabyXLogos/baby-x-fs-logo.svg" width="150">
+</div>
+<BR>
+<BR>
 <P>
-The Baby X filesystem project, or BabyXFS is a project designed to allow Baby X user to mount <A href = "importingdirectories.html">directories</A> in Baby X programs. However becuase of the highly portable nature of Baby X, it is also modular and can be used enitrely independently, by non- Baby X or even non- Baby X resource compiler users. However I recommend these projects as they come to maturity and encouraage you to get involved.
+The Baby X filesystem project, or BabyXFS is a project designed to allow Baby X user to mount <A href = "importingdirectories.html">directories</A> in Baby X programs. However because of the highly portable nature of Baby X, it is also modular and can be used entirely independently, by non- Baby X or even non- Baby X resource compiler users. However I recommend these projects as they come to maturity and encourage you to get involved.
 </P>
-
+</div>
+<H3>Baby X structure</H3>
+<TABLE>
+    <TR>
+        <TH>Icon</TH><TH>Banner</TH><TH>Short name</TH><TH>Long name</TH><TH>Description</TH>
+    </TR>
+    <TR>
+        <TD><IMG src="BabyXLogos/baby-x-logo.svg"></TD><TD><IMG src="BabyXLogos/babyx-banner.svg"></TD><TD>BabyX</TD><TD>Baby X</TD>
+        <TD>A small GUI toolkit which ports between Linux X11 and MS Windows. </TD>
+    </TR>
+    <TR>
+        <TD><IMG src="BabyXLogos/baby-x-rc-logo.svg"></TD><TD><IMG src="BabyXLogos/babyxrc-banner.svg"></TD><TD>BabyXRC</TD><TD>Baby X Resource compiler</TD>
+        <TD> A commandline program to convert resources to compileable C code.</TD>
+    </TR>
+    <TR>
+        <TD><IMG src="BabyXLogos/baby-x-fs-logo.svg"></TD><TD><IMG src="BabyXLogos/babyxfs-banner.svg"></TD><TD>BabyXFS</TD><TD>Baby X File system</TD>
+        <TD>A suite of programs and code for supporting virtual filesystems.
+    </TR>
+</TABLE>
+<P>
+This project, BabyXFS, is the filing system sub-component. You can use it on its own, or in combination with the rest of Baby X. It is designed to add power to the other components of Baby X.
+</P>
 <H3>FileSystem XML files</H3>
 <P>
 The <A href="FileSystemXML.html">FileSystem</A> XML format was invented to meet the needs of hobby programmers. It is a very clean XML format which is easy to parse and robust, as text files are all human-readable. You can of course compress the files using general purpose text compreession if you need to save space.
@@ -165,25 +195,61 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
     <P>
     <pre>
         
-        babyxfs_ls &lt;filesystem.xml&gt; &lt;glob&gt;
+        babyxfs_extract &lt;filesystem.xml&gt; &lt;filename&gt;
        
         The program accepts a FileSystem XML file as an argument, and
-        a path, and lists the files to standard output.
+        a path, and extracts the file to standard output.
         
         Example:
-           babysfxs_ls  poems.xml "/poems/*"
+           babysfxs_extract poems.xml "/poems/Blake/tyger.txt"
            
-         This will list all the files under the root directory, which should
-         be "poems", the same as the name of the XML file. However of course
-         there is no way of enforcing that, and quety with "/*" if you do not
-         know the root. Remember to enclose globs in quotes under Unix, as
-         otherwise the system will expand them for its own file system.
+         This will extract the file "tyger.txt" from the filesystem.xml
+         file and write it to standard output.
            
     </pre>
     </P>
     <P>
-    babyxfs_ls is currently very basic, but there are plans to add more options, like "ls". Directories can be recognised becuause they heave "/" appended tob their names.
+    babyxfs_extract is a very powerful facility. It means that you can get files from your FileSystem MXL files on demand.
     </P>
+    
+    <H3>babyxfs_shell</H3>
+    <P>
+    babyxfs_shell, invokes a simple shell, mounting a FileSystem XML file
+    as its backing store.
+     </P>
+     <P>
+     <pre>
+         
+         babyxfs_shell &lt;filesystem.xml&gt; &lt;filename&gt; [options]
+        
+         The program accepts a FileSystem XML file as an argument, and
+         a path, and runs the shell over it.
+        
+        options:
+                -editor &lt;editor program&gt;
+         
+         Example:
+            babysfxs_shell poems.xml
+            
+            babyxfs_shell poems.xml -editor vi
+            
+          This will run a shell and mount poems.xml.
+          in the second case, the program "vi" is used to edit the
+          files.
+            
+     </pre>
+     </P>
+     <P>
+     babyxfs_shell is a very powerful facility. It means you can do practically
+     anything you want with yuor FileSystem XML file. Your regular prompt will be
+     replaced by the <A href="babyxfs_shell.html">BBX$</A> prompt, and you are in
+     the world of Baby X.
+     </P>
+     </P>
+     Because of the way ANSI C works, it is very difficult to give the shell an
+     internal text editor that is any good, so you specify which editor to use.
+     Curently it defaults to "nano".
+     </P>
  
  <H3>Baby X BBX_FileSystem subroutines</H3>
  <P>

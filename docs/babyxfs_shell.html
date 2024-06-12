@@ -1,0 +1,162 @@
+<HTLM>
+    <HEAD>
+        <link href="prism.css" rel="stylesheet" />
+    <style>
+    body {
+        margin-left: 120px;
+    }
+
+    P {
+        width: 50em;
+    }
+
+    pre{
+        width : 50em;
+        background-color: #FFFFFF;
+    }
+        .toplevel {
+            width : 50em;
+        }
+    </style>
+    <script>
+    function fileClick(a) {
+
+            var linkTag = a.href;
+            var substring = "file:///";
+            if (linkTag.includes(substring)) {
+                var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
+                fileOpen(url);
+            }
+            else {
+                window.open(linkTag, '_blank');
+            }
+        }
+
+        function fileOpen(url) {
+            $.ajax({
+                url: url,
+                complete: function (jqxhr, txt_status) {
+                    console.log("Complete: [ " + txt_status + " ] " + jqxhr);
+                    if (txt_status == 'success') {
+                        window.open(url, '_self');
+                    }
+                    else {
+                        alert("File not found[404]!");
+                    }
+                    // }
+                }
+            });
+        }
+        </script>
+
+    </HEAD>
+    <BODY bgcolor="c0c0ff">
+        <script src="prism.js"></script>
+        <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </IMG> </A>
+        <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </IMG> </A>
+        &nbsp;&nbsp;
+        <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+        <H1> The Baby X FileSystem Shell </H1>
+        <P>
+        The Baby X FileSystem shell is a program for running a shell over FileSystem XML files. It's the most powerful way of editing FileStstem XML files there is, becuse when it is finished, it will be a little computer in its own right. And is is the jewel in the crown of the babcyxfs_ suite of programs.
+        </P>
+        <H3>Usage</H3>
+        <P>
+        <pre>
+            
+            babyxfs_shell &lt;filesystem.xml&gt; &lt;filename&gt; [options]
+           
+            The program accepts a FileSystem XML file as an argument, and
+            a path, and runs the shell over it.
+           
+           options:
+                   -editor &lt;editor program&gt;
+            
+            Example:
+               babysfxs_shell poems.xml
+               
+               babyxfs_shell poems.xml -editor vi
+               
+             This will run a shell and mount poems.xml.
+             in the second case, the program "vi" is used to edit the
+             files.
+               
+        </pre>
+        </P>
+        <P>
+        And you should get a BBX$ prompt, and you are in the shell, and everything
+        you do now is Baby X.
+        </P>
+        <H3>The shell commands</H3>
+        <P>
+        <UL>
+            <LI>help</LI>
+            <LI>quit</LI>
+            <LI>cd</LI>
+            <LI>ls</LI>
+            <LI>cp</LI>
+            <LI>mv</LI>
+            <LI>rm</LI>
+            <LI>cat</LI>
+            <LI>edit</LI>
+            <LI>import</LI>
+            <LI>export</LI>
+            <LI>system</LI>
+            <LI>edit</LI>
+            <LI>bb</LI>
+        </UL>
+        </P>
+        <H3>help</H3>
+        <P>
+        help invokes the internal help system.
+        </P>
+        <H3>quit</H3>
+        <P>
+        quit exits the shell and returns control to the host.
+        </P>
+        <H3>cd</H3>
+        <P>
+        cd changes directories.
+        </P>
+        <H3>ls</H3>
+        <P>
+        ls lists the files in a directory.
+        </P>
+        <H3>cp</H3>
+        <P>
+        cp copies files.
+        </P>
+        <H3>mv</H3>
+        <P>
+        mv moves files.
+        </P>
+        <H3>rm</H3>
+        <P>
+        rm removes files.
+        </P>
+        <H3>cat</H3>
+        <P>
+        cat prints out files.
+        </P>
+        <H3>edit</H3>
+        <P>
+        edit runs an interactive editor on files.
+        </P>
+        <H3>import</H3>
+        <P>
+        import uploads files from the host machine.
+        </P>
+        <H3>export</H3>
+        <P>
+        export downloads files to hthe host machine.
+        </P>
+        <H3>system</H3>
+        <P>
+        system runs a coomand on the host machine.
+        </P>
+        <H3>bb</H3>
+        <P>
+        bb invokes the BabyBasic intepreter.
+        </P>
+    </BODY>
+</HTML>
