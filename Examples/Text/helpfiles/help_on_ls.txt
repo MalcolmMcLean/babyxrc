@@ -1,0 +1,29 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on ls                                  *
+*                                                                             *
+*******************************************************************************
+
+ls - list files
+
+The Baby X shell has an well featured ls special to it.
+
+It accepts wildcards and options, of which the most useful id -l, or long
+mode. However you can also pass -f to list only files or -d to list only
+directories. Directories have a slash appended to their names, eg
+
+myfolder/
+
+so you can easily recognise them. 
+
+You can also specify the sort
+
+BBS$ ls binat/*.bin -sort alpha
+
+                          default - regular sort.
+                          alpha -   alphabetical order sort.
+                          ext -     sort by extension.
+                          size -    sort by size.
+                          none -    don't sort.

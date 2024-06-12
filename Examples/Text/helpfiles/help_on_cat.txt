@@ -1,0 +1,11 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on cat                                 *
+*                                                                             *
+*******************************************************************************
+
+cat prints files to standard output, concatenating them.
+
+currently we don't support any options.

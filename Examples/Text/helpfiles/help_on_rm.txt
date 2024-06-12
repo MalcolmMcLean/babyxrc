@@ -1,0 +1,14 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on rm                                  *
+*                                                                             *
+*******************************************************************************
+
+rm removes files.
+
+BBX$ rm <badfile.ext>
+
+badfile.ext will be permanently deleted. rm does not take wildcards, and you 
+can only delete one file at once, as there is currently no recovery system.

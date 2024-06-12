@@ -26,6 +26,21 @@ extern char export_usage[];
 extern char import_usage[];
 extern char bb_usage[];
 
+extern char help_on_bb[];
+extern char help_on_cat[];
+extern char help_on_cd[];
+extern char help_on_cp[];
+extern char help_on_edit[];
+extern char help_on_export[];
+extern char help_on_help[];
+extern char help_on_import[];
+extern char help_on_ls[];
+extern char help_on_mkdir[];
+extern char help_on_mv[];
+extern char help_on_rm[];
+extern char help_on_rmdir[];
+extern char help_on_system[];
+
 
 typedef struct bbx_fs_command
 {
@@ -445,19 +460,55 @@ static int getcommand(char *command, int N, const char *input)
 static int help(BBX_FS_SHELL *shell, int argc, char **argv)
 {
     BBX_Options *bbx_opt;
+    char * command = 0;
     int list = 0;
     int Nargs = 0;
     
     bbx_opt = bbx_options(argc, argv, "");
     list = bbx_options_get(bbx_opt, "-list", 0);
     Nargs = bbx_options_Nargs(bbx_opt);
+    if (Nargs == 1)
+        command = bbx_options_arg(bbx_opt, 0);
     bbx_options_kill(bbx_opt);
     bbx_opt = 0;
     
-    if (Nargs > 0)
+    if (Nargs > 1)
     {
         fprintf(shell->stdout, "%s", help_usage);
         return 0;
+    }
+    if (Nargs == 1)
+    {
+        if (!strcmp(command, "bb"))
+            fprintf(shell->stdout, "%s\n", help_on_bb);
+        if (!strcmp(command, "cat"))
+            fprintf(shell->stdout, "%s\n", help_on_cat);
+        if (!strcmp(command, "cd"))
+            fprintf(shell->stdout, "%s\n", help_on_cd);
+        if (!strcmp(command, "cp"))
+            fprintf(shell->stdout, "%s\n", help_on_cp);
+        if (!strcmp(command, "edit"))
+            fprintf(shell->stdout, "%s\n", help_on_edit);
+        if (!strcmp(command, "export"))
+            fprintf(shell->stdout, "%s\n", help_on_export);
+        if (!strcmp(command, "help"))
+            fprintf(shell->stdout, "%s\n", help_on_help);
+        if (!strcmp(command, "import"))
+            fprintf(shell->stdout, "%s\n", help_on_import);
+        if (!strcmp(command, "ls"))
+            fprintf(shell->stdout, "%s\n", help_on_ls);
+        if (!strcmp(command, "mkdir"))
+            fprintf(shell->stdout, "%s\n", help_on_mkdir);
+        if (!strcmp(command, "mv"))
+            fprintf(shell->stdout, "%s\n", help_on_mv);
+        if (!strcmp(command, "rm"))
+            fprintf(shell->stdout, "%s\n", help_on_rm);
+        if (!strcmp(command, "rmdir"))
+            fprintf(shell->stdout, "%s\n", help_on_rmdir);
+        if (!strcmp(command, "system"))
+            fprintf(shell->stdout, "%s\n", help_on_system);
+        
+        return  0;;
     }
     
     if (list)

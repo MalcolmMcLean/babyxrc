@@ -1,0 +1,15 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                Help on mkdir                                *
+*                                                                             *
+*******************************************************************************
+
+Creates a directory in the XML file.
+
+BBX$ mkdir <newdirectory>
+
+The directory is of course empty when created.
+
+ 

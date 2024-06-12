@@ -1,0 +1,24 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on bb                                  *
+*                                                                             *
+*******************************************************************************
+
+bb invokes the BabyBasic interpreter.
+
+BabyBasic used the MiniBasic interpreter by Malolpm McLean as the basis for
+a more powerful scrpting languare to be used in the BABY X shell.
+
+You can get Malcolm's book, MiniBasic - how to write a script interpreter.
+
+    The book itself is at https://www.lulu.com/spotlight/bgy1mm
+    And the webpages are at https://malcolmmclean.github.io/minibasic/
+
+BabyBasic is very fluid and constantly being developed, so for rhe latest, go 
+to the github site:
+
+    http://malcolmmclean.github.io/babyxrc/
+
+

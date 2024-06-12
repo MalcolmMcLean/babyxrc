@@ -1,0 +1,15 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                               Help on system                                *
+*                                                                             *
+*******************************************************************************
+
+system invokes a command on the host system.
+
+BBX$ system rm -r *.*
+
+Will run the command "rm -r *.*" on the host system.
+
+Baby X accepts no responsibility.

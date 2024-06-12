@@ -1,0 +1,14 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                Help on emdir                                *
+*                                                                             *
+*******************************************************************************
+
+rmdir removes directories.
+
+BBX$ rmdir <baddirectory>
+
+It is only possible to remove empty directories, to prevent disasters.
+

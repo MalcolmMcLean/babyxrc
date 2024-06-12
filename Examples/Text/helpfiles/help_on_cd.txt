@@ -1,0 +1,20 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on cd                                  *
+*                                                                             *
+*******************************************************************************
+
+cd changes directories.
+
+BBX$ cd poems
+
+ will out you in the directory "poems"
+
+BBX$ cd ..
+
+ will put you in the directory above the one you are currently in.
+
+
+

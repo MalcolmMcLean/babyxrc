@@ -1,0 +1,14 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on mv                                  *
+*                                                                             *
+*******************************************************************************
+
+mv moves files from one place to another.
+
+BBX$ mv <myfile.txt> <newname.txt>
+
+It will overwrite any old newname.txt.
+

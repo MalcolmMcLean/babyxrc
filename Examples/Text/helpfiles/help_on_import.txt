@@ -1,0 +1,14 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                               Help on import                                *
+*                                                                             *
+*******************************************************************************
+
+import uploads files from the host system to the FileSystem XML file.
+
+BBX$ import <hostfile> myimport.bin
+
+import is a really powerful way of editing a FileSystem XML file.
+

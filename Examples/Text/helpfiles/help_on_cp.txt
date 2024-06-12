@@ -1,0 +1,13 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                 Help on cp                                  *
+*                                                                             *
+*******************************************************************************
+
+cp copies a file to another file.
+
+BBX$ cp <source> <destination>
+
+If destination does not exist, it will attempt to create it.

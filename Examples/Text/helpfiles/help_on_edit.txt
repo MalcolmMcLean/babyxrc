@@ -1,0 +1,21 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                Help on edit                                 *
+*                                                                             *
+*******************************************************************************
+
+edit invokes the editor on the file.
+
+$BBX edit <readme.txt>
+
+For technical reasons, it is not possible to include an acceptable text editor
+in the Baby X shell, and so we have to call an external program on the host
+system, Currently this is nano. If you don't like nano, or if for some reason
+things don't work, try another editor.
+
+babyxfs_shell <filesystem.xml> -editor vi
+
+vi is good editor, widely available, and should work. But you can choose your
+favourite.  

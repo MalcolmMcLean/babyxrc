@@ -1,0 +1,20 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                                Help on help                                 *
+*                                                                             *
+*******************************************************************************
+
+To get help, type
+
+BBX$ help
+
+To list the currently available commands, type
+
+BBX$ help -list
+
+To get help on a particular command, type
+
+BBX$ help <command>
+

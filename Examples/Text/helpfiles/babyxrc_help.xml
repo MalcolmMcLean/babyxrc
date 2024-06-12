@@ -1,0 +1,19 @@
+<BabyXRC>
+<comment> Help texts for the Baby X shell internal commands </comment>
+
+<string name="help_on_bb" src="help_on_bb.txt"></string>
+<string name="help_on_cat" src="help_on_cat.txt"></string>
+<string name="help_on_cd" src="help_on_cd.txt"></string>
+<string name="help_on_cp" src="help_on_cp.txt"></string>
+<string name="help_on_edit" src="help_on_edit.txt"></string>
+<string name="help_on_export" src="help_on_export.txt"></string>
+<string name="help_on_help" src="help_on_help.txt"></string>
+<string name="help_on_import" src="help_on_import.txt"></string>
+<string name="help_on_ls" src="help_on_ls.txt"></string>
+<string name="help_on_mkdir" src="help_on_mkdir.txt"></string>
+<string name="help_on_mv" src="help_on_mv.txt"></string>
+<string name="help_on_rm" src="help_on_rm.txt"></string>
+<string name="help_on_rmdir" src="help_on_rmdir.txt"></string>
+<string name="help_on_system" src="help_on_system.txt"></string>
+
+</BabyXRC>

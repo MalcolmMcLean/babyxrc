@@ -1,0 +1,13 @@
+*******************************************************************************
+*                                                                             *
+*                                Baby X shell                                 *
+*                                                                             *
+*                               Help on export                                *
+*                                                                             *
+*******************************************************************************
+
+export downloads a file to host system.
+
+BBX$ export <filesystemfile.ext> path/on/host/newfilename.ext
+
+It should usually work. Both text and binary can be exported.
