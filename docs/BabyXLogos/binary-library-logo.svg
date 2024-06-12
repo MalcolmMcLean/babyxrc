@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .cls-1, .cls-2 {
+        font-size: 24px;
+      }
+
+      .cls-3, .cls-2 {
+        fill: red;
+        font-family: MyriadPro-Regular, 'Myriad Pro';
+        stroke: red;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-4, .cls-5 {
+        stroke-width: 0px;
+      }
+
+      .cls-6 {
+        font-size: 12px;
+      }
+
+      .cls-5 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <g>
+    <rect class="cls-5" x=".5" y=".5" width="8" height="8"/>
+    <path class="cls-4" d="m8,1v7H1V1h7m1-1H0v9h9V0h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="18.5" y="9.5" width="8" height="8"/>
+    <path class="cls-4" d="m26,10v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="27.5" y=".5" width="8" height="8"/>
+    <path class="cls-4" d="m35,1v7h-7V1h7m1-1h-9v9h9V0h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="36.5" y=".5" width="8" height="8"/>
+    <path class="cls-4" d="m44,1v7h-7V1h7m1-1h-9v9h9V0h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="45.5" y=".5" width="8" height="8"/>
+    <path class="cls-4" d="m53,1v7h-7V1h7m1-1h-9v9h9V0h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="45.5" y="9.5" width="8" height="8"/>
+    <path class="cls-4" d="m53,10v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="27.5" y="17.5" width="8" height="9"/>
+    <path class="cls-4" d="m35,18v8h-7v-8h7m1-1h-9v10h9v-10h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="9.5" y="27.5" width="8" height="8"/>
+    <path class="cls-4" d="m17,28v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="45.5" y="27.5" width="8" height="8"/>
+    <path class="cls-4" d="m53,28v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="18.5" y="36.5" width="8" height="8"/>
+    <path class="cls-4" d="m26,37v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="27.5" y="36.5" width="8" height="8"/>
+    <path class="cls-4" d="m35,37v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="36.5" y="36.5" width="8" height="8"/>
+    <path class="cls-4" d="m44,37v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x=".5" y="45.5" width="8" height="8"/>
+    <path class="cls-4" d="m8,46v7H1v-7h7m1-1H0v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x=".5" y="54.5" width="8" height="8"/>
+    <path class="cls-4" d="m8,55v7H1v-7h7m1-1H0v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="9.5" y="45.5" width="8" height="8"/>
+    <path class="cls-4" d="m17,46v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="27.5" y="45.5" width="8" height="8"/>
+    <path class="cls-4" d="m35,46v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="45.5" y="45.5" width="8" height="8"/>
+    <path class="cls-4" d="m53,46v7h-7v-7h7m1-1h-9v9h9v-9h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="54.5" y="17.5" width="8" height="9"/>
+    <path class="cls-4" d="m62,18v8h-7v-8h7m1-1h-9v10h9v-10h0Z"/>
+  </g>
+  <g>
+    <rect class="cls-5" x="54.5" y="54.5" width="9" height="9"/>
+    <path class="cls-4" d="m63,55v8h-8v-8h8m1-1h-10v10h10v-10h0Z"/>
+  </g>
+  <text class="cls-3" transform="translate(12.22 25.34)"><tspan class="cls-1" x="0" y="0">Bin</tspan><tspan class="cls-6" x="31.94" y="0"> </tspan></text>
+  <text class="cls-2" transform="translate(12.44 53.95)"><tspan x="0" y="0">Lib</tspan></text>
+</svg>
