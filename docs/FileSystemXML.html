@@ -1,28 +1,41 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> The FileSystem XML file format </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1> The FileSystem XML file format</H1>
 <P>
  FileSystem is an XML file format designed for storing directories. It is intended for Baby X and works with the <A href = "BabyXFS.html">BabyXFS</A> (Baby X FileSystem) suite of programs and functions. However it is independent of Baby X and is open to anyone for any use.
@@ -32,7 +45,7 @@ pre{
 <P>
 FileSystem XML is a format for storing hierarchical data. The root tag is &lt;<A href = "#FileSystem_tag">FileSystem</A>&gt; and then there are two descendant tags &lt;<A href = "#directory_tag">directory</A>&gt; and &lt;<A href = "#file_tag">file</A>&gt; Files are leaf nodes which contain data, whilst directories can nest and contain files and other directories.
 </P>
-<H4> Example FileSystem XML file </H3>
+<H4> Example FileSystem XML file </H4>
 <pre>
     &lt;FileSystem>&gt;
         &lt;directory name="owl_and_text"&gt;
@@ -40,7 +53,7 @@ FileSystem XML is a format for storing hierarchical data. The root tag is &lt;<A
                 &lt;file name="Cartoon_Owl_clip_art.png" type="binary"&gt;
     &lt;![CDATA[M)"E3'U@":H````0#)A$12!````$```@/(8````PF!UQ;````!,G4')$`NZ,'
     MI#``;&lt;02$%$5H50S;='=&lt;6=E_W4U4ETHND5R]*N!&&lt;PQ&lt;=&lt;H'@0HX0"F$(GE
-    M4V-+)9A-;.DE-9A`!(]$(+_1.LA`$@L`!,$P8&lt;!;&ltO)9)9999)9)9-2SH13O
+    M4V-+)9A-;.DE-9A`!(]$(+_1.LA`$@L`!,$P8&lt;!;&lt;O)9)9999)9)9-2SH13O
     M7V?W/IQ:D0V28T&gt;.[UGG^^FO7]&gt;?W^[95X_[`-&lt;HSFE\,I#Y:4GFRS2KV*TH
     M25I)2E:!LLH4`%PZ5I"P)_&gt;CJ5IZ8)3EZ,1B'O[0Q2T3P88(6O+6\R2"6FV!
 
@@ -53,7 +66,7 @@ FileSystem XML is a format for storing hierarchical data. The root tag is &lt;<A
     M%B[CGH^`\8`/0-%@O(#I_P#X%M7;!XVX-?;W=Y"/+;;W*]8:Z/_O!MW)SX-&lt;
     .9_(`````)5D3$YJ0@)(I
     ]]&gt;
-                &lt;/file&gt
+                &lt;/file&gt;
             &lt;/directory&gt;
             &lt;file name="readme.txt" type="text"&gt;
     In the beginning was the Word, and the Word was with God, and the Word was God.
@@ -71,7 +84,7 @@ FileSystem XML is a format for storing hierarchical data. The root tag is &lt;<A
 
 <TABLE style="width:50em">
     <TR>
-<TD><IMG src = "folderimage.svg" alt = "image of a folder" width = "100"></IMG></TD>
+<TD><IMG src = "folderimage.svg" alt = "image of a folder" width = "100"></TD>
 <TD>
 <TD>
     And it is fairly simple and self explanatory. Directories have names, but are otherwise just containers. Whilst files have names, and can be binary or text. Text is stored as plain ASCII, whilst binary data is uuencoded and put in a CDATA section. So it's a very clean format.
@@ -85,8 +98,8 @@ FileSystem XML is a format for storing hierarchical data. The root tag is &lt;<A
 
 
 <A id ="FileSystem_tag"></A>
-<H4>The &lt;FileSystem&gt; tag </H3>
-<P>
+<H4>The &lt;FileSystem&gt; tag </H4>
+
 <pre>
     &lt;FileSystem&gt;
         &lt;directory name="archive"&gt;
@@ -97,13 +110,13 @@ words ‘DRINK ME’ beautifully printed on it in large letters
         &lt;directory&gt;
     &lt;/FileSystem&gt;
 </pre>
-</P>
+
 <P>
 The FileSystem tag identifies the format. It should be the root element, and has one child, which is always a directory. The name of the root directory identifies the name of the FileSystem. Only directory and file tag elements are allowed within FileSystem elements.
 </P>
 <A id = "directory_tag"></A>
 <H4>The &lt;directory&gt; tag</H4>
-<P>
+
 <pre>
 &lt;directory name="archive"&gt;
     &lt;file name="readme.txt" type = &gt;
@@ -114,13 +127,13 @@ words ‘DRINK ME’ beautifully printed on it in large letters
     &lt;/directory&gt;
 &lt;directory&gt;
 </pre>
-</P>
+
 <P>
 The directory tag  one compulsory element, which is the name. It can contain files and directories in any order. Directories are all normal and should not have names which suggest special directories like symbolic links on common computer systems, eg "..". A directory can be empty.
 </P>
 <A id = "file_tag"></A>
 <H4>The &lt;file&gt; tag</H4>
-<P>
+
 <pre>
       &lt;file name="readme.txt" type="text"&gt;
 and round the neck of the bottles was a paper label, with the
@@ -131,7 +144,7 @@ words ‘DRINK ME’ beautifully printed on it in large letters
       ]]&gt;
       &lt;/file&gt;
 </pre>
-</P>
+
 <P>
 The file tag is the leaf element which contains data. It has two compulsory attributes, a name and a type, which must be "text" or "binary". Text data is plain, whilst binary data is <A href="https://en.wikipedia.org/wiki/Uuencoding">uuencoded</A>. uuencoding is a common system and decoders are widely available, and there is of course code at the <A href="https://github.com/MalcolmMcLean/babyxrc">BabyXRC project</A>.
 </P>
@@ -196,14 +209,14 @@ Enjoy programming - Malcolm.
 </P>
 <P>
 Here are some useful links.
+</P>
 
 <UL>
-<LI> <A href="https://github.com/MalcolmMcLean/babyxrc" BabyXRC project </A> Baby X resource compiler </LI>
-<LI> <A href="https://github.com/MalcolmMcLean/babyx" BabyX project </A> Baby X is the portable cross platform windowing sysytem for small programs.</LI>
-<LI> <A href="https://github.com/MalcolmMcLean/minixml" Mini XML </A> The home of the XML parser</LI>
-<LI> <A href="https://www.lulu.com/spotlight/bgy1mm" Malcolm&apos;s books </A> Where you can get books on programming and other subjects by Malcolm.</LI>
+<LI> <A href="https://github.com/MalcolmMcLean/babyxrc"> BabyXRC project </A> Baby X resource compiler </LI>
+<LI> <A href="https://github.com/MalcolmMcLean/babyx"> BabyX project </A> Baby X is the portable cross platform windowing sysytem for small programs.</LI>
+<LI> <A href="https://github.com/MalcolmMcLean/minixml"> Mini XML </A> The home of the XML parser</LI>
+<LI> <A href="https://www.lulu.com/spotlight/bgy1mm"> Malcolm&apos;s books </A> Where you can get books on programming and other subjects by Malcolm.</LI>
 </UL>
-</P>
 
 </BODY>
 </HTML>

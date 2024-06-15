@@ -1,28 +1,41 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> Using loadimage in Baby X </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site">  </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62">  </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1> Using loadimage in Baby X </H1>
 <P>
 The Baby X resource compiler comes with a powerful loadimage() function which you will want to take for your own baby programs if you want to allow the user to specify and image to load a runtime.
@@ -97,6 +110,7 @@ And of course I do not need to insult your intelligence by showing an example of
 
 <P>
 Dependencies:
+</P>
 <UL>
     <LI>bmp.c</LI>
     <LI>jpeg.c</LI>
@@ -109,14 +123,15 @@ Dependencies:
     <LI>nanosvg.h</LI>
     <LI>nanosvgrast.h</LI>
 </UL>
+<P>
 And the C files all have associated headers. So you need to take those files and drop them into your Baby X program, as well as loadimage.c.
 </P>
 <P>
-</P>
 lodepng.c is maintained <A href = "https://github.com/lvandeve/lodepng">here</A>. <BR>
 nanosvg.h nanosvrast.h <A href = "https://github.com/memononen/nanosvg">here</A>. <BR>
 <BR>
 All other components are by <A href="https://github.com/MalcolmMcLean"><IMG src="Cartoon_Owl_clip_art.png" alt="Malcolm's github site"></A>
+</P>
 <P>
 And this function is heart of the resource compiler. It's what most people will use it for.
 </P>

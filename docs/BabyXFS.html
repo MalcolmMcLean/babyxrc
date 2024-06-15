@@ -1,65 +1,45 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> Baby X FileSystem </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
-    .toplevel {
-        width : 50em;
-    }
 </style>
-<script>
-function fileClick(a) {
 
-        var linkTag = a.href;
-        var substring = "file:///";
-        if (linkTag.includes(substring)) {
-            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
-            fileOpen(url);
-        }
-        else {
-            window.open(linkTag, '_blank');
-        }
-    }
 
-    function fileOpen(url) {
-        $.ajax({
-            url: url,
-            complete: function (jqxhr, txt_status) {
-                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
-                if (txt_status == 'success') {
-                    window.open(url, '_self');
-                }
-                else {
-                    alert("File not found[404]!");
-                }
-                // }
-            }
-        });
-    }
-    </script>
-
-</HEAD>
-<BODY bgcolor="#c0c0ff">
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </A>
     &nbsp;&nbsp;
-    <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1>Baby X FileSystem</H1>
 <div class="toplevel">
 <div style="float:right">
-<IMG src="BabyXLogos/baby-x-fs-logo.svg" width="150">
+<IMG src="BabyXLogos/baby-x-fs-logo.svg" alt="BabyX FS logo" width="150">
 </div>
 <BR>
 <BR>
@@ -73,15 +53,15 @@ The Baby X filesystem project, or BabyXFS is a project designed to allow Baby X 
         <TH>Icon</TH><TH>Banner</TH><TH>Short name</TH><TH>Long name</TH><TH>Description</TH>
     </TR>
     <TR>
-        <TD><IMG src="BabyXLogos/baby-x-logo.svg"></TD><TD><IMG src="BabyXLogos/babyx-banner.svg"></TD><TD>BabyX</TD><TD>Baby X</TD>
+        <TD><IMG src="BabyXLogos/baby-x-logo.svg" alt="Baby X logo"></TD><TD><IMG src="BabyXLogos/babyx-banner.svg" alt="Baby X banner"></TD><TD>BabyX</TD><TD>Baby X</TD>
         <TD>A small GUI toolkit which ports between Linux X11 and MS Windows. </TD>
     </TR>
     <TR>
-        <TD><IMG src="BabyXLogos/baby-x-rc-logo.svg"></TD><TD><IMG src="BabyXLogos/babyxrc-banner.svg"></TD><TD>BabyXRC</TD><TD>Baby X Resource compiler</TD>
+        <TD><IMG src="BabyXLogos/baby-x-rc-logo.svg" alt="Baby X RC logo"></TD><TD><IMG src="BabyXLogos/babyxrc-banner.svg" alt="Baby X RC banner"></TD><TD>BabyXRC</TD><TD>Baby X Resource compiler</TD>
         <TD> A commandline program to convert resources to compileable C code.</TD>
     </TR>
     <TR>
-        <TD><IMG src="BabyXLogos/baby-x-fs-logo.svg"></TD><TD><IMG src="BabyXLogos/babyxfs-banner.svg"></TD><TD>BabyXFS</TD><TD>Baby X File system</TD>
+        <TD><IMG src="BabyXLogos/baby-x-fs-logo.svg" alt="Baby X FS logo"></TD><TD><IMG src="BabyXLogos/babyxfs-banner.svg" alt="Baby X FS banner"></TD><TD>BabyXFS</TD><TD>Baby X File system</TD>
         <TD>A suite of programs and code for supporting virtual filesystems.
     </TR>
 </TABLE>
@@ -102,13 +82,13 @@ The BabyXFS FileSystem library is a suite of functions for mounting FileSystem X
 files virtual drives on your machine and thus reading the contents.
 </P>
 <P>
-THe object BBX_FileSystem is documented <A href = "BBX_FileSystemObject.html"l>here</A>, and
+THe object BBX_FileSystem is documented <A href="BBX_FileSystemObject.html">here</A>, and
 The functions in bbx_filesystem.c are documented <A href="bbx_filesystem.html">here</A>.
 </P>
 
 <H3>The BBX_Options parser</H3>
 <P>
-The Baby X options parser, <A href = "BBX_OptionsObject.html">BBX_Options</A> is a lightweight single file options parser that greatly simplifies command line options handling and is an essential for every small or "baby" program which takes commandline options. And as with all of Baby X, it is free to anyone for any use.
+The Baby X options parser, <A href="BBX_OptionsObject.html">BBX_Options</A> is a lightweight single file options parser that greatly simplifies command line options handling and is an essential for every small or "baby" program which takes commandline options. And as with all of Baby X, it is free to anyone for any use.
 </P>
 
 <H2> The Baby X filesystem programs </H2>
@@ -120,7 +100,6 @@ BabyXFS has an entire suite of programs and sourse subroutines designed to allow
 <P>
 babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. You then have a big xml file which you can use for other purposes.
  </P>
- <P>
  <pre>
      
      babyxfs_dirtoxml &lt;targetfolder&gt;
@@ -132,7 +111,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
         babysfxs_dirtoxml  data/myfolder > myfolder.xml
         
  </pre>
- </P>
  <P>
  babyxfs_dirtoxml is simple but very powerful, and produces clean XML with text files represented a plain text and binary files uuencoded. It produces XML in the <A href="FileSystemXML.html">&lt;FileSystem&gt;</A> format.
  </P>
@@ -143,7 +121,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  directory on disk.So it is to be used with babyxfs_xmltodir to
  create and extract archives.
   </P>
-  <P>
   <pre>
       
       babyxfs_xmltodie &lt;filesystem.xml&gt; &lt;targetfolder&gt;
@@ -155,7 +132,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
          babysfxs_xmlrodir  poems.xml /users/fred/Documents/poetrycollection
          
   </pre>
-  </P>
   <P>
   babyxfs_xmltodir is quite a simple program because the FileSystem XML format is so simple.
   </P>
@@ -164,7 +140,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
   <P>
   babyxfs_ls, lists the files in a FileSystem XML file. It's a very, very basic implementation of the Unix program ls, and currently accepts no options, but only globs or wildcards..
    </P>
-   <P>
    <pre>
        
        babyxfs_ls &lt;filesystem.xml&gt; &lt;glob&gt;
@@ -183,7 +158,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
         file system.
           
    </pre>
-   </P>
    <P>
    babyxfs_ls is currently very basic, but there are plans to add more options, like "ls". Directories can be recognised becuause they heave "/" appended tob their names.
    </P>
@@ -192,7 +166,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
    <P>
    babyxfs_extract, writes out a single file in an FileSystem XML file to standard output. So bthis is in fact a very powerful practical use. In combination with babyxfs_ls, you have a portable archive that you can use, on any machine with a C compiler, even an embedded system, because babyxfs_ls and babysfs_extract are written in completely portable ANSI C with no dependencies other than the standard library.
     </P>
-    <P>
     <pre>
         
         babyxfs_extract &lt;filesystem.xml&gt; &lt;filename&gt;
@@ -207,7 +180,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
          file and write it to standard output.
            
     </pre>
-    </P>
     <P>
     babyxfs_extract is a very powerful facility. It means that you can get files from your FileSystem MXL files on demand.
     </P>
@@ -217,7 +189,6 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
     babyxfs_shell, invokes a simple shell, mounting a FileSystem XML file
     as its backing store.
      </P>
-     <P>
      <pre>
          
          babyxfs_shell &lt;filesystem.xml&gt; &lt;filename&gt; [options]
@@ -238,14 +209,13 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
           files.
             
      </pre>
-     </P>
      <P>
      babyxfs_shell is a very powerful facility. It means you can do practically
      anything you want with yuor FileSystem XML file. Your regular prompt will be
      replaced by the <A href="babyxfs_shell.html">BBX$</A> prompt, and you are in
      the world of Baby X.
      </P>
-     </P>
+     <P>
      Because of the way ANSI C works, it is very difficult to give the shell an
      internal text editor that is any good, so you specify which editor to use.
      Curently it defaults to "nano".
@@ -274,14 +244,12 @@ babyxfs_dirtoxml, crawls a C source directory for files and writes them as xml. 
  &lt;/BabyXRC&gt;
 
  </pre>
- </P>
- <P>
  
  <H3>testbabyxfilesystem</H3>
  <P>
  This program tests out the BBX_FileSystem, and ensures that the FileSystem XML and the system on disk and in sych and there are no problems. Here's the current main function.
  </P>
- <P>
+ 
  <pre><code class="language-c">
      int main(int argc, char **argv)
      {

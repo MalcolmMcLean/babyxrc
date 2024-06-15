@@ -1,67 +1,45 @@
-<HTLM>
-    <HEAD>
-        <link href="prism.css" rel="stylesheet" />
-    <style>
-    body {
-        margin-left: 120px;
-    }
+<!DOCTYPE html>
+<HTML lang="en">
+<HEAD>
+    <title> The Baby X FileSystem Shell </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
+<style>
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
+}
 
-    P {
-        width: 50em;
-    }
+P {
+   width : 50em;
+}
 
-    pre{
-        width : 50em;
-        background-color: #FFFFFF;
-    }
-        .toplevel {
-            width : 50em;
-        }
-    </style>
-    <script>
-    function fileClick(a) {
+pre {
+   background-color:white;
+}
+</style>
 
-            var linkTag = a.href;
-            var substring = "file:///";
-            if (linkTag.includes(substring)) {
-                var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
-                fileOpen(url);
-            }
-            else {
-                window.open(linkTag, '_blank');
-            }
-        }
-
-        function fileOpen(url) {
-            $.ajax({
-                url: url,
-                complete: function (jqxhr, txt_status) {
-                    console.log("Complete: [ " + txt_status + " ] " + jqxhr);
-                    if (txt_status == 'success') {
-                        window.open(url, '_self');
-                    }
-                    else {
-                        alert("File not found[404]!");
-                    }
-                    // }
-                }
-            });
-        }
-        </script>
-
-    </HEAD>
-    <BODY bgcolor="c0c0ff">
+    <BODY>
         <script src="prism.js"></script>
-        <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </IMG> </A>
-        <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </IMG> </A>
+        <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.svg" width = "64" height = "62" alt="Malcolm's github site"> </A>
+        <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource Compiler" width = "64" height = "62"> </A>
         &nbsp;&nbsp;
-        <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+        <IMG src = "BabyXLogos/babyxfs-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
         <H1> The Baby X FileSystem Shell </H1>
         <P>
         The Baby X FileSystem shell is a program for running a shell over FileSystem XML files. It's the most powerful way of editing FileStstem XML files there is, becuse when it is finished, it will be a little computer in its own right. And is is the jewel in the crown of the babcyxfs_ suite of programs.
         </P>
         <H3>Usage</H3>
-        <P>
         <pre>
             
             babyxfs_shell &lt;filesystem.xml&gt; &lt;filename&gt; [options]
@@ -82,13 +60,11 @@
              files.
                
         </pre>
-        </P>
         <P>
         And you should get a BBX$ prompt, and you are in the shell, and everything
         you do now is Baby X.
         </P>
         <H3>The shell commands</H3>
-        <P>
         <UL>
             <LI>help</LI>
             <LI>quit</LI>
@@ -105,7 +81,6 @@
             <LI>edit</LI>
             <LI>bb</LI>
         </UL>
-        </P>
         <H3>help</H3>
         <P>
         help invokes the internal help system.

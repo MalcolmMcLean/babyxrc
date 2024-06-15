@@ -1,30 +1,46 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> The Baby X resource compiler source files </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+
+
+
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site">  </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62">  </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1> The Baby X resource compiler source files </H1>
 <H3> Source file list </H3>
+<UL>
 <LI> aifffile.c </LI>
     <LI> asciitostring.c - AIFF file loader </LI>
     <LI> babyxrcmain.c - program main function </LI>
@@ -54,9 +70,7 @@ pre{
     <LI> nanosvgrast.h - SVG file rasterizer </LI>
     <LI> freetype/ - code to manipulate truetype fonts</LI>
     <LI> samplerate/ - code to resample audio</LI>
-    <P></P>
-    <P>
-    </P>
+</UL>
     
     <H3> aifffile.c </H3>
     <P> <B>Copyright:</B> Malcolm McLean </P>
@@ -78,7 +92,7 @@ pre{
         <P>
         <code>floadaiff</code> - the same fucntion but taking an open stream as an argument.
         </P>
-        <HR></HR>
+        <HR>
         <H3> asciitostring.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -102,13 +116,13 @@ pre{
         in quotes. If the string is long it will be broken up into separate quoted
         sections separated by newlines.
         </P>
-        <HR></HR>
+        <HR>
         <H3> babyxrcmain.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
         The main function of the Baby X resource compiler.
         </P>
-        <HR></HR>
+        <HR>
         <H3> bbx_utf8.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -144,7 +158,7 @@ pre{
         <P>
         See <A href="usingutf8.html"> using UTF-8</A>.
         </P>
-        <HR></HR>
+        <HR>
         <H3> bdf2c.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -156,7 +170,7 @@ pre{
         <P>
         <code>ReadBdf</code> - a misnomer. It reads a BDF font from a stream, and writes C source to out. Pass header = true to just write the C header, and name for the name of the bitmap_font structure.
         </P>
-        <HR></HR>
+        <HR>
         <H3> bmp.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -204,7 +218,7 @@ pre{
         <code>savebmp1bit</code> - save a binary (1-bit) bitmap. Each byte in the raster represents one pixel and must be 1 or 0. The actual colours are determiend by the two-entry palette. This one hasn't been well-tested, and we need a corresponding save routine. Then it can go inthe binaryimage library.'
         </P>
 
-        <HR></HR>
+        <HR>
         <H3> csv.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -230,7 +244,7 @@ pre{
         <code>loadcsv</code> - loads a CSV object from a file. Returns NULL on fail. It needs a rewrite to improve error handling.
         </P>
         <P>
-        <ocde>killcsv</code> - CSV object destructor.
+        <code>killcsv</code> - CSV object destructor.
         </P>
         <P>
         <code>csv_getsize</code> - get the dimensions of the CDV dataframe in rows (height) and columns (width).
@@ -253,7 +267,7 @@ pre{
         <P>
         See <A href="usingcsv.html"> using CSV</A>.
         </P>
-        <HR></HR>
+        <HR>
         <H3> dumpcsv.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -266,7 +280,7 @@ pre{
         <P>
         <code>dumpcsv</code> - convert a CSV object to C source code. headerfile means write out a C header file instead of a .c source file (the word "header" would have ben confusing). It should be considered experimental.
         </P>
-        <HR></HR>
+        <HR>
         <H3> gif.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -285,7 +299,7 @@ pre{
         <P>
         <code>savegif</code> - save a non-animated GIF file. This one looks frightening, because of little-used features of GIF files we support. pal points to palsize RGB triplets. transparent passes in the transparent color (use -1 for no transparency). important and interlaced are obsolete and can be zero.
         </P>
-        <HR></HR>
+        <HR>
         <H3> jpeg.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -298,7 +312,7 @@ pre{
         <P>
         <code>loadjpeg</code> - load a JPEG.
         </P>
-        <HR></HR>
+        <HR>
         <H3> loadasutf8.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -311,7 +325,7 @@ pre{
         <P>
         <code>loadasutf8</code> - load text as UTF-8. It's quite straightforwards except for the text format detection code on which it depends. It returns NULL and err is set to non-zero on failure. To do, improve error reporting.
         </P>
-        <HR></HR>
+        <HR>
         <H3> loadcursor.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -333,7 +347,7 @@ pre{
         <P>
         <code>loadcursor</code> - load a .cur file. A .cur file is basically just a bitmap with a hotpoint attached. The function hasn't been well-tested.
         </P>
-        <HR></HR>
+        <HR>
         <H3> loadimage.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -350,7 +364,7 @@ pre{
         <P>
         <code>loadsvg</code> - load an SVG as a 32 bit RTGBA raster. Since SVGs are scaleable, they can't have the same interface as the raster graphics, and you have to pass in the width and height that you want.
         </P>
-        <HR></HR>
+        <HR>
         <H3> loadmp3.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -369,7 +383,7 @@ pre{
         <P>
         <code>mp3streamdecompress</code> - a function to decompress and entire MP3 image in one go. It's useful for audio processing, less useful for playback.
         </P>
-        <HR></HR>
+        <HR>
         <H3> loadtiff.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -382,13 +396,13 @@ pre{
         <P>
         <code>floadtiff</code> - load a TIFF froman open stream. TIFFs were designed to work with non-seekable streams, hence the interface. TIFF is a very complicated umbrella format and it will probably fail on some input.
         </P>
-        <HR></HR>
+        <HR>
         <H3> lodepng.c </H3>
         <P> <B>Copyright:</B> (c) 2005-2012 Lode Vandevenne
         <P>
         PNG (Portable network graphic) file loader and saver.
         </P>
-        <HR></HR>
+        <HR>
         <H3> minimp3.c </H3>
         <P>
         <B>Copyright:</B> (c) 2001, 2002 Fabrice Bellard, <BR>
@@ -397,7 +411,7 @@ pre{
         <P>
         MP3 audio decoder. This is almost in a single file (there is a trivial dependency on libc.h), and is a great achievement.
         </P>
-        <HR></HR>
+        <HR>
         <H3> options.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -422,7 +436,7 @@ pre{
         <code>opt_get</code> - query the OPTIONS object for an option. You can pass several aliases for an option at once, eg, "-help -h --help /help /h". If the option is a flag, fmt should be null. If it takes arguments, it's similar to scanf() - pass %d for an integer or %f for a double. %s should always take a length field (e.g %256s) to avoid buffer overruns. Intitialise the arguments to defaults and they will not be overwritten if the option is not present. Note that opt_get() is used both to extract options, and to tell the options parser what the allowed options are. So you must query for every option you support.
         </P>
         <P>
-        <ode>opt_error</code> - query the options parser for user errors. Pass a stream to receive error text (so, usually, pass stderr), or NULL to suppress. It returns non-zero if there is an error. The main errors are unrecognised options, or options with the wrong arguments. So setting up the opt_get calls beforehand is vital. Note that it won't sanity check arguments for you, you have to do that in caller.
+        <code>opt_error</code> - query the options parser for user errors. Pass a stream to receive error text (so, usually, pass stderr), or NULL to suppress. It returns non-zero if there is an error. The main errors are unrecognised options, or options with the wrong arguments. So setting up the opt_get calls beforehand is vital. Note that it won't sanity check arguments for you, you have to do that in caller.
         </P>
         <P>
         <code>opt_Nargs</code> - after all the calls to opt_get have been completed, the remaining arguments in argv are non-option arguments, usually filenames. This function counts them.
@@ -434,7 +448,7 @@ pre{
         See <A href="usingoptions.html"> using the commandline options parser</A>.
         </P>
         
-        <HR></HR>
+        <HR>
         <H3> rbtree.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -474,7 +488,7 @@ pre{
         <P>
         See <A href="usingrbtree.html"> using the RBTREE</A>.
         </P>
-        <HR></HR>
+        <HR>
         <H3> resize.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -488,7 +502,7 @@ pre{
         <P>
         <code>resizeimage</code> - resize a 32 bit RGBA image to dwidth, dheight. It doesn't allocate the buffer so you have to pass it in.
         </P>
-        <HR></HR>
+        <HR>
         <H3> savejpeg.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
     
@@ -501,7 +515,7 @@ pre{
         </code></pre>
         <P>
         <code>savejpeg</code> - saves a JPEG. There are no options for quality. If you want to add them. you will need to adjust the quantisation table.
-        <HR></HR>
+        <HR>
         <H3> text_encoding_detect.c </H3>
         <P> <B>Copyright:</B> 2015 Jonathan Bennett </P>
         <P>
@@ -528,9 +542,11 @@ pre{
         <P>
         <code>DetectTextFileEncoding</code> - this uses very good heuristics. error isn't really functional.
         </P>
-        <HR></HR>
+        <HR>
         <H3> ttf2c.c </H3>
-        <B>Copyright:</B> Malcolm McLean </P>
+        <P>
+        <B>Copyright:</B> Malcolm McLean
+        </P>
         <P>
         This is a thin layer on top of the freetype/ code which loads a .ttf or TrueType font, and saves it out as a struct bitmap_font.
         </P>
@@ -541,7 +557,7 @@ pre{
         <P>
         <code>dumpttf</code> - write out a TrueType font as C source for a bitmap_font structure. You need to pass in the size you want in points. fp points to the output stream. header is set to just output a C header.
         </P>
-        <HR></HR>
+        <HR>
         <H3> wavfile.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -570,7 +586,7 @@ pre{
         <P>
         <code>fsavewav</code> - save a WAV file to an open stream.
         </P>
-        <HR></HR>
+        <HR>
         <H3> xmlparser.c </H3>
         <P> <B>Copyright:</B> Malcolm McLean </P>
         <P>
@@ -654,7 +670,7 @@ pre{
         <P>
         See <A href="usingxmlparser.html">using the XML parser</A>.
         </P>
-        <HR></HR>
+        <HR>
         <H3> nanosgv.h </H3>
         <P> <B>Copyright:</B> (c) 2013-14 Mikko Mononen
         <P>
@@ -665,7 +681,7 @@ pre{
         NSVGimage* nsvgParseFromFile(const char* filename, const char* units, float dpi);
         void nsvgDelete(NSVGimage* image);
         </code></pre>
-        <HR></HR>
+        <HR>
         <H3> nanosvgrast.h </H3>
         <P> <B>Copyright:</B> (c) 2013-14 Mikko Mononen
         <P>
@@ -679,13 +695,13 @@ pre{
                            NSVGimage* image, float tx, float ty, float scale,
                            unsigned char* dst, int w, int h, int stride);
         </code></pre>
-        <HR></HR>
+        <HR>
         <H3> freetype/ </H3>
         <P> <B>Copyright:</B> 1996-1999 by David Turner, Robert Wilhelm, and Werner Lemberg. </P>
         <P>
         This directory contains files for drawing TrueType fonts. We use it to convert the fonts to a simple raster representation which can be used by small programs.
         </P>
-        <HR></HR>
+        <HR>
         <H3> samplerate/ </H3>
         <P> <B> Copyright:</B> (C) 2002-2011 Erik de Castro Lopo </P>
         <P>

@@ -1,58 +1,40 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> The BBX_Options object </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-<script>
-function fileClick(a) {
-
-        var linkTag = a.href;
-        var substring = "file:///";
-        if (linkTag.includes(substring)) {
-            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
-            fileOpen(url);
-        }
-        else {
-            window.open(linkTag, '_blank');
-        }
-    }
-
-    function fileOpen(url) {
-        $.ajax({
-            url: url,
-            complete: function (jqxhr, txt_status) {
-                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
-                if (txt_status == 'success') {
-                    window.open(url, '_self');
-                }
-                else {
-                    alert("File not found[404]!");
-                }
-                // }
-            }
-        });
-    }
-    </script>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site">  </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1>The BBX_Options object </H1>
 <P>
 The Baby X Options object, BBX_Options, is a Baby X object designed to parse commandline options easily and automatically report errors.. The object is extremly easy for programmers to use and is lightweight, a single file, so a "baby" options parser in the spirit of Baby X. It is part of the <A href = "BabyXFS.html">BabyXFS</A> or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories.
@@ -65,7 +47,7 @@ taking most of the error checking and parse logic out of
 the calling program.
 </P>
 
-<H2> Public functions <H2>
+<H2> Public functions </H2>
 
     <H3>bbx_options</H3>
 <P>
@@ -82,21 +64,19 @@ the empty string.
 </P>
 
 <H3> bbx_options_kill</H3>
-<P>
 <pre><code class="language-c">
     void bbx_options_kill(BBX_Options *opt);
 </code></pre>
-</P>
+
 <P>
 Destroys the options object.
 </P>
 <H3> bbx_options_get </H3>
-<P>
+
 <pre><code class="language-c">
     int options_get(BBX_Options *opt, char *name, char *fmt, ...);
 </code></pre>
-</P>
-<P>
+
 <P>
     Get an option.
 </P>
@@ -108,7 +88,7 @@ Destroys the options object.
     %s - a string - argument char *
     strings should take a buffer length qualifer (default 256)
 </pre>
-</P>
+
 <P>
 Returns the number of arguments consumed. However it's not normally
 necessary to check for errors. Call bbx_options_error after parsing
@@ -116,11 +96,11 @@ all the options.
 </P>
 
 <H3>bbx_options_error</H3>
-<P>
+
 <pre><code class="language-c">
     int bbx_options_error(BBX_Options *opt, char *errormessage, int Nerror);
 </code></pre>
-</P>
+
 <P>
 Returns non-zero if the options parser encountered an error. It then
 writes an human-readable error report to the error buffer. The errormessage
@@ -134,17 +114,17 @@ can be null if you don't want to report the error to the user.
 This gets the number of arguments left after otions have been parsed.
 </P>
 <H3>bbx_options_arg</H3>
-<P>
+
 <pre><code class="language-c">
     char *bbx_options_arg(BBX_Options *opt, int index);
 </code></pre>
-</P>
+
 <P>
 Retrieves the commandline non-option argument (most frequently file
 names). You must call after parsing the options.
 </P>
 <H2>Example Usage</H2>
-<P>
+
 <pre><code class="language-c">
     int main(int argc, char *argv)
     {
@@ -185,7 +165,7 @@ names). You must call after parsing the options.
         return 0;
     }
 </code></pre>
-</P>
+
 <P>
 It's very clean and easy to use.
 </P>

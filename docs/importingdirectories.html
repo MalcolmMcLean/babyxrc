@@ -1,58 +1,41 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title>  Importing Directories into C programs with the Baby X Resource Compiler  </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-<script>
-function fileClick(a) {
-
-        var linkTag = a.href;
-        var substring = "file:///";
-        if (linkTag.includes(substring)) {
-            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
-            fileOpen(url);
-        }
-        else {
-            window.open(linkTag, '_blank');
-        }
-    }
-
-    function fileOpen(url) {
-        $.ajax({
-            url: url,
-            complete: function (jqxhr, txt_status) {
-                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
-                if (txt_status == 'success') {
-                    window.open(url, '_self');
-                }
-                else {
-                    alert("File not found[404]!");
-                }
-                // }
-            }
-        });
-    }
-    </script>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1> Importing Directories into C programs with the Baby X Resource Compiler </H1>
 <P>
 You often have data in a directory or folder somewhere on your machine, and want to import the entire folder into a C program. And it would be nice to achieve this with the resource compiler with a "folder" tag. But this cannot be done because the resource compiler is written in portable ANSI C, and there is no way of traversing a computer's directory structure. For that you must go to Posix. However there is now a solution, but it involves a second program written in Posix. And so we have a separate project, <A href = "BabyXFS.html">BabyXFS</A>, which is supplementary to the resource compiler, <A href = "index.html">babyxrc</A>.
@@ -61,7 +44,7 @@ You often have data in a directory or folder somewhere on your machine, and want
 <P>
 The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml</A>, which crawls a C source directory for files and writes them as xml. You then have a big xml file which you embed in the C program as a string. You then call the <A href="https://github.com/MalcolmMcLean/minixml">XML parser</A> on the string to get a document tree, which is your file structure. You then use a function provided to load files a FILE *, which you can pass to functions in your C program which operate on streams.
  </P>
- <P>
+ 
  <pre>
      
      babyxfs_dirtoxml &lt;targetfolder&gt;
@@ -73,7 +56,7 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
         babysfxs_dirtoxml  data/myfolder > myfolder.xml
         
  </pre>
- </P>
+ 
  <P>
  babyxfs_dirtoxml is simple but very powerful, and produces clean XML with text files represented a plain text and binary files uuencoded. It produces XML in the <A href="FileSystemXML.html">&lt;FileSystem&gt;</A> format.
  </P>
@@ -82,7 +65,7 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
  <P>
  Once we've got the XML, we need to get it into our C program and mount it as a directory. And so of course to embed a string, we use the Baby X resource compiler with a simple script.
  </P>
- <P>
+ 
  <pre>
      
  &lt;BabyXRC&gt;
@@ -90,12 +73,12 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
  &lt;/BabyXRC&gt;
 
  </pre>
- </P>
+ 
  <P>
  Now we need to mount the string as filesystem. So first we need to load it as an XML document using the function
   xmldocfromstring() from the fie xmlparser2.h. Then we use the function xml_fopen() from the file directory.c to get a FILE * with the desired file.
  </P>
- <P>
+ 
  <pre><code class="language-c">
  #include "xmlparser2.h"
  #include "xml_fload.h" /* you need to steal this yourself from directory.c */
@@ -111,7 +94,8 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
  
  fp = xml_fload(doc, "/myfolder/books/MalcolmMcLean/Adam_and_Abagail_Go_to_St_Toms.pdf", "r");
  </code></pre>
- <BR></BR>
+ <BR>
+ <P>
  Very simple.
  </P>
  <P>
@@ -121,7 +105,8 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
  <H3> C source files </H3>
  <P>
      These are old files which are retained here for refererence, and so that if you come to the page you have something. 
-     The programs are being developed actively in the <A href="https://github.com/MalcolmMcLean/babyxrc"> Baby X resource compiler</A> project  
+     The programs are being developed actively in the <A href="https://github.com/MalcolmMcLean/babyxrc"> Baby X resource compiler</A> project
+</P>
  <UL>
      
  <LI> <A href="src/directorytoxml.c">directorytoxml.c</A></LI>
@@ -129,7 +114,6 @@ The solution is to use a program called <A href="BabyXFS.html">babyxfs_dirtoxml<
  <LI><A href="src/xmlparser2.c">xmlparser2.c</A></LI>
  <LI><A href="src/xmlparser2.h">xmlparser2.h</A></LI>
  </UL>
-</P>
 
 </BODY> </HTML>
 

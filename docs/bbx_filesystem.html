@@ -1,58 +1,41 @@
-<HTML>
+<!DOCTYPE html>
+<HTML lang="en">
 <HEAD>
-    <link href="prism.css" rel="stylesheet" />
+    <title> bbx_filesystem library </title>
+    <meta charset="UTF-8">
+        
+    <link href="prism.css" rel="stylesheet">
+<script src="microlight.js"> </script>
+<script src="prism.js"> </script>
 <style>
-body {
-    margin-left: 120px;
+.microlight {
+    font-family : monospace;
+    white-space : pre;
+    background-color : white;
+}
+    
+BODY {
+    width:50em;
+    margin-left:5em;
+    background-color:#c0c0ff;
 }
 
 P {
-    width: 50em;
+   width : 50em;
 }
 
-pre{
-    width : 50em;
-    background-color: #FFFFFF;
+pre {
+   background-color:white;
 }
 </style>
-<script>
-function fileClick(a) {
-
-        var linkTag = a.href;
-        var substring = "file:///";
-        if (linkTag.includes(substring)) {
-            var url = '/cnm/document/v/downloadLocalfile?path=' + encodeURIComponent(linkTag);
-            fileOpen(url);
-        }
-        else {
-            window.open(linkTag, '_blank');
-        }
-    }
-
-    function fileOpen(url) {
-        $.ajax({
-            url: url,
-            complete: function (jqxhr, txt_status) {
-                console.log("Complete: [ " + txt_status + " ] " + jqxhr);
-                if (txt_status == 'success') {
-                    window.open(url, '_self');
-                }
-                else {
-                    alert("File not found[404]!");
-                }
-                // }
-            }
-        });
-    }
-    </script>
-
 </HEAD>
-<BODY bgcolor="#c0c0ff">
+
+<BODY>
     <script src="prism.js"></script>
-    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"> </IMG> </A>
-    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62"> </IMG> </A>
+    <A href ="https://github.com/MalcolmMcLean"> <IMG src = "Cartoon_Owl_clip_art.png" alt="Malcolm's github site"></A>
+    <A href ="index.html"> <IMG src = "babyxrc_logo.svg" alt="Baby X Resource compiler" width = "64" height = "62">  </A>
     &nbsp;&nbsp;
-    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner"></IMG>
+    <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1>bbx_filesystem library </H1>
 <P>
 The Baby X filesystem library, BBX_FileSystem, is a set of functions designed to work with FileSystem XML files. The function make it easy for programmers to use these files aand to manipulate the. It is part of the BabyXFS or Baby X FileSystem project, whch is a project designed to allow Baby X user to mount directories in Baby X programs. BBX_fileSystem is the heart of the poject. It is a suite of programs allowing Baby X programmers or anyone else to mount FileSytem XML files as virtual filing systems.
@@ -64,8 +47,7 @@ The Baby X filesystem library, BBX_FileSystem, is a set of functions designed to
 
 These are the functions in the library.
 
-<P>
-<P>
+</P>
 <pre><code class="language-c">
     //
     //  bbx_filesystem.h
@@ -99,7 +81,6 @@ These are the functions in the library.
 
     #endif /* bbx_filesystem_h */
 </code></pre>
-</P>
 
 <H3>bbx_filesystem</H3>
 <P>
@@ -112,12 +93,10 @@ Constructs an empty BBX_FileSystem object.
     
 </pre>
 
-</P>
 <H3>bbx_filesystem_kill</H3>
 <P>
 Destroys a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     void bbx_filesystem_kill(BBX_FileSystem *bbx_fs);
     
@@ -125,13 +104,12 @@ Destroys a BBX_FileSystem object.
            bbx_fs - the BBX_FileSystem object.
            
 </pre>
-</P>
 
 <H3>bbx_filesystem_set</H3>
 <P>
 Mounts either a FileSystem XML string or a host directory on the BBX_FileSystem object.
 </P>
-<P>
+
 <pre>
     int bbx_filesystem_set(BBX_FileSystem *bbx_fs,
     const char *pathorxml, int mode);
@@ -146,7 +124,7 @@ Mounts either a FileSystem XML string or a host directory on the BBX_FileSystem 
 
     Returns: 0 on success, -1 on failure.
 </pre>
-</P>
+
 <P>
 Pass it a string with FileSystem XML to mount the system. Or a host directory, though
 BBX_F_STDIO mode isn't entirely tested. You can free the XML string after the function
@@ -154,8 +132,9 @@ has returned, it doesn't use it after setting.
 </P>
 
 <H3>bbx_filesystem_fopen</H3>
-Opens a file from a BBX_FileSystem object.
 <P>
+Opens a file from a BBX_FileSystem object.
+</P>
 <pre>
     FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs,
     const char *path, const char *mode);
@@ -166,7 +145,6 @@ Opens a file from a BBX_FileSystem object.
     Returns: pointer to the opened stream, 0 on failure.
     
 </pre>
-</P>
 <P>
 This is the fopen() function for the BBX_FileSystem. The FILE *s
 must be closed with bbx_filesystem_fclose(), they must not be passed
@@ -178,7 +156,6 @@ fprintf() can be called on them.
 <P>
 Closes a file opened from a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp);
     Params:
@@ -187,7 +164,6 @@ Closes a file opened from a BBX_FileSystem object.
     Returns: on success, -1 on failure (which can happen).
            
 </pre>
-</P>
 <P>
 This is the fclose() function for the BBX_FileSystem. The FILE *s must
 have been returned from bbx_filessytem_fopen. Every file pointer opened
@@ -203,7 +179,6 @@ With this function, it can fail.
 <P>
 Load an entire text file from a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     char *bbx_filesystem_slurp(BBX_FileSystem *bbx_fs,
     const char *path, const char *mode);
@@ -215,7 +190,6 @@ Load an entire text file from a BBX_FileSystem object.
     Returns: allocated pointer to file contents, 0 on failure.
     
 </pre>
-</P>
 <P>
 Load in an entire file. If the file in binary, you will get strange
 results. In BBX_FS_STRING mode, mode should be "r" or at least a short
@@ -228,7 +202,6 @@ right thing.
 <P>
 Load an entire binary file from a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     unsigned char *bbx_filesystem_slurpb(BBX_FileSystem *bbx_fs,
     const char *path, const char *mode, int *N);
@@ -241,7 +214,7 @@ Load an entire binary file from a BBX_FileSystem object.
     Returns: allocated pointer to file contents.
 
 </pre>
-</P>
+
 <P>
 Load in an entire file. If the file in text, you will be given
 theterminating nul, but it is poor form to rely on it. The pointer needs
@@ -252,7 +225,6 @@ to be freed when done.
 <P>
 Delete a file from A BBX_FileSystem object.
 </P>
-<P>
 <pre>
     int bbx_filesystem_unlink(BBX_FileSystem *bbx_fs, const char *path);
     Params:
@@ -260,7 +232,6 @@ Delete a file from A BBX_FileSystem object.
            path - the path to the file to delete.
     Returns: 0 on success, -1 on fail.
 </pre>
-</P>
 <P>
 It unlinks a file form the directory tree. In BBX_FS_STRING mode, this is
 the same as deletion. On stdio system, unlinking may not delete, and there
@@ -270,14 +241,12 @@ may be other links to the same file.
 <P>
 Get the name of the FileSystem mounted in the BBX_FileSystem object.
 </P>
-<P>
 <pre>
     const char *bbx_filesystem_getname(BBX_FileSystem *bbx_fs);
     Params:
            bbx_fs - the BBX_FileSystem object.
     Returns: the name of the filessyrm mounted within it.
 </pre>
->?P>
 <P>
 A FileSystem XML should have a single directory node as a child,
 which is the root of the data. The name is the name of that node.
@@ -286,7 +255,6 @@ which is the root of the data. The name is the name of that node.
 <P>
 Set a function to read a directory on host-mounted BBX_FileSystem systems.
 </P>
-<P>
 <pre>
     int bbx_filesystem_setreadir(BBX_FileSystem *bbx_fs,
     char **(*fptr)(const char *path, void *ptr), void *ptr);
@@ -296,7 +264,7 @@ Set a function to read a directory on host-mounted BBX_FileSystem systems.
                     on a hosted file system.
     Returns: 0 on success, -1 on failure.
 </pre>
-</P>
+
 <P>
 ANSI C provides no function to read directories, and so the
 bbx_filesystem_list can only be implemented by proving this
@@ -307,7 +275,6 @@ current working diectory.
 <P>
 Write out the entire contents of a BBX_Filesystem object to a FileSysytem XML file.
 </P>
-<P>
 <pre>
     int bbx_filesystem_dump(BBX_FileSystem *bbx_fs, FILE *fp);
     Params:
@@ -315,7 +282,7 @@ Write out the entire contents of a BBX_Filesystem object to a FileSysytem XML fi
            fp - stream to write XML to.
     Returns: 0 on success, -1 on failure.
 </pre>
-</P>
+
 <P>
 This is an easy way of saving the state of the system. It will only work on
 BBX_FS_STRING mode file systems, however.
@@ -324,7 +291,6 @@ BBX_FS_STRING mode file systems, however.
 <P>
 Create a directory on a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     char **bbx_filesystem_mkdir(BBX_FileSystem *bbx_fs, const char *path);
     Params:
@@ -332,7 +298,6 @@ Create a directory on a BBX_FileSystem object.
            path - path to a directory.
     Returns: a programming error, the pointer is useless.
 </pre>
-</P>
 <P>
 This can only be done for BBX_FS_STRING systems. ANSI systems have no way.
 </P>
@@ -340,7 +305,6 @@ This can only be done for BBX_FS_STRING systems. ANSI systems have no way.
 <P>
 Remove a directory from a BBX_FileSystem object.
 </P>
-<P>
 <pre>
     char **bbx_filesystem_rmdir(BBX_FileSystem *bbx_fs, const char *path);
     Params:
@@ -348,7 +312,6 @@ Remove a directory from a BBX_FileSystem object.
            pth - path to a empty directory.
     Returns: a programming error, the pointer is useless.
 </pre>
-</P>
 <P>
 This can only be done for BBX_FS_STRING systems. ANSI systems have no way.
 The directory must be empty. Otherwise it to easy to lose all your data by
@@ -358,7 +321,6 @@ accidentallly deleting a senior node.
 <P>
 List the contents of a BBX_FileSystem directory.
 </P>
-<P>
 <pre>
     char **bbx_filesystem_list(BBX_FileSystem *bbx_fs, const char *path);
     Params:
@@ -366,12 +328,10 @@ List the contents of a BBX_FileSystem directory.
            path - path to a directory.
     Returns: allocated pointer to allocated list of strings.
 </pre>
-</P>
 <P>
 This returns the contents of a directory as a simple list of allocated
 strings in the form
 </P>
-<P>
 <pre>
 mydirectory/
 myfolder/
@@ -379,7 +339,6 @@ mymate.txt
 myenemy.bin
 anotherfolder/
 </pre>
-</P>
 <P>
 Directories are indicated with a trailing /. The order should not be
 taken to have any meaning.
