@@ -15,6 +15,8 @@
 #include "bbx_filesystem.h"
 #include "bbx_fs_shell.h"
 
+#include "re.h"
+
 
 /*
     This program is an impementation of the shell command for FileSystem.xml files.
@@ -134,7 +136,37 @@ out_of_memory:
     return 0;
 }
 
-int helloworld(int argc, char **argv, FILE *out, FILE *in, FILE *err)
+int babyxfs_grep_main(int argc, char **argv,FILE *out, FILE *in, FILE *err, BBX_FS_SHELL *shell, void *ptr)
+{
+   FILE *fp;
+   char line[1024];
+    int length;
+    
+   if (argc != 3)
+   {
+      // usage();
+       return 0;
+   }
+
+    char *pattern = argv[1];
+   fp =  bbx_fs_shell_fopen(shell, argv[2], "r");
+    if (!fp)
+    {
+        fprintf(stderr, "Can't open %s\n", argv[2]);
+    }
+
+   while (fgets(line, 1024, fp))
+   {
+       int m = re_match(pattern, line, &length);
+       if (m >= 0)
+           printf("%s", line);
+   }
+   bbx_fs_shell_fclose(shell, fp);
+   return 0;
+}
+
+
+int helloworld(int argc, char **argv, FILE *out, FILE *in, FILE *err, BBX_FS_SHELL *shell, void *ptr)
 {
     return fprintf(out, "Hello world\n");
 };
@@ -188,7 +220,9 @@ int docommand(BBX_FileSystem *fs, int argc, char **argv)
     printf("\n");
    
     shell = bbx_fs_shell(fs);
-    bbx_fs_shell_addcommand(shell, "hello", helloworld);
+    bbx_fs_shell_addcommand(shell, "hello", helloworld, 0);
+    bbx_fs_shell_addcommand(shell, "grep", babyxfs_grep_main, 0);
+    
     if (hasedit)
     {
         bbx_fs_shell_set_editor(shell, editor);

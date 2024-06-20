@@ -45,7 +45,8 @@ extern char help_on_system[];
 typedef struct bbx_fs_command
 {
     char *name;
-    int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err);
+    int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err, struct bbx_fs_shell *shell, void *ptr);
+    void *ptr;
     struct bbx_fs_command *next;
 } BBX_FS_COMMAND;
 
@@ -142,15 +143,29 @@ int bbx_fs_shell_run(BBX_FS_SHELL *shell, FILE *output, FILE *input, FILE *error
 }
 
 int bbx_fs_shell_addcommand(BBX_FS_SHELL *shell, const char *command,
-                            int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err))
+                            int (*fptr)(int argc, char **argv, FILE *out, FILE *in, FILE *err, BBX_FS_SHELL *shell, void *ptr), void *ptr)
 {
     BBX_FS_COMMAND *bbx_command;
     
     bbx_command = bbx_malloc(sizeof(BBX_FS_COMMAND));
     bbx_command->fptr = fptr;
+    bbx_command->ptr = ptr;
     bbx_command->name = bbx_strdup(command);
     bbx_command->next = shell->commands;
     shell->commands = bbx_command;
+}
+
+FILE *bbx_fs_shell_fopen(BBX_FS_SHELL *shell, const char *path, const char *mode)
+{
+    char fspath[1024];
+    snprintf(fspath, 1024, "%s/%s", shell->path, path);
+    
+    return bbx_filesystem_fopen(shell->bbx_fs, fspath, mode);
+}
+
+int bbx_fs_shell_fclose(BBX_FS_SHELL *shell, FILE *fp)
+{
+    return bbx_filesystem_fclose(shell->bbx_fs, fp);
 }
 
 int bbx_fs_shell_set_editor(BBX_FS_SHELL *shell, const char *editor)
@@ -259,8 +274,11 @@ static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line)
 
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
 {
-    run_internal_command(shell, command, argc, argv);
-    run_external_command(shell, command, argc, argv);
+    int didrun;
+    
+    didrun = run_external_command(shell, command, argc, argv);
+    if (!didrun)
+        run_internal_command(shell, command, argc, argv);
     return 0;
 }
 
@@ -273,7 +291,8 @@ static int run_external_command(BBX_FS_SHELL *shell, const char *command,
     {
         if (!strcmp(cmd->name, command))
         {
-            (*cmd->fptr)(argc, argv,shell->stdout, shell->stdin, shell->stderr);
+            (*cmd->fptr)(argc, argv,shell->stdout, shell->stdin, shell->stderr, shell, cmd->ptr);
+            return 1;
         }
         cmd = cmd->next;
     }
@@ -531,6 +550,9 @@ static int help(BBX_FS_SHELL *shell, int argc, char **argv)
     fprintf(shell->stdout, "\tsystem - host operating system command\n");
     fprintf(shell->stdout, "\tbb - Baby Basic\n");
     fprintf(shell->stdout, "\n");
+    fprintf(shell->stdout, "\thelp help - help on using help\n");
+    fprintf(shell->stdout, "\thelp -list - list all external commands\n");
+    fprintf(shell->stdout, "\n"); 
     fprintf(shell->stdout, "\tquit - exit the shell\n");
     fprintf(shell->stdout, "\n");
     
