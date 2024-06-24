@@ -118,7 +118,7 @@ Loads an XML file and returns an XMLDOC object.
 </pre>
 
 <P>
-This is the main function to load an XML file from disk and parse it. The XMl loader is quite good, and will load UTF-16 and convert to UTF-8. Ir's also got fairly strong error reporting
+This is the main function to load an XML file from disk and parse it. The XML loader is quite good, and will load UTF-16 and convert to UTF-8. It's also got fairly strong error reporting.
 
 </P>
 <H3>floadxmldoc</H3>
@@ -138,7 +138,7 @@ Loads XML from an open stream and returns an XMLDOC object.
            
 </pre>
 <P>
-loadxmldoc isof course just a wrapper for this function, which is exposed in case you have data coming from an open stream and can't provide a filename.
+loadxmldoc is of course just a wrapper for this function, which is exposed in case you have data coming from an open stream and can't provide a filename.
 </P>
 
 <H3>xmldocfromstring</H3>
@@ -149,14 +149,14 @@ Reads XML from a string, and returns an XMLDOC object.
     XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
     
     Params:
-           str - a string conatining xml.
+           str - a string containing xml.
            errormesssage - retun buffer for error messages.
            Nerr - size of the error message bufffer.
 
     Returns: the constructed XMLDOC object.
 </pre>
 <P>
-Pass it a string with XML to use the system in an IO-free manner.
+Pass it a string with XML to use the system in an IO-free manner. Strings must be in UTF-8.
 </P>
 
 <H3>killxmldoc</H3>
@@ -219,7 +219,7 @@ Gets the tag or element name associated with a node.
 
 </pre>
 <P>
-Access function. You get a bit  of security with "const".""
+Access function. You get a bit  of security with "const".
 </P>
 
 <H3>xml_getdata</H3>
@@ -325,7 +325,7 @@ Get the data held by a node and its descendants.
     Returns: allocated pointer to the data held by the nodecand its children..
 </pre>
 <P>
-This is needed for XML which is raeup instead of tagged data. The node needs to know the positons of any childre within its data string.
+This is needed for XML which is markup instead of tagged data. The node needs to know the positions of any children within its data string.
 </P>
 
 <H3>xml_getlineno</H3>
@@ -340,7 +340,7 @@ Get the number of the line in the XML document where the node appeared.
     Returns: the line number the node appeared in the XML document.
 </pre>
 <P>
-This is an absolutely crucial little function for reporting errors. XML fles often get very large, and withot some reference to the place a corrupted node appears in the data, repair is hopeless.
+This is an absolutely crucial little function for reporting errors. XML fles often get very large, and without some reference to the place a corrupted node appears in the data, repair is hopeless.
 </P>
 
 <H3>xml_unknownattributes</H3>
@@ -359,18 +359,18 @@ Return any attributes which do not match a list of known attributes.
 This is another function mainly for debugging. Nodes might have unkown attributes associated with them. Which will often indicate a bug somewhere upstream.
 </P>
 <P>
-You use it ike this
+You use it like this
 </P>
 <pre>
     void *sentinel = 0;
     XMLARRIBUTE *attr;
      
-     attr = xml_unknownattriby=uyes(node, "faith", "hope" charity, sentinel);
+     attr = xml_unknownattributes(node, "faith", "hope", "charity", sentinel);
      if (!attr)
      {
         /* all ok */
      }
-     /* now ww have deep copy of tha unknown attriubutes.
+     /* now we have deep copy of the unknown attributes. */
      
 </pre>
 

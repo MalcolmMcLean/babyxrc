@@ -39,7 +39,8 @@ pre {
 <IMG src = "babyxrc-banner.svg" width = "256" height = "62" alt = "Baby X RC banner">
 <H1> Using the XML parser </H1>
 <P>
-The Baby X resource compiler contains a "vanilla" <A href="https://github.com/MalcolmMcLean/minixml">XML parser</A>. 
+The Baby X resource compiler contains a "vanilla" <A href="https://github.com/MalcolmMcLean/minixml">XML parser</A>.
+T
 </P>
 
 <H3> What is XML </H3>
@@ -95,6 +96,7 @@ The XML parser is a vanilla parser. It doesn't support everything. It just conve
         char *data;                /* data as ascii */
         int position;              /* position of the node within parent's data
         string */
+        int lineno;                /* line number of node in document */
         struct xmlnode *next;      /* sibling node */
         struct xmlnode *child;     /* first child node */
         } XMLNODE;
@@ -105,8 +107,9 @@ The XML parser is a vanilla parser. It doesn't support everything. It just conve
         } XMLDOC;
         
         
-        XMLDOC *loadxmldoc(char *fname, int *err);
-        XMLDOC *floadxmldoc(FILE *fp, int *err);
+        XMLDOC *loadxmldoc(const char *fname, char *errormessage, int Nerr);
+        XMLDOC *floadxmldoc(FILE *fp, char *errormessage, int Nerr);
+        XMLDOC *xmldocfromstring(const char *str,char *errormessage, int Nerr);
         void killxmldoc(XMLDOC *doc);
         
         XMLNODE *xml_getroot(XMLDOC *doc);
@@ -119,6 +122,9 @@ The XML parser is a vanilla parser. It doesn't support everything. It just conve
         XMLNODE **xml_getdescendants(XMLNODE *node, const char *tag, int *N);
 </code>
 </pre>
+<P>
+Technical documentation on the functions <A href="xmlparser2.html">here</A>. 
+</P>
 <P>
 You will often need to access these structures directly to process the XML tree efficiently. For instance if you do not know beforehand which attributes are assoicated with an element, the only way to get that information is to walk the attribute list an examne the "name" members.
 </P>
