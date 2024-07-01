@@ -81,7 +81,7 @@ static char *fslurp(FILE *fp)
     free(answer);
         return 0;
       }
-      buffsize = buffsize + 100 * buffsize/10;
+      buffsize = buffsize + 100 + buffsize/10;
       temp = realloc(answer, buffsize);
       if(temp == 0)
       {
@@ -136,31 +136,160 @@ out_of_memory:
     return 0;
 }
 
+static void strtoupper(char *str)
+{
+    int i;
+    
+    for (i =0; str[i];i++)
+        str[i] = toupper((unsigned char) str[i]);
+}
+
+static void pattoupper(char *pat)
+{
+    int i;
+    
+    for (i = 0; pat[i]; i++)
+    {
+        if (islower((unsigned char) pat[i]) &&
+                (i == 0 || pat[i-1] != '\\'))
+            pat[i] = toupper((unsigned char) pat[i]);
+    }
+}
+
+static int matchword(char *pattern, char *line, int *length)
+{
+    char *word;
+    int len;
+    int answer = -1;
+    
+    if (length)
+        *length = 0;
+    len = strlen(pattern);
+    
+    word = strstr(line, pattern);
+    if (word)
+    {
+        if ( (word == line ||
+              isspace(*(word -1)) ||
+              ispunct(*(word -1))) &&
+            (word[len] == 0 ||
+            (isspace(word[len]) ||
+             ispunct(word[len]))))
+        {
+            answer = (int) (word - line);
+            if (length)
+                *length = len;
+        }
+    }
+            
+    return answer;
+}
+
+/*
+ -i, --ignore-case: Ignores case distinctions in patterns and input data.
+ -v, --invert-match: Selects the non-matching lines of the provided input pattern.
+ -n, --line-number: Prefix each line of the matching output with the line number in the input file.
+ -w: Find the exact matching word from the input file or string.
+ -c: Count the number of occurrences of the provided pattern.
+ */
+static int grep_usage(FILE *out)
+{
+    fprintf(out, "grep - the Baby X regular expression parser\n");
+    fprintf(out, "Usage: grep [options] <pattern> <file.txt>\n");
+    fprintf(out, "\toptions:\n");
+    fprintf(out, "\t\t-i - ignore case.\n");
+    fprintf(out, "\t\t-v - invert (report non-matching lines).\n");
+    fprintf(out, "\t\t-n - show line numbers.\n");
+    fprintf(out, "\t\t-w - match exact word.\n");
+    fprintf(out, "\t\t-c - count number of matching lines.\n");
+    fprintf(out, "\n");
+    return 0;
+}
+
+
 int babyxfs_grep_main(int argc, char **argv,FILE *out, FILE *in, FILE *err, BBX_FS_SHELL *shell, void *ptr)
 {
    FILE *fp;
    char line[1024];
-    int length;
+   char pline[1024];
+    char errormessage[1024];
     
-   if (argc != 3)
+    int length;
+    BBX_Options *opt;
+    char *pattern = 0;
+    char *fname = 0;
+    int i_flag;
+    int v_flag;
+    int n_flag;
+    int w_flag;
+    int c_flag;
+    int Nargs;
+    int count = 0;
+    int lineno = 0;
+    
+    opt = bbx_options(argc, argv, "-ivnwc");
+    i_flag = bbx_options_get(opt, "-i", 0);
+    v_flag = bbx_options_get(opt, "-v", 0);
+    n_flag = bbx_options_get(opt, "-n", 0);
+    w_flag = bbx_options_get(opt, "-w", 0);
+    c_flag = bbx_options_get(opt, "-c", 0);
+    
+    if (bbx_options_error(opt, errormessage, 1024))
+    {
+        fprintf(err, "%s\n", errormessage);
+        return 0;
+    }
+    
+    Nargs = bbx_options_Nargs(opt);
+    
+   if (Nargs != 2)
    {
-      // usage();
+       grep_usage(out);
        return 0;
    }
 
-    char *pattern = argv[1];
-   fp =  bbx_fs_shell_fopen(shell, argv[2], "r");
+    pattern = bbx_options_arg(opt, 0);
+    fname = bbx_options_arg(opt, 1);
+    
+    bbx_options_kill(opt);
+    opt = 0;
+    
+    if (i_flag)
+        pattoupper(pattern);
+    
+   fp =  bbx_fs_shell_fopen(shell, fname, "r");
     if (!fp)
     {
-        fprintf(stderr, "Can't open %s\n", argv[2]);
+        fprintf(err, "Can't open %s\n", argv[2]);
     }
 
    while (fgets(line, 1024, fp))
    {
-       int m = re_match(pattern, line, &length);
-       if (m >= 0)
-           printf("%s", line);
+       int m;
+       strcpy(pline, line);
+       if (i_flag)
+           strtoupper(pline);
+       if (w_flag)
+           m = matchword(pattern, pline, &length);
+       else
+           m = re_match(pattern, pline, &length);
+       lineno++;
+       if ( (v_flag && m < 0) || (!v_flag && m >= 0))
+       {
+           if (c_flag)
+               count++;
+           else
+           {
+               if (n_flag)
+                   fprintf(out, "%d: ", lineno);
+               fprintf(out, "%s", line);
+           }
+       }
    }
+    
+   if (c_flag)
+       fprintf(out, "%d matching lines\n", count);
+    
    bbx_fs_shell_fclose(shell, fp);
    return 0;
 }

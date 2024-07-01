@@ -262,6 +262,12 @@ FILE *bbx_filesystem_fopen(BBX_FileSystem *bbx_fs, const char *path, const char 
           fp = xml_fopen(bbx_fs->filesystemdoc, path, mode);
       }
       
+      if (fp && mode[0] == 'w')
+      {
+          fclose(fp);
+          fp = tmpfile();
+      }
+      
       if (fp)
       {
           bbx_fs->openfiles[bbx_fs->Nopenfiles] = fp;
@@ -310,8 +316,6 @@ int bbx_filesystem_fclose(BBX_FileSystem *bbx_fs, FILE *fp)
                     babyxfs_cp(root, bbx_fs->paths[i], data, N);
                     
                     free(data);
-
-                    
                 }
             }
              

@@ -63,6 +63,8 @@ typedef struct bbx_fs_shell
 
 
 static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line);
+static int dopipes(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
+static int doredirection(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv);
 static int run_external_command(BBX_FS_SHELL *shell, const char *command,
                                 int argc, char **argv);
@@ -260,9 +262,13 @@ static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line)
         }
         
     }
+    else if (!strcmp(command, "pwd"))
+    {
+        fprintf(shell->stdout, "%s\n", shell->path);
+    }
     else
     {
-        donormalcommand(shell, command, Nargs, args);
+        dopipes(shell, command, Nargs, args);
     }
     
     for (i = 0; args[i]; i++)
@@ -270,6 +276,74 @@ static int bbx_fs_shell_inputline(BBX_FS_SHELL *shell, const char *line)
     free(args);
  
     return 0;
+}
+
+static int dopipes(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
+{
+    FILE *savein;
+    FILE *saveout;
+    int commandindex = 0;
+    int i;
+    
+    savein = shell->stdin;
+    saveout = shell->stdout;
+    
+    for (i = 1; i < argc; i++)
+    {
+        if (!strcmp(argv[i], "|"))
+        {
+            if (shell->stdout != saveout)
+                fclose(shell->stdout);
+            shell->stdout = tmpfile();
+            doredirection(shell, argv[commandindex], i - commandindex, argv + commandindex);
+            shell->stdin = shell->stdout;
+            rewind(shell->stdin);
+            
+        }
+    }
+    doredirection(shell, argv[commandindex], i - commandindex, argv + commandindex);
+    if (shell->stdin != savein)
+        fclose(shell->stdin);
+    
+    shell->stdin = savein;
+    shell->stdout = saveout;
+}
+
+static int doredirection(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
+{
+    int i;
+    int redirect = 0;
+    for (i = 1; i <argc; i++)
+        if (!strcmp(argv[i], ">"))
+            redirect = i;
+    
+    if (redirect)
+    {
+        if (redirect < argc - 1)
+        {
+            FILE *fp;
+            FILE *savefp;
+          
+            savefp = shell->stdout;
+            fp = bbx_fs_shell_fopen(shell, argv[redirect +1], "w");
+            if (!fp)
+                fprintf(shell->stderr, "Can't redirect to %s\n", argv[redirect +1]);
+            else
+            {
+                shell->stdout = fp;
+                donormalcommand(shell, command, redirect, argv);
+                bbx_fs_shell_fclose(shell, shell->stdout);
+                shell->stdout = savefp;
+            }
+        }
+    }
+    else
+    {
+        donormalcommand(shell, command, argc, argv);
+    }
+    
+    return 0;
+    
 }
 
 static int donormalcommand(BBX_FS_SHELL *shell, const char *command, int argc, char **argv)
